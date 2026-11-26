@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P03_Base_Table_Deck_Studio_v1.0 — OpenVI B-Rep Cartridge Workbench (DG-2026-105)</title>
+  <style>
+    :root {
+      --bg-dark: #14171c;
+      --panel-bg: rgba(25, 29, 36, 0.94);
+      --panel-2: #222731;
+      --panel-3: #2d3442;
+      --border: #394150;
+      --border-hi: #525e73;
+      --ink: #eef2f7;
+      --muted: #97a3b6;
+      --accent: #0696d7;
+      --accent-hi: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #f43f5e;
+      --violet: #c084fc;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 12.5px;
+      user-select: none;
+    }
+
+    /* Top Header Bar */
+    .topbar {
+      height: 46px;
+      background: #101318;
+      border-bottom: 1px solid #29303c;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .part-badge {
+      background: linear-gradient(135deg, #0696d7, #1d4ed8);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .spec-badge {
+      background: rgba(34, 197, 94, 0.14);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .app-title {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-kpis {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .kpi-chip {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .kpi-chip strong { color: var(--accent-hi); }
+
+    /* Main 3D Workspace */
+    .workspace {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 46px);
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    /* Left CAD Browser Tree */
+    .left-panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 296px;
+      max-height: calc(100% - 82px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .panel-hdr {
+      padding: 8px 11px;
+      background: #1f242d;
+      border-bottom: 1px solid var(--border);
+      font-size: 10.8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #d6deeb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tree-scroll {
+      padding: 7px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tree-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: #161a22;
+      border: 1px solid #2a313f;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .tree-row:hover { border-color: var(--border-hi); }
+    .tree-row.selected {
+      background: rgba(6, 150, 215, 0.22);
+      border-color: var(--accent-hi);
+    }
+    .tree-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .node-name {
+      font-size: 11.3px;
+      font-weight: 600;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node-sub {
+      font-family: var(--mono);
+      font-size: 9.8px;
+      color: var(--muted);
+    }
+    .eye-btn {
+      font-family: var(--mono);
+      font-size: 9.8px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .eye-btn:hover { border-color: var(--accent-hi); }
+    .eye-btn.off {
+      opacity: 0.42;
+      text-decoration: line-through;
+    }
+
+    /* ViewCube */
+    .viewcube {
+      position: absolute;
+      top: 12px;
+      right: 348px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+    }
+    .vc-lbl {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .vc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .vc-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vc-btn:hover { border-color: var(--accent-hi); background: #313949; }
+    .vc-btn.active { background: var(--accent); border-color: var(--accent-hi); color: #fff; }
+
+    /* Right Engineering Inspector */
+    .right-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 326px;
+      max-height: calc(100% - 82px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .r-sec {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .r-sec:last-child { border-bottom: none; }
+    .ctrl-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .s-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .s-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.3px;
+    }
+    .s-val {
+      font-family: var(--mono);
+      font-size: 10.8px;
+      font-weight: 700;
+      color: var(--accent-hi);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 0;
+      cursor: pointer;
+    }
+    .audit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    .audit-btn {
+      font-family: var(--font);
+      font-size: 10.8px;
+      font-weight: 600;
+      padding: 6px 7px;
+      border-radius: 5px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: #e2e8f0;
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.3;
+    }
+    .audit-btn:hover { border-color: var(--accent-hi); background: #2c3442; }
+    .audit-btn.active {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: var(--warn);
+      color: #fde68a;
+    }
+    .audit-note {
+      margin-top: 7px;
+      padding: 7px 8px;
+      border-radius: 5px;
+      background: #12161d;
+      border: 1px solid #2d3646;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+    .audit-note strong { color: #fde68a; }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.8px;
+    }
+    .spec-table th {
+      text-align: left;
+      padding: 4px 4px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .spec-table td {
+      padding: 4px 4px;
+      border-bottom: 1px solid rgba(57, 65, 80, 0.45);
+    }
+    .spec-table td.num {
+      text-align: right;
+      font-family: var(--mono);
+      color: #86efac;
+      font-weight: 600;
+    }
+
+    .pad-scroll {
+      max-height: 148px;
+      overflow-y: auto;
+      border: 1px solid #2b3342;
+      border-radius: 5px;
+      background: #13171f;
+    }
+    .pad-row-tr { cursor: pointer; }
+    .pad-row-tr:hover { background: rgba(56, 189, 248, 0.12); }
+    .pad-row-tr.sel { background: rgba(6, 150, 215, 0.25); }
+
+    /* Bottom Display Toolbar */
+    .bottom-dock {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 22, 28, 0.96);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 12;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.58);
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: calc(100% - 24px);
+    }
+    .dock-btn {
+      font-family: var(--font);
+      font-size: 11.2px;
+      font-weight: 600;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .dock-btn:hover { background: #2b3240; color: #fff; }
+    .dock-btn.active {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+    .sep { width: 1px; height: 18px; background: var(--border); }
+    .sec-controls {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: #fda4af;
+    }
+    .sec-controls.show { display: flex; }
+
+    @media (max-width: 1100px) {
+      .top-kpis { display: none; }
+      .left-panel { width: 245px; }
+      .right-panel { width: 278px; }
+      .viewcube { right: 298px; }
+    }
+    @media (max-width: 780px) {
+      .left-panel { display: none; }
+      .viewcube { left: 10px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-group">
+      <span class="part-badge">CARTRIDGE P03 v2.0</span>
+      <span class="spec-badge">DG-2026-105 · 110 BOUNDS</span>
+      <span class="app-title">P03_Base_Table_Deck_Studio_v1.0 — Steel Tabletop B-Rep Workbench</span>
+    </div>
+    <div class="top-kpis">
+      <span class="kpi-chip">Size: <strong>2000 × 1480 × 15 mm</strong></span>
+      <span class="kpi-chip">TR1100 Ctr: <strong>(-100, -60) mm</strong></span>
+      <span class="kpi-chip">Net Mass: <strong>326.45 kg</strong> (Steel 7850)</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT BROWSER TREE -->
+    <aside class="left-panel" aria-label="B-Rep Feature Browser">
+      <div class="panel-hdr">
+        <span>B-REP FEATURE ZONES (BODY1)</span>
+        <span style="font-family:var(--mono);color:var(--accent-hi);">109 Cutouts</span>
+      </div>
+      <div class="tree-scroll" id="featureTree"></div>
+    </aside>
+
+    <!-- VIEWCUBE -->
+    <div class="viewcube" aria-label="Camera ViewCube">
+      <div class="vc-lbl">VIEWCUBE · Z-UP (mm)</div>
+      <div class="vc-grid">
+        <button type="button" class="vc-btn active" data-cam="iso">ISO</button>
+        <button type="button" class="vc-btn" data-cam="top">TOP</button>
+        <button type="button" class="vc-btn" data-cam="bottom">UNDER</button>
+        <button type="button" class="vc-btn" data-cam="front">FRONT</button>
+        <button type="button" class="vc-btn" data-cam="right">RIGHT</button>
+        <button type="button" class="vc-btn" data-cam="dp2">DP2</button>
+      </div>
+    </div>
+
+    <!-- MAIN 3D WEBGL VIEWPORT -->
+    <canvas id="glCanvas"></canvas>
+
+    <!-- RIGHT ENGINEERING INSPECTOR -->
+    <aside class="right-panel" aria-label="DG-2026-105 Engineering Inspector">
+      <div class="panel-hdr">
+        <span>DATUM CHAIN & STEP AUDIT</span>
+        <span id="lblDatumMode" style="font-family:var(--mono);color:var(--ok);">WORLD Z</span>
+      </div>
+
+      <div class="r-sec">
+        <div class="ctrl-stack">
+          <div style="display:flex;gap:5px;">
+            <button type="button" class="audit-btn active" id="btnWorldDatum" style="flex:1;text-align:center;">
+              World Cell Z (845→860)
+            </button>
+            <button type="button" class="audit-btn" id="btnLocalDatum" style="flex:1;text-align:center;">
+              STEP Local Z (-12.5→+2.5)
+            </button>
+          </div>
+
+          <div class="s-row" id="rowColH">
+            <div class="s-lbl">
+              <label for="rngFrameTop">L02 Frame Top (zDeckBotMm)</label>
+              <span class="s-val" id="lblFrameTop">845.0 → 860.0 mm</span>
+            </div>
+            <input type="range" id="rngFrameTop" min="720" max="960" step="5" value="845">
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:2px;">
+            <span style="font-size:11.2px;color:#cbd5e1;">รูมุมหน้าขวา (+977.5, Y):</span>
+            <button type="button" class="eye-btn" id="btnSnapToggle" title="สลับพิกัดดิบจากไฟล์ STEP (-675.086 mm) เทียบพิกัดกริดมาตรฐาน (-675.000 mm)">
+              RAW STEP: -675.086
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>DG-2026-105 B-REP AUDIT SPOTS</span>
+        <span style="font-family:var(--mono);font-size:9.8px;color:var(--warn);">4 FINDINGS</span>
+      </div>
+      <div class="r-sec">
+        <div class="audit-grid">
+          <button type="button" class="audit-btn" data-audit="rb3">1. รูน็อต RB3 ขยับ +145° หลบช่อง DP2</button>
+          <button type="button" class="audit-btn" data-audit="dp2">2. ช่องเกียร์ 24 ขอบ + ปาดบน C5×45°</button>
+          <button type="button" class="audit-btn" data-audit="toroid">3. รูกลาง Ø70 มนโดนัท Toroid R2.0</button>
+          <button type="button" class="audit-btn" data-audit="cbore">4. บ่าจมมุมโต๊ะ M12 (-0.086 mm)</button>
+        </div>
+        <div class="audit-note" id="auditNote">
+          คลิกจุดตรวจด้านบน หรือคลิกเลือกโซนในต้นไม้ซ้ายมือเพื่อส่องพิกัดจริงจากไฟล์ <strong>BASE_TABLE.step</strong>
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>10× M10 STATION & ROBOT PADS (P1–P10)</span>
+        <span style="font-family:var(--mono);font-size:9.8px;color:var(--accent-hi);">40 TAPS</span>
+      </div>
+      <div class="r-sec">
+        <div class="pad-scroll">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>Pad</th>
+                <th>Pitch</th>
+                <th>Center (X, Y)</th>
+                <th style="text-align:right;">θ_TR1100</th>
+              </tr>
+            </thead>
+            <tbody id="padTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>EXPORTS DATUM CONTRACT</span>
+        <span style="font-family:var(--mono);font-size:9.8px;color:var(--ok);">v2.0 READY</span>
+      </div>
+      <div class="r-sec">
+        <table class="spec-table">
+          <tbody>
+            <tr><td>zDeckBotMm / zDeckTopMm</td><td class="num" id="dtDeckZ">845.0 / 860.0 mm</td></tr>
+            <tr><td>Y Asymmetry [-700..+780]</td><td class="num">+80.0 mm Rear</td></tr>
+            <tr><td>TR1100 Center / Housing PCD</td><td class="num">(-100,-60) / Ø1055</td></tr>
+            <tr><td>Inner / +X SCARA Bases</td><td class="num">P3 &amp; P10 (170×170)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+
+    <!-- BOTTOM DOCK -->
+    <div class="bottom-dock" role="toolbar" aria-label="Viewport Display Controls">
+      <button type="button" class="dock-btn active" data-lod="lod0">LOD-0: B-Rep ครบ 109 ช่อง</button>
+      <button type="button" class="dock-btn" data-lod="lod1">LOD-1: Full-Cell (ลื่นพิเศษ)</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn active" data-colormode="zone">สีแยกโซนวิศวกรรม</button>
+      <button type="button" class="dock-btn" data-colormode="steel">Satin Steel (CAD)</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn active" data-style="shaded_edges">Shaded + Edges</button>
+      <button type="button" class="dock-btn" data-style="shaded">Shaded</button>
+      <button type="button" class="dock-btn" data-style="wireframe">Wireframe</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn" id="btnSection">✂ Section Cut</button>
+      <div class="sec-controls" id="secControls">
+        <button type="button" class="eye-btn" id="btnSecAxis">Y-CUT</button>
+        <input type="range" id="rngSec" min="-1020" max="1020" step="5" value="-60" style="width:105px;">
+        <span id="lblSecVal">-60 mm</span>
+      </div>
+      <div class="sep"></div>
+      <span id="perfReadout" style="font-family:var(--mono);font-size:10.8px;color:var(--muted);padding:0 4px;">
+        Tris: 0 · 0.0 ms
+      </span>
+    </div>
+  </div>
+
+  <script>
+    // Ensure Global OpenVIRegistry exists for standalone run AND Master Shell compatibility
+    window.OpenVIRegistry = window.OpenVIRegistry || {
+      parts: {},
+      order: [],
+      registerPart(id, spec) {
+        if (!this.parts[id]) this.order.push(id);
+        this.parts[id] = { id, visible: true, ...spec };
+      }
+    };
+
+    /* <<<BEGIN_OPENVI_PART_CARTRIDGE: P03_BASE_TABLE_DECK>>> */
+    window.OpenVIRegistry.registerPart("P03_BASE_TABLE_DECK", {
+      version: "2.0.0",
+      layer: "L03",
+      sourceStep: "BASE_TABLE.step (ISO-10303-21, 6766 Entities, Body1)",
+
+      // =======================================================================
+      // EXACT B-REP COORDINATE MANIFEST FROM BASE_TABLE.step (DG-2026-105)
+      // =======================================================================
+      specData: {
+        dimsMm: [2000.0, 1480.0, 15.0],
+        boundsMm: { xMin: -1000.0, xMax: 1000.0, yMin: -700.0, yMax: 780.0, zMin: -12.5, zMax: 2.5 },
+        netMassKg: 326.45,
+        densityKgM3: 7850.0,
+        tr1100Center: [-100.0, -60.0],
+        tr1100PcdMm: 1055.0,
+
+        // 12 Synchronized Corner Arcs of the 24-Edge Stepped DP2 Gearbox Pocket (#1199 Wall & #1089 Top C5 Rim)
+        // Each entry: [cx, cy, rWall, rTopRim, startDeg, endDeg]
+        dp2PocketArcs: [
+          [-320.0, 249.0, 10.0, 15.0, -90, -180],
+          [-340.0, 257.5, 10.0,  5.0,   0,   90],
+          [-410.0, 277.5, 10.0, 15.0, -90, -180],
+          [-410.0, 482.5, 10.0, 15.0, 180,   90],
+          [-340.0, 502.5, 10.0,  5.0, -90,    0],
+          [-320.0, 511.0, 10.0, 15.0, 180,   90],
+          [ 100.0, 511.0, 10.0, 15.0,  90,    0],
+          [ 120.0, 430.0, 10.0,  5.0, 180,  270],
+          [ 125.0, 410.0, 10.0, 15.0,  90,    0],
+          [ 125.0, 350.0, 10.0, 15.0,   0,  -90],
+          [ 120.0, 330.0, 10.0,  5.0,  90,  180],
+          [ 100.0, 249.0, 10.0, 15.0,   0,  -90]
+        ],
+
+        // 2x Ø12.020 mm H7 Dowel Pins on PCD Ø1055.0 mm (-45° and +135°)
+        h7Dowels: [
+          [ 273.000, -433.000],
+          [-473.000,  313.000]
+        ],
+
+        // 6x M10x1.5 (Ø8.376 mm) TR1100 Ring Housing Bolts on PCD Ø1055.0 mm (Note RB3 at +145°!)
+        tr1100RingBolts: [
+          [ 427.500,  -60.000,    0.0],
+          [ 163.750,  396.828,   60.0],
+          [-532.103,  242.562,  145.0],
+          [-627.500,  -60.000,  180.0],
+          [-363.750, -516.828, -120.0],
+          [ 163.750, -516.828,  -60.0]
+        ],
+
+        // 10x 4-Hole M10x1.5 (Ø8.376 mm) Tooling & Robot Mounting Pads (40 holes total)
+        m10Pads: [
+          { id: "P1", zone: "island", pitch: "100×140", theta: 149.13, rTr: 212.89,
+            holes: [[-339.781, -15.165], [-240.322, -25.619], [-225.689, 113.614], [-325.147, 124.068]] },
+          { id: "P2", zone: "island", pitch: "100.2×140", theta: 28.91, rTr: 211.13,
+            holes: [[  -1.240,  42.714], [ 112.023, -39.576], [ 170.805,  41.331], [  57.676, 123.804]] },
+          { id: "P3", zone: "island", pitch: "170×170", theta: -36.12, rTr: 254.31,
+            holes: [[ -14.787,-210.209], [ 105.709,-330.129], [ 225.629,-209.633], [ 105.133, -89.713]] },
+          { id: "P4", zone: "orbit",  pitch: "100×140", theta: 42.00, rTr: 658.00,
+            holes: [[ 303.513, 370.606], [ 370.430, 296.287], [ 474.470, 389.965], [ 407.553, 464.284]] },
+          { id: "P5", zone: "orbit",  pitch: "100×140", theta: 59.27, rTr: 764.11,
+            holes: [[ 206.151, 579.622], [ 334.047, 522.679], [ 374.723, 614.039], [ 246.827, 670.982]] },
+          { id: "P6", zone: "orbit",  pitch: "100×140", theta: 108.82, rTr: 754.18,
+            holes: [[-401.337, 590.408], [-264.397, 619.515], [-285.189, 717.336], [-422.130, 688.229]] },
+          { id: "P7", zone: "orbit",  pitch: "100×140", theta: 132.73, rTr: 764.11,
+            holes: [[-645.708, 419.702], [-532.445, 501.992], [-591.228, 582.899], [-704.490, 500.609]] },
+          { id: "P8", zone: "orbit",  pitch: "100×140", theta: 156.73, rTr: 764.11,
+            holes: [[-793.641, 156.270], [-723.641, 277.514], [-810.249, 327.517], [-880.249, 206.274]] },
+          { id: "P9", zone: "orbit",  pitch: "100×140", theta: -179.27, rTr: 764.11,
+            holes: [[-821.638,-144.556], [-807.004,  -5.323], [-906.462,   5.130], [-921.096,-134.103]] },
+          { id: "P10", zone: "conveyor", pitch: "170×170", theta: -0.30, rTr: 940.01,
+            holes: [[ 755.000,-150.000], [ 925.000,-150.000], [ 925.000,  20.000], [ 755.000,  20.000]] }
+        ],
+
+        // 8x M6x1.0 (Ø4.917 mm) Infeed/Outfeed Conveyor Rail (+X Zone)
+        conveyorM6: [
+          [468.0, 63.0], [468.0, 123.0],
+          [598.0, 63.0], [598.0, 123.0],
+          [708.0, 63.0], [708.0, 123.0],
+          [838.0, 63.0], [838.0, 123.0]
+        ],
+
+        // 32x M6x1.0 (Ø4.917 mm) Perimeter Safety Enclosure Posts (16x 30mm pairs at 50mm inset)
+        enclosureM6: [
+          [-765.0,-650.0], [-735.0,-650.0], [-415.0,-650.0], [-385.0,-650.0], [ -15.0,-650.0], [  15.0,-650.0], [ 385.0,-650.0], [ 415.0,-650.0], [ 735.0,-650.0], [ 765.0,-650.0],
+          [-765.0, 730.0], [-735.0, 730.0], [-415.0, 730.0], [-385.0, 730.0], [ -15.0, 730.0], [  15.0, 730.0], [ 385.0, 730.0], [ 415.0, 730.0], [ 735.0, 730.0], [ 765.0, 730.0],
+          [-950.0,-465.0], [-950.0,-435.0], [-950.0,  65.0], [-950.0,  95.0], [-950.0, 515.0], [-950.0, 545.0],
+          [ 950.0,-465.0], [ 950.0,-435.0], [ 950.0,  65.0], [ 950.0,  95.0], [ 950.0, 515.0], [ 950.0, 545.0]
+        ],
+
+        // 11x Ø60.0 mm Cable Grommet Pass-Through Holes (G01..G11)
+        grommets60: [
+          [-900.0, -580.0], [-900.0, -365.0], [-900.0,  300.0], [-900.0,  680.0],
+          [-700.0,  560.0], [-180.0,  650.0], [ 450.0,  620.0], [ 880.0,  120.0],
+          [ 900.0, -580.0], [ 900.0,  680.0], [ 920.0, -220.0]
+        ],
+
+        // 8x M12 SHCS Corner Frame Counterbored Holes (Ø13.0 thru / Ø20.0 CBore 12.8mm deep)
+        cornerCBores: [
+          [-977.5, -675.000], [-977.5, -635.000],
+          [-977.5,  715.000], [-977.5,  755.000],
+          [ 977.5, -675.086], [ 977.5, -635.000],
+          [ 977.5,  715.000], [ 977.5,  755.000]
+        ]
+      },
+
+      exportsDatum(state = {}) {
+        const zDeckBotMm = Number.isFinite(state.zFrameTopMm) ? state.zFrameTopMm : 845.0;
+        const zDeckTopMm = zDeckBotMm + 15.0;
+        return {
+          tableSizeMm: [2000.0, 1480.0, 15.0],
+          tableBoundsXYMm: { xMin: -1000.0, xMax: 1000.0, yMin: -700.0, yMax: 780.0 },
+          zDeckBotMm,
+          zDeckTopMm,
+          tr1100CenterXYMm: [-100.0, -60.0],
+          tr1100HousingPcdMm: 1055.0,
+          scaraInnerPadCenterXYMm: [105.42, -209.92],
+          scaraOuterPadCenterXYMm: [840.0, -65.0],
+          conveyorRailCenterYMm: 93.0
+        };
+      },
+
+      buildMeshes(kernel, lod = "lod0", opts = {}) {
+        const sd = this.specData;
+        const useZoneColors = opts.colorMode === "zone";
+        const fixSnap = Boolean(opts.fixFrontRightSnap);
+        const isLod0 = (lod === "lod0");
+
+        const cSteel     = [0.64, 0.67, 0.71];
+        const cSteelRim  = [0.55, 0.58, 0.63];
+        const cDp2       = useZoneColors ? [0.16, 0.76, 0.54] : cSteelRim;
+        const cTr1100    = useZoneColors ? [0.95, 0.36, 0.48] : cSteelRim;
+        const cIsland    = useZoneColors ? [0.96, 0.68, 0.18] : cSteelRim;
+        const cOrbit     = useZoneColors ? [0.94, 0.54, 0.20] : cSteelRim;
+        const cConveyor  = useZoneColors ? [0.62, 0.86, 0.24] : cSteelRim;
+        const cEnclosure = useZoneColors ? [0.18, 0.80, 0.92] : cSteelRim;
+        const cGrommet   = useZoneColors ? [0.74, 0.48, 0.96] : cSteelRim;
+        const cCBore     = useZoneColors ? [0.26, 0.68, 0.98] : cSteelRim;
+
+        function ptInPoly(px, py, poly) {
+          let inside = false;
+          for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+            if (((yi > py) !== (yj > py)) && (px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-12) + xi)) {
+              inside = !inside;
+            }
+          }
+          return inside;
+        }
+
+        function distToPolyEdges(px, py, poly) {
+          let best = 1e9;
+          for (let i = 0; i < poly.length; i++) {
+            const a = poly[i], b = poly[(i + 1) % poly.length];
+            const dx = b[0] - a[0], dy = b[1] - a[1];
+            const l2 = dx * dx + dy * dy || 1e-9;
+            const t = Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / l2));
+            const d = Math.hypot(px - (a[0] + dx * t), py - (a[1] + dy * t));
+            if (d < best) best = d;
+          }
+          return best;
+        }
+
+        // Build synchronized Outer Loops (R20 at Z=-10.5..+0.5, R18 at Z=-12.5 & +2.5)
+        function buildRoundedRectSync(arcSegs = 6, maxEdgeStep = 135.0) {
+          const corners = [
+            [ 980.0, -680.0, -90,   0],
+            [ 980.0,  760.0,   0,  90],
+            [-980.0,  760.0,  90, 180],
+            [-980.0, -680.0, 180, 270]
+          ];
+          const rawOuter = [], rawInset = [];
+          for (const [cx, cy, a0, a1] of corners) {
+            for (let s = 0; s <= arcSegs; s++) {
+              const rad = ((a0 + (a1 - a0) * (s / arcSegs)) * Math.PI) / 180.0;
+              const cs = Math.cos(rad), sn = Math.sin(rad);
+              rawOuter.push([cx + 20.0 * cs, cy + 20.0 * sn]);
+              rawInset.push([cx + 18.0 * cs, cy + 18.0 * sn]);
+            }
+          }
+          const out20 = [], in18 = [];
+          for (let i = 0; i < rawOuter.length; i++) {
+            const p0 = rawOuter[i], p1 = rawOuter[(i + 1) % rawOuter.length];
+            const q0 = rawInset[i], q1 = rawInset[(i + 1) % rawInset.length];
+            const dist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+            const steps = Math.max(1, Math.ceil(dist / maxEdgeStep));
+            for (let k = 0; k < steps; k++) {
+              const u = k / steps;
+              out20.push([p0[0] + (p1[0] - p0[0]) * u, p0[1] + (p1[1] - p0[1]) * u]);
+              in18.push([q0[0] + (q1[0] - q0[0]) * u, q0[1] + (q1[1] - q0[1]) * u]);
+            }
+          }
+          return { out20, in18 };
+        }
+
+        // Build synchronized 24-Edge DP2 Gearbox Pocket Loops (Wall #1199 & Top Rim #1089)
+        function buildDp2SyncLoops(arcSegs = 5, lineStep = 14.0) {
+          const rawWall = [], rawRim = [];
+          for (const [cx, cy, rw, rr, deg0, deg1] of sd.dp2PocketArcs) {
+            for (let s = 0; s <= arcSegs; s++) {
+              const rad = ((deg0 + (deg1 - deg0) * (s / arcSegs)) * Math.PI) / 180.0;
+              const cs = Math.cos(rad), sn = Math.sin(rad);
+              rawWall.push([cx + rw * cs, cy + rw * sn]);
+              rawRim.push([cx + rr * cs, cy + rr * sn]);
+            }
+          }
+          const wallLoop = [], rimLoop = [];
+          for (let i = 0; i < rawWall.length; i++) {
+            const p0 = rawWall[i], p1 = rawWall[(i + 1) % rawWall.length];
+            const q0 = rawRim[i],  q1 = rawRim[(i + 1) % rawRim.length];
+            const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+            if (len < 1e-4) continue;
+            const steps = Math.max(1, Math.ceil(len / lineStep));
+            for (let k = 0; k < steps; k++) {
+              const u = k / steps;
+              wallLoop.push([p0[0] + (p1[0] - p0[0]) * u, p0[1] + (p1[1] - p0[1]) * u]);
+              rimLoop.push([q0[0] + (q1[0] - q0[0]) * u, q0[1] + (q1[1] - q0[1]) * u]);
+            }
+          }
+          return { wallLoop, rimLoop };
+        }
+
+        // Self-contained 2000x1480 Bowyer-Watson Perforated Plate Triangulator
+        function triangulateDeckCap(outerLoop, dp2Loop, circHoles) {
+          const verts = [];
+          const holeTag = [];
+
+          for (const p of outerLoop) {
+            verts.push([p[0], p[1]]);
+            holeTag.push(-1);
+          }
+          for (const p of dp2Loop) {
+            verts.push([p[0], p[1]]);
+            holeTag.push(0);
+          }
+          for (let hIdx = 0; hIdx < circHoles.length; hIdx++) {
+            const h = circHoles[hIdx];
+            const segs = h.segs;
+            for (let i = 0; i < segs; i++) {
+              const a = (i / segs) * Math.PI * 2.0;
+              verts.push([h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r]);
+              holeTag.push(hIdx + 1);
+            }
+          }
+
+          // Interior Steiner regular grid for well-graded triangles across 2000 x 1480 mm
+          const stepGrid = isLod0 ? 130.0 : 160.0;
+          for (let gx = -900.0; gx <= 900.0; gx += stepGrid) {
+            for (let gy = -600.0; gy <= 680.0; gy += stepGrid) {
+              if (ptInPoly(gx, gy, dp2Loop) || distToPolyEdges(gx, gy, dp2Loop) < 18.0) continue;
+              let nearHole = false;
+              for (const h of circHoles) {
+                if (Math.hypot(gx - h.x, gy - h.y) < h.r + 14.0) { nearHole = true; break; }
+              }
+              if (!nearHole) {
+                verts.push([gx, gy]);
+                holeTag.push(-1);
+              }
+            }
+          }
+
+          const n0 = verts.length;
+          verts.push([-4800.0, -4200.0], [4800.0, -4200.0], [0.0, 5600.0]);
+
+          function mkTri(i, j, k) {
+            const ax = verts[i][0], ay = verts[i][1];
+            const bx = verts[j][0], by = verts[j][1];
+            const cx = verts[k][0], cy = verts[k][1];
+            const d = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+            if (Math.abs(d) < 1e-7) return null;
+            const a2 = ax * ax + ay * ay, b2 = bx * bx + by * by, c2 = cx * cx + cy * cy;
+            const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d;
+            const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+            const dx = ax - ux, dy = ay - uy;
+            return { i, j, k, ux, uy, r2: dx * dx + dy * dy };
+          }
+
+          let tris = [mkTri(n0, n0 + 1, n0 + 2)];
+          for (let p = 0; p < n0; p++) {
+            const px = verts[p][0], py = verts[p][1];
+            const bad = [], good = [];
+            for (let tIdx = 0; tIdx < tris.length; tIdx++) {
+              const t = tris[tIdx];
+              const dx = px - t.ux, dy = py - t.uy;
+              if (dx * dx + dy * dy <= t.r2 * (1.0 + 1e-7)) bad.push(t);
+              else good.push(t);
+            }
+            const edgeMap = new Map();
+            for (let bIdx = 0; bIdx < bad.length; bIdx++) {
+              const t = bad[bIdx];
+              const e3 = [[t.i, t.j], [t.j, t.k], [t.k, t.i]];
+              for (let e = 0; e < 3; e++) {
+                const u = e3[e][0], v = e3[e][1];
+                const key = u < v ? u * 16384 + v : v * 16384 + u;
+                if (edgeMap.has(key)) edgeMap.delete(key);
+                else edgeMap.set(key, [u, v]);
+              }
+            }
+            tris = good;
+            for (const uv of edgeMap.values()) {
+              const nt = mkTri(uv[0], uv[1], p);
+              if (nt) tris.push(nt);
+            }
+          }
+
+          const valid = [];
+          for (let idx = 0; idx < tris.length; idx++) {
+            const t = tris[idx];
+            if (t.i >= n0 || t.j >= n0 || t.k >= n0) continue;
+            const ti = holeTag[t.i], tj = holeTag[t.j], tk = holeTag[t.k];
+            // Exact convexity theorem: any triangle with all 3 vertices on the same circular hole is strictly inside that hole!
+            if (ti > 0 && ti === tj && tj === tk) continue;
+
+            const A = verts[t.i], B = verts[t.j], C = verts[t.k];
+            const mx = (A[0] + B[0] + C[0]) / 3.0;
+            const my = (A[1] + B[1] + C[1]) / 3.0;
+            if (!ptInPoly(mx, my, outerLoop)) continue;
+            if (ptInPoly(mx, my, dp2Loop)) continue;
+
+            let insideCircle = false;
+            for (let hIdx = 0; hIdx < circHoles.length; hIdx++) {
+              const h = circHoles[hIdx];
+              if (Math.hypot(mx - h.x, my - h.y) < h.r * 0.90) { insideCircle = true; break; }
+            }
+            if (insideCircle) continue;
+
+            const cross = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+            valid.push(cross > 0 ? [A, B, C] : [A, C, B]);
+          }
+          return valid;
+        }
+
+        const { out20, in18 } = buildRoundedRectSync(6, 140.0);
+        const { wallLoop: dp2Wall, rimLoop: dp2Rim } = buildDp2SyncLoops(isLod0 ? 5 : 3, isLod0 ? 14.0 : 28.0);
+
+        const cornerCoords = sd.cornerCBores.map(([x, y], idx) =>
+          (fixSnap && idx === 4) ? [x, -675.000] : [x, y]
+        );
+
+        // Assemble circular hole lists for Top Cap (Z=+2.5) and Bottom Cap (Z=-12.5)
+        const topHoles = [];
+        const botHoles = [];
+        function addCapHole(x, y, rTop, rBot, segs) {
+          topHoles.push({ x, y, r: rTop, segs });
+          botHoles.push({ x, y, r: rBot, segs });
+        }
+
+        // Major holes drilled in BOTH LOD-0 and LOD-1 (21 holes + DP2 pocket = 22 major apertures)
+        addCapHole(-100.0, -60.0, 37.0, 37.0, isLod0 ? 24 : 18); // Center Ø70 + R2 toroid -> Ø74 mouth
+        for (const [gx, gy] of sd.grommets60) addCapHole(gx, gy, 30.0, 30.0, isLod0 ? 18 : 12);
+        for (const [cx, cy] of cornerCoords)  addCapHole(cx, cy, 10.0,  6.5, isLod0 ? 14 : 10);
+        for (const [dx, dy] of sd.h7Dowels)   addCapHole(dx, dy, 6.01, 6.01, isLod0 ? 12 : 8);
+
+        // 86 Small Tapped Holes (46x M10 + 40x M6): physically drilled in LOD-0, collar decals in LOD-1!
+        if (isLod0) {
+          for (const [rx, ry] of sd.tr1100RingBolts) addCapHole(rx, ry, 4.188, 4.188, 10);
+          for (const pad of sd.m10Pads) {
+            for (const [px, py] of pad.holes) addCapHole(px, py, 4.188, 4.188, 10);
+          }
+          for (const [mx, my] of sd.conveyorM6)  addCapHole(mx, my, 2.4585, 2.4585, 8);
+          for (const [ex, ey] of sd.enclosureM6) addCapHole(ex, ey, 2.4585, 2.4585, 8);
+        }
+
+        const topTris = triangulateDeckCap(in18, dp2Rim, topHoles);
+        const botTris = triangulateDeckCap(in18, dp2Wall, botHoles);
+
+        // Create separate sub-meshes per engineering zone so user can toggle / highlight any zone!
+        const builders = {
+          plate: new kernel.CadMeshBuilder(),
+          dp2: new kernel.CadMeshBuilder(),
+          tr1100: new kernel.CadMeshBuilder(),
+          island: new kernel.CadMeshBuilder(),
+          orbit: new kernel.CadMeshBuilder(),
+          conveyor: new kernel.CadMeshBuilder(),
+          enclosure: new kernel.CadMeshBuilder(),
+          grommets: new kernel.CadMeshBuilder(),
+          cbores: new kernel.CadMeshBuilder()
+        };
+
+        // 1. Plate Top & Bottom Caps + Outer C2.0 Chamfers & R20 Perimeter Wall
+        const mbPlate = builders.plate;
+        for (const [a, b, c] of topTris) {
+          mbPlate.pushTri([a[0], a[1], 2.5], [b[0], b[1], 2.5], [c[0], c[1], 2.5], [0, 0, 1], cSteel);
+        }
+        for (const [a, b, c] of botTris) {
+          mbPlate.pushTri([a[0], a[1], -12.5], [c[0], c[1], -12.5], [b[0], b[1], -12.5], [0, 0, -1], cSteel);
+        }
+        for (let i = 0; i < out20.length; i++) {
+          const i1 = (i + 1) % out20.length;
+          const o0 = out20[i], o1 = out20[i1];
+          const q0 = in18[i],  q1 = in18[i1];
+          const dx = o1[0] - o0[0], dy = o1[1] - o0[1], l = Math.hypot(dx, dy) || 1.0;
+          const nx = dy / l, ny = -dx / l;
+          const nTop = [nx * 0.7071, ny * 0.7071,  0.7071];
+          const nBot = [nx * 0.7071, ny * 0.7071, -0.7071];
+
+          // Top C2.0 x 45 deg Chamfer (Z = +0.5 -> +2.5)
+          mbPlate.pushTri([o0[0], o0[1], 0.5], [o1[0], o1[1], 0.5], [q1[0], q1[1], 2.5], nTop, cSteelRim);
+          mbPlate.pushTri([o0[0], o0[1], 0.5], [q1[0], q1[1], 2.5], [q0[0], q0[1], 2.5], nTop, cSteelRim);
+          // Vertical Perimeter Band (Z = -10.5 -> +0.5)
+          mbPlate.pushTri([o0[0], o0[1], -10.5], [o1[0], o1[1], -10.5], [o1[0], o1[1], 0.5], [nx, ny, 0], cSteelRim);
+          mbPlate.pushTri([o0[0], o0[1], -10.5], [o1[0], o1[1], 0.5], [o0[0], o0[1], 0.5], [nx, ny, 0], cSteelRim);
+          // Bottom C2.0 x 45 deg Chamfer (Z = -12.5 -> -10.5)
+          mbPlate.pushTri([q0[0], q0[1], -12.5], [q1[0], q1[1], -12.5], [o1[0], o1[1], -10.5], nBot, cSteelRim);
+          mbPlate.pushTri([q0[0], q0[1], -12.5], [o1[0], o1[1], -10.5], [o0[0], o0[1], -10.5], nBot, cSteelRim);
+
+          mbPlate.pushLine([q0[0], q0[1],   2.5], [q1[0], q1[1],   2.5]);
+          mbPlate.pushLine([o0[0], o0[1],   0.5], [o1[0], o1[1],   0.5]);
+          mbPlate.pushLine([o0[0], o0[1], -10.5], [o1[0], o1[1], -10.5]);
+          mbPlate.pushLine([q0[0], q0[1], -12.5], [q1[0], q1[1], -12.5]);
+        }
+
+        // 2. 24-Edge Stepped DP2 Gearbox Pocket Walls + C5.0 x 45° Top Chamfer
+        const mbDp2 = builders.dp2;
+        for (let i = 0; i < dp2Wall.length; i++) {
+          const i1 = (i + 1) % dp2Wall.length;
+          const w0 = dp2Wall[i], w1 = dp2Wall[i1];
+          const r0 = dp2Rim[i],  r1 = dp2Rim[i1];
+          const dx = w1[0] - w0[0], dy = w1[1] - w0[1], l = Math.hypot(dx, dy) || 1.0;
+          // dp2Wall is ordered CW in XY, so inward normal pointing into the pocket is (dy/l, -dx/l, 0)
+          const nx = dy / l, ny = -dx / l;
+          const nBevel = [nx * 0.7071, ny * 0.7071, 0.7071];
+
+          // Top C5.0 Bevel (Z = +2.5 down to Z = -2.5), CCW front-facing into the pocket
+          mbDp2.pushTri([r0[0], r0[1], 2.5], [w0[0], w0[1], -2.5], [w1[0], w1[1], -2.5], nBevel, cDp2);
+          mbDp2.pushTri([r0[0], r0[1], 2.5], [w1[0], w1[1], -2.5], [r1[0], r1[1], 2.5], nBevel, cDp2);
+          // Vertical Wall (Z = -2.5 down to Z = -12.5), CCW front-facing into the pocket
+          mbDp2.pushTri([w0[0], w0[1], -2.5], [w0[0], w0[1], -12.5], [w1[0], w1[1], -12.5], [nx, ny, 0], cDp2);
+          mbDp2.pushTri([w0[0], w0[1], -2.5], [w1[0], w1[1], -12.5], [w1[0], w1[1], -2.5], [nx, ny, 0], cDp2);
+
+          mbDp2.pushLine([r0[0], r0[1],   2.5], [r1[0], r1[1],   2.5]);
+          mbDp2.pushLine([w0[0], w0[1],  -2.5], [w1[0], w1[1],  -2.5]);
+          mbDp2.pushLine([w0[0], w0[1], -12.5], [w1[0], w1[1], -12.5]);
+        }
+
+        // Helper for cylindrical thru-holes, counterbores, and LOD-1 collars
+        function addThruBore(mb, cx, cy, r, segs, col, drilled) {
+          if (drilled) {
+            mb.addLatheZ(cx, cy, [[r, 2.5], [r, -12.5]], segs, col);
+            if (r <= 2.5) {
+              // addLatheZ skips line rings when r <= 2.0; ensure crisp M6 edge rings!
+              for (const z of [2.5, -12.5]) {
+                for (let i = 0; i < segs; i++) {
+                  const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+                  mb.pushLine([cx + r * Math.cos(a0), cy + r * Math.sin(a0), z],
+                              [cx + r * Math.cos(a1), cy + r * Math.sin(a1), z]);
+                }
+              }
+            }
+          } else {
+            // LOD-1 fast visual cap & rim on top/bottom surfaces without triangulating 86 micro-holes
+            const cDark = [col[0] * 0.35, col[1] * 0.35, col[2] * 0.38];
+            for (let i = 0; i < 8; i++) {
+              const a0 = (i / 8) * Math.PI * 2, a1 = ((i + 1) / 8) * Math.PI * 2;
+              const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+              const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+              mb.pushTri([cx, cy, 2.53], [x0, y0, 2.53], [x1, y1, 2.53], [0, 0, 1], cDark);
+              mb.pushTri([cx, cy, -12.53], [x1, y1, -12.53], [x0, y0, -12.53], [0, 0, -1], cDark);
+              mb.pushLine([x0, y0, 2.54], [x1, y1, 2.54]);
+            }
+          }
+        }
+
+        // 3. Zone 2: TR1100 Center Ø70 Bore (with exact Toroidal R2.0 Top & Bottom Fillets!) + 2x H7 Dowels + 6x M10 Ring Bolts
+        const toroidProf = [];
+        const fSteps = isLod0 ? 5 : 3;
+        for (let s = 0; s <= fSteps; s++) {
+          const ang = (s / fSteps) * (Math.PI * 0.5); // 0 (top Z=+2.5, r=37) -> 90 deg (Z=+0.5, r=35)
+          toroidProf.push([37.0 - 2.0 * Math.sin(ang), 0.5 + 2.0 * Math.cos(ang)]);
+        }
+        for (let s = 0; s <= fSteps; s++) {
+          const ang = (s / fSteps) * (Math.PI * 0.5); // 0 (Z=-10.5, r=35) -> 90 deg (bot Z=-12.5, r=37)
+          toroidProf.push([37.0 - 2.0 * Math.cos(ang), -10.5 - 2.0 * Math.sin(ang)]);
+        }
+        builders.tr1100.addLatheZ(-100.0, -60.0, toroidProf, isLod0 ? 24 : 18, cTr1100);
+        for (const [dx, dy] of sd.h7Dowels) {
+          addThruBore(builders.tr1100, dx, dy, 6.01, isLod0 ? 12 : 8, cTr1100, true);
+        }
+        for (const [rx, ry] of sd.tr1100RingBolts) {
+          addThruBore(builders.tr1100, rx, ry, 4.188, 10, cTr1100, isLod0);
+        }
+
+        // 4. Zones 3, 4, 5: 10x M10 Pads (P1..P3 Island, P4..P9 Outer Orbit, P10 + 8x M6 Conveyor)
+        for (const pad of sd.m10Pads) {
+          const targetMb = pad.zone === "island" ? builders.island : (pad.zone === "orbit" ? builders.orbit : builders.conveyor);
+          const col = pad.zone === "island" ? cIsland : (pad.zone === "orbit" ? cOrbit : cConveyor);
+          for (const [px, py] of pad.holes) {
+            addThruBore(targetMb, px, py, 4.188, 10, col, isLod0);
+          }
+        }
+        for (const [mx, my] of sd.conveyorM6) {
+          addThruBore(builders.conveyor, mx, my, 2.4585, 8, cConveyor, isLod0);
+        }
+
+        // 5. Zone 6: 32x M6 Safety Enclosure Perimeter Taps
+        for (const [ex, ey] of sd.enclosureM6) {
+          addThruBore(builders.enclosure, ex, ey, 2.4585, 8, cEnclosure, isLod0);
+        }
+
+        // 6. Zone 7: 11x Ø60.0 mm Cable Grommet Thru-Holes (G01..G11)
+        for (const [gx, gy] of sd.grommets60) {
+          addThruBore(builders.grommets, gx, gy, 30.0, isLod0 ? 18 : 12, cGrommet, true);
+        }
+
+        // 7. Zone 8: 8x M12 SHCS Corner Counterbores (Ø20.0 CBore 12.8mm deep -> Ø13.0 Thru 2.2mm)
+        for (const [cx, cy] of cornerCoords) {
+          builders.cbores.addLatheZ(
+            cx, cy,
+            [[10.0, 2.5], [10.0, -10.3], [6.5, -10.3], [6.5, -12.5]],
+            isLod0 ? 14 : 10,
+            cCBore
+          );
+        }
+
+        const uploaded = {};
+        let totalTris = 0;
+        for (const k of Object.keys(builders)) {
+          uploaded[k] = kernel.uploadMesh(builders[k]);
+          totalTris += uploaded[k].tris;
+        }
+        uploaded.totalTris = totalTris;
+        return uploaded;
+      },
+
+      drawInstance(kernel, meshes, worldMat, animState = {}) {
+        if (!meshes) return;
+        const zDeckBot = Number.isFinite(animState.zFrameTopMm)
+          ? animState.zFrameTopMm
+          : (Number.isFinite(animState.zDeckBotMm) ? animState.zDeckBotMm : 845.0);
+        const zOriginShift = animState.useLocalStepZ ? 0.0 : (zDeckBot + 12.5);
+
+        const mDeck = kernel.Mat4.create();
+        kernel.Mat4.translate(mDeck, worldMat, 0.0, 0.0, zOriginShift);
+
+        const vis = animState.zoneVisibility || {};
+        const selZone = animState.selectedZone || "";
+        const allSel = Boolean(animState.selected);
+
+        const zones = ["plate", "dp2", "tr1100", "island", "orbit", "conveyor", "enclosure", "grommets", "cbores"];
+        for (const zKey of zones) {
+          if (vis[zKey] === false) continue;
+          kernel.drawMesh(meshes[zKey], mDeck, allSel || selZone === zKey);
+        }
+      }
+    });
+    /* <<<END_OPENVI_PART_CARTRIDGE: P03_BASE_TABLE_DECK>>> */
+
+    // =========================================================================
+    // STANDALONE B-REP STUDIO SHELL (RUNS INDEPENDENTLY FOR QC & AUDIT)
+    // =========================================================================
+    (() => {
+      "use strict";
+
+      const Mat4 = {
+        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
+        identity(o) { o.fill(0); o[0]=o[5]=o[10]=o[15]=1; return o; },
+        multiply(o, a, b) {
+          const out = new Float32Array(16);
+          for (let i = 0; i < 4; i++) {
+            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];
+            out[i*4]   = b0*a[0] + b1*a[4] + b2*a[8]  + b3*a[12];
+            out[i*4+1] = b0*a[1] + b1*a[5] + b2*a[9]  + b3*a[13];
+            out[i*4+2] = b0*a[2] + b1*a[6] + b2*a[10] + b3*a[14];
+            out[i*4+3] = b0*a[3] + b1*a[7] + b2*a[11] + b3*a[15];
+          }
+          o.set(out);
+          return o;
+        },
+        perspective(o, fovy, aspect, near, far) {
+          const f = 1.0 / Math.tan(fovy / 2);
+          o.fill(0); o[0] = f / aspect; o[5] = f;
+          o[10] = (far + near) / (near - far); o[11] = -1;
+          o[14] = (2 * far * near) / (near - far);
+          return o;
+        },
+        lookAt(o, eye, ctr, up) {
+          let zx=eye[0]-ctr[0], zy=eye[1]-ctr[1], zz=eye[2]-ctr[2];
+          let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
+          let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+          l=Math.hypot(xx,xy,xz)||1; xx/=l; xy/=l; xz/=l;
+          const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+          o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;
+          o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;
+          o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;
+          o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+          o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+          o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+          o[15]=1;
+          return o;
+        },
+        translate(o, a, x, y, z) {
+          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;
+          return Mat4.multiply(o, a, t);
+        },
+        rotateZ(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;
+          return Mat4.multiply(o, a, r);
+        }
+      };
+
+      class CadMeshBuilder {
+        constructor() { this.verts = []; this.lines = []; }
+        pushTri(p1, p2, p3, n, c) {
+          this.verts.push(
+            p1[0],p1[1],p1[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p2[0],p2[1],p2[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p3[0],p3[1],p3[2], n[0],n[1],n[2], c[0],c[1],c[2]
+          );
+        }
+        pushLine(p1, p2) {
+          this.lines.push(p1[0],p1[1],p1[2], p2[0],p2[1],p2[2]);
+        }
+        addBox(cx, cy, cz, sx, sy, sz, col, edges = true) {
+          const hx=sx/2, hy=sy/2, hz=sz/2;
+          const x0=cx-hx, x1=cx+hx, y0=cy-hy, y1=cy+hy, z0=cz-hz, z1=cz+hz;
+          const faces = [
+            [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[0,0,1]],
+            [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[0,0,-1]],
+            [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1],[1,0,0]],
+            [[x0,y1,z0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[-1,0,0]],
+            [[x0,y1,z0],[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[0,1,0]],
+            [[x0,y0,z1],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[0,-1,0]]
+          ];
+          for (const [a,b,c,d,n] of faces) { this.pushTri(a,b,c,n,col); this.pushTri(a,c,d,n,col); }
+          if (edges) {
+            const c8 = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+            for (const [u,v] of [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]) {
+              this.pushLine(c8[u], c8[v]);
+            }
+          }
+        }
+        addLatheZ(cx, cy, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const r0=prof[s][0], z0=prof[s][1], r1=prof[s+1][0], z1=prof[s+1][1];
+            const dr=r1-r0, dz=z1-z0, l=Math.hypot(dr,dz);
+            if (l < 1e-6) continue;
+            const nr=dz/l, nz=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,cy+r0*s0,z0], p10=[cx+r0*c1,cy+r0*s1,z0];
+              const p11=[cx+r1*c1,cy+r1*s1,z1], p01=[cx+r1*c0,cy+r1*s0,z1];
+              const n=[(c0+c1)*0.5*nr, (s0+s1)*0.5*nr, nz];
+              if (r0>1e-4) this.pushTri(p00,p10,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p01,n,col);
+            }
+          }
+          for (const [r, z] of prof) {
+            if (r > 2.0) {
+              for (let i = 0; i < segs; i++) {
+                const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+                this.pushLine([cx+r*Math.cos(a0),cy+r*Math.sin(a0),z], [cx+r*Math.cos(a1),cy+r*Math.sin(a1),z]);
+              }
+            }
+          }
+        }
+      }
+
+      const canvas = document.getElementById("glCanvas");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+
+      const vsSolid = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec3 aCol;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vNorm;
+        varying vec3 vWorld;
+        varying vec3 vCol;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorld = wp.xyz;
+          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);
+          vCol = aCol;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsSolid = `
+        precision highp float;
+        varying vec3 vNorm;
+        varying vec3 vWorld;
+        varying vec3 vCol;
+        uniform vec3 uEye;
+        uniform float uSelect;
+        uniform float uClipOn;
+        uniform float uClipAxis;
+        uniform float uClipVal;
+        void main() {
+          float coord = uClipAxis < 0.5 ? vWorld.x : vWorld.y;
+          if (uClipOn > 0.5 && coord > uClipVal) discard;
+          if (!gl_FrontFacing && uClipOn > 0.5) {
+            float st = mod(vWorld.x + vWorld.y + vWorld.z, 5.0);
+            gl_FragColor = vec4(st < 2.2 ? vec3(0.96, 0.38, 0.30) : vec3(0.70, 0.20, 0.16), 1.0);
+            return;
+          }
+          vec3 N = normalize(gl_FrontFacing ? vNorm : -vNorm);
+          vec3 V = normalize(uEye - vWorld);
+          vec3 L1 = normalize(vec3(0.45, -0.58, 0.68));
+          vec3 L2 = normalize(vec3(-0.62, 0.52, -0.50));
+          float d1 = max(dot(N, L1), 0.0);
+          float d2 = max(dot(N, L2), 0.0);
+          vec3 hemi = mix(vec3(0.24, 0.27, 0.32), vec3(0.48, 0.52, 0.58), N.z * 0.5 + 0.5);
+          float spec = pow(max(dot(N, normalize(L1 + V)), 0.0), 36.0) * 0.30;
+          vec3 col = vCol * (hemi + 0.62 * d1 + 0.38 * d2) + vec3(spec);
+          col = mix(col, col * 0.45 + vec3(0.22, 0.68, 0.98), uSelect);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `;
+
+      const vsLine = `
+        attribute vec3 aPos;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vWorld;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorld = wp.xyz;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsLine = `
+        precision highp float;
+        varying vec3 vWorld;
+        uniform vec4 uCol;
+        uniform float uClipOn;
+        uniform float uClipAxis;
+        uniform float uClipVal;
+        void main() {
+          float coord = uClipAxis < 0.5 ? vWorld.x : vWorld.y;
+          if (uClipOn > 0.5 && coord > uClipVal) discard;
+          gl_FragColor = uCol;
+        }
+      `;
+
+      function mkProg(vs, fs) {
+        const p = gl.createProgram();
+        const c = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; };
+        gl.attachShader(p, c(gl.VERTEX_SHADER, vs));
+        gl.attachShader(p, c(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(p);
+        return p;
+      }
+
+      const pSolid = mkProg(vsSolid, fsSolid);
+      const pLine  = mkProg(vsLine, fsLine);
+
+      const uS = {
+        aPos: gl.getAttribLocation(pSolid, "aPos"),
+        aNorm: gl.getAttribLocation(pSolid, "aNorm"),
+        aCol: gl.getAttribLocation(pSolid, "aCol"),
+        uProj: gl.getUniformLocation(pSolid, "uProj"),
+        uView: gl.getUniformLocation(pSolid, "uView"),
+        uModel: gl.getUniformLocation(pSolid, "uModel"),
+        uEye: gl.getUniformLocation(pSolid, "uEye"),
+        uSelect: gl.getUniformLocation(pSolid, "uSelect"),
+        uClipOn: gl.getUniformLocation(pSolid, "uClipOn"),
+        uClipAxis: gl.getUniformLocation(pSolid, "uClipAxis"),
+        uClipVal: gl.getUniformLocation(pSolid, "uClipVal")
+      };
+
+      const uL = {
+        aPos: gl.getAttribLocation(pLine, "aPos"),
+        uProj: gl.getUniformLocation(pLine, "uProj"),
+        uView: gl.getUniformLocation(pLine, "uView"),
+        uModel: gl.getUniformLocation(pLine, "uModel"),
+        uCol: gl.getUniformLocation(pLine, "uCol"),
+        uClipOn: gl.getUniformLocation(pLine, "uClipOn"),
+        uClipAxis: gl.getUniformLocation(pLine, "uClipAxis"),
+        uClipVal: gl.getUniformLocation(pLine, "uClipVal")
+      };
+
+      function uploadMesh(mb) {
+        const tArr = new Float32Array(mb.verts);
+        const tBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, tArr, gl.STATIC_DRAW);
+
+        const lArr = new Float32Array(mb.lines);
+        const lBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, lArr, gl.STATIC_DRAW);
+
+        return { tBuf, tCount: tArr.length / 9, tris: tArr.length / 27, lBuf, lCount: lArr.length / 3 };
+      }
+
+      const state = {
+        lod: "lod0",
+        colorMode: "zone",
+        style: "shaded_edges",
+        useLocalStepZ: false,
+        zFrameTopMm: 845.0,
+        fixFrontRightSnap: false,
+        sectionOn: false,
+        sectionAxis: 1, // 0 = X, 1 = Y
+        sectionVal: -60.0,
+        selectedZone: "",
+        selectedPadId: "",
+        showGhostRing: true,
+        showGhostFrame: true,
+        zoneVisibility: {
+          plate: true,
+          dp2: true,
+          tr1100: true,
+          island: true,
+          orbit: true,
+          conveyor: true,
+          enclosure: true,
+          grommets: true,
+          cbores: true
+        }
+      };
+
+      const projMat = Mat4.create();
+      const viewMat = Mat4.create();
+      let frameTris = 0;
+
+      function drawMesh(mesh, modelMat, selected = false) {
+        if (!mesh) return;
+        frameTris += mesh.tris;
+        const clipFlag = state.sectionOn ? 1.0 : 0.0;
+
+        if (state.style !== "wireframe" && mesh.tCount > 0) {
+          gl.useProgram(pSolid);
+          gl.uniformMatrix4fv(uS.uProj, false, projMat);
+          gl.uniformMatrix4fv(uS.uView, false, viewMat);
+          gl.uniformMatrix4fv(uS.uModel, false, modelMat);
+          gl.uniform3fv(uS.uEye, cam.eye);
+          gl.uniform1f(uS.uSelect, selected ? 1.0 : 0.0);
+          gl.uniform1f(uS.uClipOn, clipFlag);
+          gl.uniform1f(uS.uClipAxis, state.sectionAxis);
+          gl.uniform1f(uS.uClipVal, state.sectionVal);
+
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.15, 1.15);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.tBuf);
+          gl.enableVertexAttribArray(uS.aPos);
+          gl.vertexAttribPointer(uS.aPos, 3, gl.FLOAT, false, 36, 0);
+          gl.enableVertexAttribArray(uS.aNorm);
+          gl.vertexAttribPointer(uS.aNorm, 3, gl.FLOAT, false, 36, 12);
+          gl.enableVertexAttribArray(uS.aCol);
+          gl.vertexAttribPointer(uS.aCol, 3, gl.FLOAT, false, 36, 24);
+          gl.drawArrays(gl.TRIANGLES, 0, mesh.tCount);
+
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+        }
+
+        if ((state.style === "shaded_edges" || state.style === "wireframe" || selected) && mesh.lCount > 0) {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uL.uProj, false, projMat);
+          gl.uniformMatrix4fv(uL.uView, false, viewMat);
+          gl.uniformMatrix4fv(uL.uModel, false, modelMat);
+          gl.uniform1f(uL.uClipOn, clipFlag);
+          gl.uniform1f(uL.uClipAxis, state.sectionAxis);
+          gl.uniform1f(uL.uClipVal, state.sectionVal);
+          gl.uniform4fv(uL.uCol, selected ? [0.24, 0.84, 1.0, 1.0] : [0.06, 0.08, 0.11, 0.92]);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);
+          if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+          if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+          if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+          gl.enableVertexAttribArray(uL.aPos);
+          gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, mesh.lCount);
+        }
+      }
+
+      function drawOverlayLines(mesh, modelMat, rgba) {
+        if (!mesh || mesh.lCount === 0) return;
+        gl.useProgram(pLine);
+        gl.uniformMatrix4fv(uL.uProj, false, projMat);
+        gl.uniformMatrix4fv(uL.uView, false, viewMat);
+        gl.uniformMatrix4fv(uL.uModel, false, modelMat);
+        gl.uniform1f(uL.uClipOn, 0.0);
+        gl.uniform4fv(uL.uCol, rgba);
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);
+        if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+        if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+        if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+        gl.enableVertexAttribArray(uL.aPos);
+        gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+        gl.drawArrays(gl.LINES, 0, mesh.lCount);
+      }
+
+      const kernel = { Mat4, CadMeshBuilder, uploadMesh, drawMesh };
+      const partP03 = window.OpenVIRegistry.parts.P03_BASE_TABLE_DECK;
+
+      let activeMeshes = null;
+      function rebuildP03() {
+        activeMeshes = partP03.buildMeshes(kernel, state.lod, {
+          colorMode: state.colorMode,
+          fixFrontRightSnap: state.fixFrontRightSnap
+        });
+      }
+      rebuildP03();
+
+      // Build Reference Overlays:
+      // 1) Kinematic Overlay Lines on Deck Top (PCD Ø1055, Orbit R=764.1, P1..P10 rectangles, Conveyor Rail)
+      const ghostRingMb = new CadMeshBuilder();
+      const padBoxes = {};
+      {
+        const sd = partP03.specData;
+        const zTop = 3.2; // just above Z_local = +2.5
+        for (const r of [395.0, 527.5, 764.11]) {
+          const segs = 96;
+          for (let i = 0; i < segs; i++) {
+            if (r === 764.11 && i % 2 === 1) continue; // dashed orbit line
+            const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+            ghostRingMb.pushLine(
+              [-100 + r * Math.cos(a0), -60 + r * Math.sin(a0), zTop],
+              [-100 + r * Math.cos(a1), -60 + r * Math.sin(a1), zTop]
+            );
+          }
+        }
+        // Crosshair at TR1100 true center (-100, -60)
+        ghostRingMb.pushLine([-165, -60, zTop], [-35, -60, zTop]);
+        ghostRingMb.pushLine([-100, -125, zTop], [-100, 5, zTop]);
+
+        // P1..P10 pad footprints
+        for (const pad of sd.m10Pads) {
+          const pmb = new CadMeshBuilder();
+          for (let i = 0; i < 4; i++) {
+            const p0 = pad.holes[i], p1 = pad.holes[(i + 1) % 4];
+            ghostRingMb.pushLine([p0[0], p0[1], zTop], [p1[0], p1[1], zTop]);
+            pmb.pushLine([p0[0], p0[1], zTop + 0.6], [p1[0], p1[1], zTop + 0.6]);
+          }
+          padBoxes[pad.id] = uploadMesh(pmb);
+        }
+        // Conveyor rail outline (+X)
+        const cr = [[468,63],[838,63],[838,123],[468,123]];
+        for (let i = 0; i < 4; i++) {
+          ghostRingMb.pushLine([cr[i][0], cr[i][1], zTop], [cr[(i+1)%4][0], cr[(i+1)%4][1], zTop]);
+        }
+      }
+      const ghostRingMesh = uploadMesh(ghostRingMb);
+
+      // 2) Ghost L02 Scaled 2000x1480 Base Frame Support underneath Z_deck_bot (Z_local = -12.5 downwards)
+      const ghostFrameMesh = (() => {
+        const mb = new CadMeshBuilder();
+        const cAlu = [0.36, 0.40, 0.46];
+        // Upper perimeter 40x80 frame right under Z_local = -12.5 (Z = -92.5 .. -12.5)
+        mb.addBox(   0.0, -655.0, -52.5, 1915.0, 40.0, 80.0, cAlu, true);
+        mb.addBox(   0.0,  735.0, -52.5, 1915.0, 40.0, 80.0, cAlu, true);
+        mb.addBox(-977.5,   40.0, -52.5,   40.0, 1350.0, 80.0, cAlu, true);
+        mb.addBox( 977.5,   40.0, -52.5,   40.0, 1350.0, 80.0, cAlu, true);
+        // Two heavy central cross-bearers flanking TR1100 / DP2 pocket
+        mb.addBox(-660.0,   40.0, -52.5,   80.0, 1350.0, 80.0, cAlu, true);
+        mb.addBox( 480.0,   40.0, -52.5,   80.0, 1350.0, 80.0, cAlu, true);
+        // 4 Corner Columns (720 mm tall: Z = -732.5 .. -12.5)
+        for (const [cx, cy] of [[-977.5,-655.0],[977.5,-655.0],[-977.5,735.0],[977.5,735.0]]) {
+          mb.addBox(cx, cy, -372.5, 40.0, 80.0, 720.0, cAlu, true);
+        }
+        return uploadMesh(mb);
+      })();
+
+      // Floor grid + World Origin Triad
+      const floorGridMesh = (() => {
+        const mb = new CadMeshBuilder();
+        for (let g = -1400; g <= 1400; g += 200) {
+          mb.pushLine([-1400, g, 0], [1400, g, 0]);
+          mb.pushLine([g, -1400, 0], [g, 1400, 0]);
+        }
+        return uploadMesh(mb);
+      })();
+
+      const triadMeshes = (() => {
+        const mx = new CadMeshBuilder(); mx.addBox(110, 0, 2, 220, 7, 7, [0.92, 0.26, 0.26], false);
+        const my = new CadMeshBuilder(); my.addBox(0, 110, 2, 7, 220, 7, [0.20, 0.80, 0.42], false);
+        const mz = new CadMeshBuilder(); mz.addBox(0, 0, 110, 7, 7, 220, [0.24, 0.62, 0.96], false);
+        return { x: uploadMesh(mx), y: uploadMesh(my), z: uploadMesh(mz) };
+      })();
+
+      // =======================================================================
+      // UI TREE, PAD TABLE, CAMERA & AUDIT SPOT CONTROLS
+      // =======================================================================
+      const treeDefs = [
+        { key: "plate",     name: "Body1: Steel Deck Plate",    sub: "2000×1480×15 · R20 · C2", color: "#9aa3b2" },
+        { key: "dp2",       name: "1. DP2 Gearbox Pocket",      sub: "24-Edge · 555×282 · C5",  color: "#29c28a" },
+        { key: "tr1100",    name: "2. TR1100 Bore & PCD Ø1055", sub: "Ø70 R2 + 2×H7 + 6×M10",   color: "#f25c7a" },
+        { key: "island",    name: "3. Inner Island Pads P1–P3", sub: "12× M10 (P3 170×170)",    color: "#f5ae2e" },
+        { key: "orbit",     name: "4. Station Orbit Pads P4–P9",sub: "24× M10 @ 12° Radial",    color: "#f08a33" },
+        { key: "conveyor",  name: "5. +X Robot P10 & Conveyor", sub: "4× M10 + 8× M6 Rail",     color: "#9edb3d" },
+        { key: "enclosure", name: "6. Safety Enclosure Posts",  sub: "32× M6 (16 Pairs @ 50mm)",color: "#2ecce8" },
+        { key: "grommets",  name: "7. Cable Grommets G01–G11",  sub: "11× Ø60.0 mm Thru",       color: "#bd7af5" },
+        { key: "cbores",    name: "8. Corner M12 Counterbores", sub: "8× Ø13 Thru / Ø20 CBore", color: "#42adf7" }
+      ];
+
+      function renderTreeUI() {
+        const wrap = document.getElementById("featureTree");
+        wrap.innerHTML = "";
+        for (const item of treeDefs) {
+          const vis = state.zoneVisibility[item.key];
+          const row = document.createElement("div");
+          row.className = "tree-row" + (state.selectedZone === item.key ? " selected" : "");
+          row.innerHTML = `
+            <div class="tree-left">
+              <span class="swatch" style="background:${item.color};"></span>
+              <div style="min-width:0;">
+                <div class="node-name">${item.name}</div>
+                <div class="node-sub">${item.sub}</div>
+              </div>
+            </div>
+            <button type="button" class="eye-btn ${vis ? "" : "off"}">${vis ? "EYE" : "OFF"}</button>
+          `;
+          row.addEventListener("click", (ev) => {
+            if (ev.target.tagName === "BUTTON") {
+              state.zoneVisibility[item.key] = !state.zoneVisibility[item.key];
+              renderTreeUI();
+              return;
+            }
+            state.selectedZone = state.selectedZone === item.key ? "" : item.key;
+            renderTreeUI();
+          });
+          wrap.appendChild(row);
+        }
+
+        // Reference Ghost Overlays
+        const extras = [
+          { id: "ring",  name: "Ref: TR1100 PCD & Pad Outlines", sub: "PCD Ø1055 + Orbit R764", on: state.showGhostRing,  color: "#38bdf8" },
+          { id: "frame", name: "Ref: L02 Support Frame (Ghost)", sub: "2000×1480 Series-40",    on: state.showGhostFrame, color: "#64748b" }
+        ];
+        for (const ex of extras) {
+          const row = document.createElement("div");
+          row.className = "tree-row";
+          row.innerHTML = `
+            <div class="tree-left">
+              <span class="swatch" style="background:${ex.color};"></span>
+              <div style="min-width:0;">
+                <div class="node-name">${ex.name}</div>
+                <div class="node-sub">${ex.sub}</div>
+              </div>
+            </div>
+            <button type="button" class="eye-btn ${ex.on ? "" : "off"}">${ex.on ? "ON" : "OFF"}</button>
+          `;
+          row.addEventListener("click", () => {
+            if (ex.id === "ring") state.showGhostRing = !state.showGhostRing;
+            else state.showGhostFrame = !state.showGhostFrame;
+            renderTreeUI();
+          });
+          wrap.appendChild(row);
+        }
+      }
+      renderTreeUI();
+
+      // Populate P1..P10 Pad Coordinate Table
+      function renderPadTable() {
+        const tbody = document.getElementById("padTableBody");
+        tbody.innerHTML = "";
+        for (const pad of partP03.specData.m10Pads) {
+          const cx = pad.holes.reduce((s, p) => s + p[0], 0) / 4.0;
+          const cy = pad.holes.reduce((s, p) => s + p[1], 0) / 4.0;
+          const tr = document.createElement("tr");
+          tr.className = "pad-row-tr" + (state.selectedPadId === pad.id ? " sel" : "");
+          tr.innerHTML = `
+            <td style="font-family:var(--mono);font-weight:700;color:#fde68a;">${pad.id}</td>
+            <td style="font-family:var(--mono);">${pad.pitch}</td>
+            <td style="font-family:var(--mono);">(${cx.toFixed(0)}, ${cy.toFixed(0)})</td>
+            <td class="num">${pad.theta.toFixed(1)}°</td>
+          `;
+          tr.addEventListener("click", () => {
+            state.selectedPadId = state.selectedPadId === pad.id ? "" : pad.id;
+            state.selectedZone = pad.zone === "island" ? "island" : (pad.zone === "orbit" ? "orbit" : "conveyor");
+            const zRef = currentDeckTopZ();
+            cam.target = [cx, cy, zRef];
+            cam.dist = 920;
+            cam.pitch = 0.88;
+            renderTreeUI();
+            renderPadTable();
+            document.getElementById("auditNote").innerHTML =
+              `<strong>${pad.id} (${pad.pitch} mm, 4× M10×1.5):</strong> กึ่งกลาง (${cx.toFixed(2)}, ${cy.toFixed(2)}) mm · ห่างศูนย์ TR1100 R = ${pad.rTr.toFixed(2)} mm ที่มุม ${pad.theta.toFixed(2)}°`;
+          });
+          tbody.appendChild(tr);
+        }
+      }
+
+      function currentDeckTopZ() {
+        return state.useLocalStepZ ? 2.5 : (state.zFrameTopMm + 15.0);
+      }
+
+      const cam = {
+        yaw: -1.92,
+        pitch: 0.68,
+        dist: 2650,
+        target: [0, 40, 852],
+        eye: [0, 0, 0]
+      };
+
+      function setCamPreset(preset) {
+        document.querySelectorAll("[data-cam]").forEach(b => b.classList.toggle("active", b.dataset.cam === preset));
+        const zMid = currentDeckTopZ() - 7.5;
+        if (preset === "iso")    { cam.yaw = -1.92; cam.pitch = 0.68;  cam.dist = 2650; cam.target = [0, 40, zMid]; }
+        if (preset === "top")    { cam.yaw = -Math.PI * 0.5; cam.pitch = 1.52; cam.dist = 2480; cam.target = [0, 40, zMid]; }
+        if (preset === "bottom") { cam.yaw = -Math.PI * 0.5; cam.pitch = -1.46; cam.dist = 2480; cam.target = [0, 40, zMid]; }
+        if (preset === "front")  { cam.yaw = -Math.PI * 0.5; cam.pitch = 0.06; cam.dist = 2550; cam.target = [0, 40, zMid - 120]; }
+        if (preset === "right")  { cam.yaw = 0.0; cam.pitch = 0.08; cam.dist = 2250; cam.target = [0, 40, zMid - 100]; }
+        if (preset === "dp2")    { cam.yaw = -1.65; cam.pitch = 0.85; cam.dist = 980;  cam.target = [-135, 380, zMid]; }
+      }
+      document.querySelectorAll("[data-cam]").forEach(b => b.addEventListener("click", () => setCamPreset(b.dataset.cam)));
+
+      let drag = 0, lx = 0, ly = 0;
+      canvas.addEventListener("contextmenu", e => e.preventDefault());
+      canvas.addEventListener("pointerdown", e => {
+        drag = (e.button === 2 || e.shiftKey) ? 2 : 1;
+        lx = e.clientX; ly = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", e => {
+        if (!drag) return;
+        const dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        if (drag === 1) {
+          cam.yaw -= dx * 0.0068;
+          cam.pitch = Math.max(-1.53, Math.min(1.53, cam.pitch + dy * 0.0068));
+        } else {
+          const sc = cam.dist * 0.0011;
+          cam.target[0] -= dx * (-Math.sin(cam.yaw)) * sc;
+          cam.target[1] -= dx * Math.cos(cam.yaw) * sc;
+          cam.target[2] += dy * sc;
+        }
+      });
+      canvas.addEventListener("pointerup", () => { drag = 0; });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        cam.dist = Math.max(140, Math.min(6200, cam.dist * (1 + e.deltaY * 0.001)));
+      }, { passive: false });
+
+      // Datum Controls
+      function syncDatumReadouts() {
+        const d = partP03.exportsDatum({ zFrameTopMm: state.zFrameTopMm });
+        document.getElementById("lblDatumMode").textContent = state.useLocalStepZ ? "STEP LOCAL Z" : "WORLD CELL Z";
+        document.getElementById("lblFrameTop").textContent = `${d.zDeckBotMm.toFixed(1)} → ${d.zDeckTopMm.toFixed(1)} mm`;
+        document.getElementById("dtDeckZ").textContent = state.useLocalStepZ
+          ? "-12.5 / +2.5 mm"
+          : `${d.zDeckBotMm.toFixed(1)} / ${d.zDeckTopMm.toFixed(1)} mm`;
+      }
+
+      document.getElementById("btnWorldDatum").addEventListener("click", () => {
+        state.useLocalStepZ = false;
+        document.getElementById("btnWorldDatum").classList.add("active");
+        document.getElementById("btnLocalDatum").classList.remove("active");
+        document.getElementById("rowColH").style.opacity = "1";
+        cam.target[2] = state.zFrameTopMm + 7.5;
+        syncDatumReadouts();
+      });
+
+      document.getElementById("btnLocalDatum").addEventListener("click", () => {
+        state.useLocalStepZ = true;
+        document.getElementById("btnLocalDatum").classList.add("active");
+        document.getElementById("btnWorldDatum").classList.remove("active");
+        document.getElementById("rowColH").style.opacity = "0.45";
+        cam.target[2] = -5.0;
+        syncDatumReadouts();
+      });
+
+      document.getElementById("rngFrameTop").addEventListener("input", e => {
+        const oldZ = state.zFrameTopMm;
+        state.zFrameTopMm = Number(e.target.value);
+        if (!state.useLocalStepZ) cam.target[2] += (state.zFrameTopMm - oldZ);
+        syncDatumReadouts();
+      });
+
+      const btnSnap = document.getElementById("btnSnapToggle");
+      btnSnap.addEventListener("click", () => {
+        state.fixFrontRightSnap = !state.fixFrontRightSnap;
+        btnSnap.textContent = state.fixFrontRightSnap ? "ALIGNED: -675.000" : "RAW STEP: -675.086";
+        btnSnap.style.borderColor = state.fixFrontRightSnap ? "#22c55e" : "";
+        rebuildP03();
+      });
+
+      // DG-2026-105 Audit Spot Quick-Jump Buttons
+      const auditSpots = {
+        rb3: {
+          zone: "tr1100",
+          target: [-500, 275],
+          dist: 520, pitch: 0.92, yaw: -1.45,
+          secOn: false,
+          msg: "<strong>RB3 (+145.00° Shift):</strong> มุมมาตรฐาน +120° บนวง PCD Ø1,055 mm ชนเข้ากลางช่องเว้าเกียร์ DP2 ผู้ออกแบบจึงขยับรูน็อต M10 ตัวนี้มาที่ (-532.103, +242.562) mm ข้างสลักโดเวล DW2 (-473, +313)"
+        },
+        dp2: {
+          zone: "dp2",
+          target: [-135, 380],
+          dist: 880, pitch: 0.82, yaw: -1.62,
+          secOn: true, axis: 1, val: 380,
+          msg: "<strong>24-Edge DP2 Gearbox Pocket:</strong> โถงหลัก 440×282 mm + หูมอเตอร์ซ้าย (-420 mm) + ติ่งเซนเซอร์ขวา (+135 mm) ปาดปากบน C5.0 × 45° รอบทั้ง 24 เส้นขอบ"
+        },
+        toroid: {
+          zone: "tr1100",
+          target: [-100, -60],
+          dist: 310, pitch: 0.42, yaw: -1.57,
+          secOn: true, axis: 1, val: -60,
+          msg: "<strong>Center Ø70 Bore + Toroid R2.0 (#261/#262):</strong> ผ่าตัดขวางที่ Y = -60.0 mm เผยให้เห็นผิวมนโค้ง TOROIDAL_SURFACE R2.0 mm ทั้งปากบนและปากล่างเพื่อกันขอบเหล็กบาดท่อลมเกาะกลาง!"
+        },
+        cbore: {
+          zone: "cbores",
+          target: [977.5, -655],
+          dist: 290, pitch: 0.46, yaw: -2.55,
+          secOn: true, axis: 0, val: 977.5,
+          msg: "<strong>Corner M12 Counterbore (Ø20 ลึก 12.8 / Ø13 ทะลุ 2.2 mm):</strong> ผ่าที่ X = +977.5 mm เห็นบ่าสกรูจม M12 คู่พิตช์ 40 mm (รูหน้าขวามีค่าดิบใน STEP = -675.086 mm)"
+        }
+      };
+
+      document.querySelectorAll("[data-audit]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.audit;
+          const sp = auditSpots[key];
+          document.querySelectorAll("[data-audit]").forEach(x => x.classList.toggle("active", x === btn));
+          state.selectedZone = sp.zone;
+          cam.target = [sp.target[0], sp.target[1], currentDeckTopZ() - 7.5];
+          cam.dist = sp.dist;
+          cam.pitch = sp.pitch;
+          cam.yaw = sp.yaw;
+
+          if (sp.secOn) {
+            state.sectionOn = true;
+            state.sectionAxis = sp.axis;
+            state.sectionVal = sp.val;
+          } else {
+            state.sectionOn = false;
+          }
+          syncSectionUI();
+          renderTreeUI();
+          document.getElementById("auditNote").innerHTML = sp.msg;
+        });
+      });
+
+      // Bottom Dock Controls
+      document.querySelectorAll("[data-lod]").forEach(b => {
+        b.addEventListener("click", () => {
+          state.lod = b.dataset.lod;
+          document.querySelectorAll("[data-lod]").forEach(x => x.classList.toggle("active", x === b));
+          rebuildP03();
+        });
+      });
+
+      document.querySelectorAll("[data-colormode]").forEach(b => {
+        b.addEventListener("click", () => {
+          state.colorMode = b.dataset.colormode;
+          document.querySelectorAll("[data-colormode]").forEach(x => x.classList.toggle("active", x === b));
+          rebuildP03();
+        });
+      });
+
+      document.querySelectorAll("[data-style]").forEach(b => {
+        b.addEventListener("click", () => {
+          state.style = b.dataset.style;
+          document.querySelectorAll("[data-style]").forEach(x => x.classList.toggle("active", x === b));
+        });
+      });
+
+      function syncSectionUI() {
+        document.getElementById("btnSection").classList.toggle("active", state.sectionOn);
+        document.getElementById("secControls").classList.toggle("show", state.sectionOn);
+        document.getElementById("btnSecAxis").textContent = state.sectionAxis === 0 ? "X-CUT" : "Y-CUT";
+        document.getElementById("rngSec").value = String(state.sectionVal);
+        document.getElementById("lblSecVal").textContent = `${state.sectionVal} mm`;
+      }
+
+      document.getElementById("btnSection").addEventListener("click", () => {
+        state.sectionOn = !state.sectionOn;
+        syncSectionUI();
+      });
+      document.getElementById("btnSecAxis").addEventListener("click", () => {
+        state.sectionAxis = state.sectionAxis === 0 ? 1 : 0;
+        state.sectionVal = state.sectionAxis === 1 ? -60 : 0;
+        syncSectionUI();
+      });
+      document.getElementById("rngSec").addEventListener("input", e => {
+        state.sectionVal = Number(e.target.value);
+        document.getElementById("lblSecVal").textContent = `${state.sectionVal} mm`;
+      });
+
+      renderPadTable();
+      syncDatumReadouts();
+
+      // =======================================================================
+      // 60 FPS RENDER LOOP
+      // =======================================================================
+      const mId = Mat4.create();
+      const mGhost = Mat4.create();
+      let lastT = performance.now();
+
+      function render(now) {
+        const dtMs = now - lastT;
+        lastT = now;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.13, 0.15, 0.185, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+
+        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;
+        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;
+        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;
+
+        Mat4.perspective(projMat, (38 * Math.PI) / 180, w / Math.max(1, h), 10.0, 14000.0);
+        Mat4.lookAt(viewMat, cam.eye, cam.target, [0, 0, 1]);
+
+        Mat4.identity(mId);
+        drawOverlayLines(floorGridMesh, mId, [0.25, 0.29, 0.36, 0.55]);
+
+        frameTris = 0;
+        drawMesh(triadMeshes.x, mId, false);
+        drawMesh(triadMeshes.y, mId, false);
+        drawMesh(triadMeshes.z, mId, false);
+
+        const zShift = state.useLocalStepZ ? 0.0 : (state.zFrameTopMm + 12.5);
+        Mat4.translate(mGhost, mId, 0, 0, zShift);
+
+        if (state.showGhostFrame && !state.useLocalStepZ) {
+          drawMesh(ghostFrameMesh, mGhost, false);
+        }
+
+        partP03.drawInstance(kernel, activeMeshes, mId, {
+          zFrameTopMm: state.zFrameTopMm,
+          useLocalStepZ: state.useLocalStepZ,
+          zoneVisibility: state.zoneVisibility,
+          selectedZone: state.selectedZone
+        });
+
+        if (state.showGhostRing) {
+          drawOverlayLines(ghostRingMesh, mGhost, [0.22, 0.74, 0.98, 0.85]);
+          if (state.selectedPadId && padBoxes[state.selectedPadId]) {
+            drawOverlayLines(padBoxes[state.selectedPadId], mGhost, [1.0, 0.84, 0.20, 1.0]);
+          }
+        }
+
+        document.getElementById("perfReadout").textContent =
+          `Tris: ${frameTris.toLocaleString()} · ${dtMs.toFixed(1)} ms`;
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

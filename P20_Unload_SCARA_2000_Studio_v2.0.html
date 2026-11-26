@@ -1,0 +1,2173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenVI 3D WebGL Workbench — 2000-Unload SCARA Calibrated v2.0</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --panel-bg: #0f172a;
+      --surface: #1e293b;
+      --surface-hover: #334155;
+      --border: #475569;
+      --ink: #f8fafc;
+      --muted: #94a3b8;
+      --brand: #38bdf8;
+      --brand-ink: #0369a1;
+      --accent: #10b981;
+      --warn: #f43f5e;
+      --radius: 8px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --font: ui-monospace, "SF Mono", Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-layout {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* 3D Viewport Area */
+    .viewer-area {
+      flex: 1 1 0%;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #1e293b 0%, #090d16 85%);
+      user-select: none;
+    }
+
+    #gl-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+    #gl-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* HUD Overlay Top-Left */
+    .hud-overlay {
+      position: absolute;
+      top: var(--space-3);
+      left: var(--space-3);
+      right: var(--space-3);
+      max-width: 360px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      pointer-events: none;
+      font-size: 11px;
+      z-index: 4;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+    }
+    .hud-title {
+      font-weight: 700;
+      color: var(--brand);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .hud-sub {
+      color: var(--muted);
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+    .hud-sub span {
+      color: var(--ink);
+    }
+    .hud-fk {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Bottom Camera & Demo Controls */
+    .viewcube-controls {
+      position: absolute;
+      bottom: var(--space-3);
+      left: var(--space-3);
+      right: var(--space-3);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      z-index: 4;
+      pointer-events: none;
+    }
+    .view-btn {
+      pointer-events: auto;
+      font-family: inherit;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .view-btn:hover, .view-btn.active {
+      color: var(--brand);
+      border-color: var(--brand);
+      background: var(--surface);
+    }
+    .view-btn.play-btn {
+      color: var(--accent);
+      border-color: rgba(16, 185, 129, 0.45);
+    }
+    .view-btn.play-btn.playing {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.55);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      width: clamp(300px, 33vw, 370px);
+      flex-shrink: 0;
+      min-height: 0;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      flex-shrink: 0;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: #090d16;
+    }
+    .sidebar-header h1 {
+      font-size: 12px;
+      margin: 0;
+      color: var(--brand);
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .status-badge {
+      background: rgba(16, 185, 129, 0.14);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 2px 6px;
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .scroll-container {
+      flex: 1 1 0%;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Cards inside Scroll Container */
+    .panel-card {
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .panel-header {
+      background: rgba(15, 23, 42, 0.45);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .panel-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .mini-action {
+      font-family: inherit;
+      font-size: 10px;
+      color: var(--brand);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-weight: 700;
+    }
+    .mini-action:hover {
+      text-decoration: underline;
+    }
+    .panel-body {
+      padding: 12px;
+    }
+
+    /* Sliders */
+    .slider-group {
+      margin-bottom: 10px;
+    }
+    .slider-group:last-child {
+      margin-bottom: 0;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      margin-bottom: 3px;
+      gap: 8px;
+    }
+    .slider-label {
+      color: var(--ink);
+    }
+    .slider-value {
+      color: var(--brand);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 4px 0;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--brand);
+      border: 2px solid #090d16;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--brand);
+      border: 2px solid #090d16;
+      cursor: pointer;
+    }
+
+    /* Toggle Switches */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      padding: 4px 0;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #090d16;
+      border: 1px solid var(--border);
+      transition: 0.18s;
+      border-radius: 9px;
+    }
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #cbd5e1;
+      transition: 0.18s;
+      border-radius: 50%;
+    }
+    input:checked + .slider-toggle {
+      background-color: var(--brand);
+      border-color: var(--brand);
+    }
+    input:checked + .slider-toggle:before {
+      transform: translateX(16px);
+      background-color: #090d16;
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 9px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+      width: 100%;
+    }
+    .btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--brand);
+    }
+    .btn-primary {
+      background: var(--brand);
+      color: var(--brand-ink);
+      border-color: var(--brand);
+    }
+    .btn-primary:hover {
+      background: #7dd3fc;
+      border-color: #7dd3fc;
+    }
+
+    /* Parts Browser Tree */
+    .tree-node {
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 4px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.12);
+      border-radius: 4px;
+    }
+    .tree-node:last-child {
+      border-bottom: none;
+    }
+    .tree-node:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .tree-node-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .vis-btn {
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--brand);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .vis-btn.off {
+      border-color: var(--border);
+      background: rgba(15, 23, 42, 0.5);
+      color: var(--muted);
+    }
+
+    /* Metadata Grid & ISO Tap Table */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 5px 10px;
+      font-size: 11px;
+    }
+    .meta-label {
+      color: var(--muted);
+    }
+    .meta-val {
+      color: var(--ink);
+      text-align: right;
+      font-weight: 600;
+    }
+    .meta-val.highlight {
+      color: var(--brand);
+    }
+
+    .tap-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .tap-table th {
+      text-align: left;
+      color: var(--muted);
+      padding: 4px 4px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+    }
+    .tap-table td {
+      padding: 4px 4px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.12);
+    }
+    .tap-badge {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .help-footer {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      font-size: 10px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: #090d16;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+    }
+
+    /* In-Page Mating Datum Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--brand);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+    }
+    .modal-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 {
+      margin: 0;
+      font-size: 12px;
+      color: var(--brand);
+    }
+    .modal-body {
+      padding: 14px 16px;
+      overflow-y: auto;
+      font-size: 11px;
+    }
+    .json-pre {
+      margin: 0;
+      padding: 12px;
+      background: #05080e;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #a7f3d0;
+      font-size: 11px;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    @media (max-width: 760px) {
+      .app-layout {
+        flex-direction: column;
+      }
+      .viewer-area {
+        flex: 0 0 52%;
+      }
+      .sidebar {
+        width: 100%;
+        flex: 1 1 48%;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+      .hud-overlay {
+        max-width: 270px;
+        padding: 8px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- 3D WebGL Viewport -->
+    <div class="viewer-area" id="viewer-container">
+      <canvas id="gl-canvas"></canvas>
+
+      <!-- Top-Left HUD Overlay -->
+      <div class="hud-overlay">
+        <div class="hud-title">
+          <span>● IXP-4N6520 DIGITAL TWIN</span>
+          <span id="hud-tris" style="color:var(--muted); font-weight:400; font-size:10px;">LOD-0</span>
+        </div>
+        <div class="hud-sub">Source: <span>2000-Unload scara.step</span> | UUT: <span style="color:var(--brand)">UUT_DUMMY</span></div>
+        <div class="hud-sub">Frame: <span>Right-Handed Z-Up (Z=0 Base Riser Floor)</span></div>
+        <div class="hud-fk">
+          <span>TCP X: <span id="fk-x">0.00</span> mm</span>
+          <span>Y: <span id="fk-y">0.00</span> mm</span>
+          <span>Z: <span id="fk-z">0.00</span> mm</span>
+        </div>
+      </div>
+
+      <!-- Bottom ViewCube & Demo Bar -->
+      <div class="viewcube-controls">
+        <button class="view-btn" type="button" onclick="setCameraView('iso')">Isometric</button>
+        <button class="view-btn" type="button" onclick="setCameraView('top')">Top (+Z)</button>
+        <button class="view-btn" type="button" onclick="setCameraView('front')">Front (X-Z)</button>
+        <button class="view-btn" type="button" onclick="setCameraView('right')">Right (Y-Z)</button>
+        <button class="view-btn play-btn" type="button" id="play-btn" onclick="togglePlayAnimation()">► Play Pick-Place</button>
+      </div>
+    </div>
+
+    <!-- Right Control Workbench Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>OPENVI CALIBRATED</h1>
+        <div class="status-badge">PRODUCTION v2.0</div>
+      </div>
+
+      <div class="scroll-container">
+
+        <!-- 1. Kinematics Control (Fitted with exact catalog works envelopes) -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">Calibrated Kinematics (J1, J2, Z, R)</span>
+            <button class="mini-action" type="button" onclick="resetKinematics()">Reset Pose</button>
+          </div>
+          <div class="panel-body">
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">J1 Shoulder Angle (±127°)</span>
+                <span class="slider-value" id="val-j1">15.0°</span>
+              </div>
+              <input type="range" id="slider-j1" min="-127" max="127" value="15" step="0.5">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">J2 Elbow Angle (±127°)</span>
+                <span class="slider-value" id="val-j2">45.0°</span>
+              </div>
+              <input type="range" id="slider-j2" min="-127" max="127" value="45" step="0.5">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Z Spline Quill Stroke (200 mm)</span>
+                <span class="slider-value" id="val-z">-40.0 mm</span>
+              </div>
+              <input type="range" id="slider-z" min="-200" max="0" value="-40" step="1">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">R Wrist Tool Rotation (±360°)</span>
+                <span class="slider-value" id="val-r">0.0°</span>
+              </div>
+              <input type="range" id="slider-r" min="-360" max="360" value="0" step="1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mating Datum Modal Trigger -->
+        <div style="flex-shrink: 0;">
+          <button class="btn btn-primary" type="button" onclick="openDatumModal()">
+            Inspect Mating Datum (exportsDatum)
+          </button>
+        </div>
+
+        <!-- 2. Display Settings with Prohibited Area & X-Ray -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">Display &amp; Limits Settings</span>
+          </div>
+          <div class="panel-body">
+            <div class="toggle-row">
+              <span>Shaded with B-Rep Edges</span>
+              <label class="switch">
+                <input type="checkbox" id="chk-edges" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <span>Wireframe X-Ray Mode</span>
+              <label class="switch">
+                <input type="checkbox" id="chk-wire">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <span>Show Prohibited Area (R296.7)</span>
+              <label class="switch">
+                <input type="checkbox" id="chk-prohibit" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <span>Cell Economy Mesh (LOD-1)</span>
+              <label class="switch">
+                <input type="checkbox" id="chk-lod1" onchange="rebuildActiveLod()">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <span>Show Mating Ports (Datum)</span>
+              <label class="switch">
+                <input type="checkbox" id="chk-datum" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <span>Section Analysis (Z-Cut Plane)</span>
+              <label class="switch">
+                <input type="checkbox" id="chk-section" onchange="toggleSectionAnalysis()">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div id="section-slider-container" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+              <div class="slider-header">
+                <span class="slider-label">Z-Clip Elevation</span>
+                <span class="slider-value" id="val-sec">260.0 mm</span>
+              </div>
+              <input type="range" id="slider-sec" min="5" max="460" value="260" step="1">
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. B-Rep Solids Browser Tree with Calibrated Stack Heights -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">B-Rep Solids (Calibrated Stack)</span>
+            <button class="mini-action" type="button" onclick="showAllParts()">Show All</button>
+          </div>
+          <div class="panel-body" id="tree-container" style="padding: 8px 10px;"></div>
+        </div>
+
+        <!-- 4. Upgraded STEP DNA vs Catalog Spec Metadata -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">Calibrated Spec Benchmarks</span>
+          </div>
+          <div class="panel-body">
+            <div class="meta-grid">
+              <span class="meta-label">Model Code</span>
+              <span class="meta-val highlight">IXP-4N6520-WA-S-P3-B</span>
+
+              <span class="meta-label">Axis 1 Link (Shoulder)</span>
+              <span class="meta-val">360.00 mm</span>
+
+              <span class="meta-label">Axis 2 Link (Elbow)</span>
+              <span class="meta-val">290.00 mm</span>
+
+              <span class="meta-label">Vertical Z Stroke</span>
+              <span class="meta-val">200.00 mm</span>
+
+              <span class="meta-label">Base Riser Height</span>
+              <span class="meta-val">70.00 mm (Solid #460)</span>
+
+              <span class="meta-label">Base Plate Height</span>
+              <span class="meta-val">15.00 mm (Solid #455)</span>
+
+              <span class="meta-label">Primary Arm Height</span>
+              <span class="meta-val highlight">Z = 333.50 mm (offset)</span>
+
+              <span class="meta-label">Repeatability</span>
+              <span class="meta-val">±0.04 mm</span>
+
+              <span class="meta-label">Unit Weight</span>
+              <span class="meta-val">22.00 kg (Standard Spec)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. ISO Metric Tap Auto-Lookup Report -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">ISO Metric Tap Auto-Lookup</span>
+          </div>
+          <div class="panel-body" style="padding: 8px 10px;">
+            <table class="tap-table">
+              <thead>
+                <tr>
+                  <th>EID</th>
+                  <th>Minor Ø</th>
+                  <th>ISO Tap</th>
+                  <th>Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>#455</td><td>8.376 mm</td><td class="tap-badge">M10×1.5</td><td>8</td></tr>
+                <tr><td>#456</td><td>2.459 mm</td><td class="tap-badge">M3×0.5</td><td>10</td></tr>
+                <tr><td>#457</td><td>4.900 mm</td><td class="tap-badge">M6×1.0</td><td>6</td></tr>
+                <tr><td>#457</td><td>8.376 mm</td><td class="tap-badge">M10×1.5</td><td>2</td></tr>
+                <tr><td>#459</td><td>6.600 mm</td><td class="tap-badge">M8×1.25</td><td>8</td></tr>
+                <tr><td>#460</td><td>4.918 mm</td><td class="tap-badge">M6×1.0</td><td>8</td></tr>
+                <tr><td>#461</td><td>6.600 mm</td><td class="tap-badge">M8×1.25</td><td>8</td></tr>
+                <tr><td>#462</td><td>4.917 mm</td><td class="tap-badge">M6×1.0</td><td>8</td></tr>
+                <tr><td>#463</td><td>13.800 mm</td><td class="tap-badge">M16×2.0</td><td>1</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="help-footer">
+        <span>Drag: Orbit View</span>
+        <span>Shift+Drag: Pan</span>
+        <span>Wheel: Zoom</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- In-Page Modal for Cartridge Datum Inspection -->
+  <div class="modal-backdrop" id="datum-modal" onclick="if(event.target===this) closeDatumModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>OpenVIRegistry v2.0 — exportsDatum(state)</h2>
+        <button class="mini-action" type="button" onclick="closeDatumModal()">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin: 0 0 8px 0; color: var(--muted);">
+          Live mating port coordinates computed in Right-Handed Z-Up (mm / deg) for <code>join_cell_html.py</code>:
+        </p>
+        <pre class="json-pre" id="datum-json-output"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" type="button" style="width:auto; padding:7px 14px;" onclick="closeDatumModal()">Close</button>
+        <button class="btn btn-primary" type="button" id="copy-datum-btn" style="width:auto; padding:7px 14px;" onclick="copyDatumJson()">Copy JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. OpenVI Registry Kernel & Safe 4x4 Matrix Math (Right-Handed Z-Up)
+    // =========================================================================
+    window.OpenVIRegistry = window.OpenVIRegistry || {
+      parts: {},
+      registerPart(id, spec) {
+        this.parts[id] = spec;
+      }
+    };
+
+    const Mat4 = {
+      create() {
+        return new Float32Array([
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+        ]);
+      },
+      identity(out) {
+        out.fill(0);
+        out[0] = 1; out[5] = 1; out[10] = 1; out[15] = 1;
+        return out;
+      },
+      copy(out, a) {
+        for (let i = 0; i < 16; i++) out[i] = a[i];
+        return out;
+      },
+      perspective(out, fovy, aspect, near, far) {
+        const f = 1.0 / Math.tan(fovy * 0.5);
+        out.fill(0);
+        out[0] = f / aspect;
+        out[5] = f;
+        out[10] = (far + near) / (near - far);
+        out[11] = -1;
+        out[14] = (2 * far * near) / (near - far);
+        return out;
+      },
+      lookAt(out, eye, target, up) {
+        let z0 = eye[0] - target[0], z1 = eye[1] - target[1], z2 = eye[2] - target[2];
+        let len = Math.hypot(z0, z1, z2) || 1;
+        z0 /= len; z1 /= len; z2 /= len;
+
+        let x0 = up[1] * z2 - up[2] * z1;
+        let x1 = up[2] * z0 - up[0] * z2;
+        let x2 = up[0] * z1 - up[1] * z0;
+        len = Math.hypot(x0, x1, x2);
+        if (len < 1e-6) { x0 = 1; x1 = 0; x2 = 0; }
+        else { x0 /= len; x1 /= len; x2 /= len; }
+
+        const y0 = z1 * x2 - z2 * x1;
+        const y1 = z2 * x0 - z0 * x2;
+        const y2 = z0 * x1 - z1 * x0;
+
+        out[0] = x0; out[1] = y0; out[2] = z0; out[3] = 0;
+        out[4] = x1; out[5] = y1; out[6] = z1; out[7] = 0;
+        out[8] = x2; out[9] = y2; out[10] = z2; out[11] = 0;
+        out[12] = -(x0 * eye[0] + x1 * eye[1] + x2 * eye[2]);
+        out[13] = -(y0 * eye[0] + y1 * eye[1] + y2 * eye[2]);
+        out[14] = -(z0 * eye[0] + z1 * eye[1] + z2 * eye[2]);
+        out[15] = 1;
+        return out;
+      },
+      multiply(out, a, b) {
+        const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+        const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+        const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+        const a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+        const b00 = b[0], b01 = b[1], b02 = b[2], b03 = b[3];
+        const b10 = b[4], b11 = b[5], b12 = b[6], b13 = b[7];
+        const b20 = b[8], b21 = b[9], b22 = b[10], b23 = b[11];
+        const b30 = b[12], b31 = b[13], b32 = b[14], b33 = b[15];
+
+        out[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+        out[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+        out[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+        out[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+
+        out[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+        out[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+        out[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+        out[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+
+        out[8]  = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+        out[9]  = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+        out[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+        out[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+
+        out[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+        out[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+        out[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+        out[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+        return out;
+      },
+      translate(out, a, v) {
+        const x = v[0], y = v[1], z = v[2];
+        const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+        const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+        const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+        const a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+        if (out !== a) {
+          out[0] = a00; out[1] = a01; out[2] = a02; out[3] = a03;
+          out[4] = a10; out[5] = a11; out[6] = a12; out[7] = a13;
+          out[8] = a20; out[9] = a21; out[10] = a22; out[11] = a23;
+        }
+        out[12] = a00 * x + a10 * y + a20 * z + a30;
+        out[13] = a01 * x + a11 * y + a21 * z + a31;
+        out[14] = a02 * x + a12 * y + a22 * z + a32;
+        out[15] = a03 * x + a13 * y + a23 * z + a33;
+        return out;
+      },
+      rotateZ(out, a, rad) {
+        const s = Math.sin(rad), c = Math.cos(rad);
+        const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+        const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+        if (out !== a) {
+          for (let i = 8; i < 16; i++) out[i] = a[i];
+        }
+        out[0] = a00 * c + a10 * s;
+        out[1] = a01 * c + a11 * s;
+        out[2] = a02 * c + a12 * s;
+        out[3] = a03 * c + a13 * s;
+        out[4] = a10 * c - a00 * s;
+        out[5] = a11 * c - a01 * s;
+        out[6] = a12 * c - a02 * s;
+        out[7] = a13 * c - a03 * s;
+        return out;
+      }
+    };
+
+    // =========================================================================
+    // 2. Zero-Bloat B-Rep Mesh Archetype Builders (DG-2026-103 Section 4)
+    // =========================================================================
+    const BRepBuilder = {
+      pointInPoly(px, py, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i][0], yi = poly[i][1];
+          const xj = poly[j][0], yj = poly[j][1];
+          const intersect = ((yi > py) !== (yj > py)) &&
+            (px < (xj - xi) * (py - yi) / ((yj - yi) || 1e-12) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      },
+
+      // Archetype 1: PERFORATED_PLATE via 2D Bowyer-Watson Delaunay Triangulation
+      createPerforatedPlate(outerContour, holes, zBot, zTop, segsHole) {
+        const pos = [], norm = [], lines = [];
+        const pts2d = [];
+
+        for (let i = 0; i < outerContour.length; i++) {
+          const p0 = outerContour[i];
+          const p1 = outerContour[(i + 1) % outerContour.length];
+          const dist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+          const steps = Math.max(1, Math.ceil(dist / 35));
+          for (let s = 0; s < steps; s++) {
+            const t = s / steps;
+            pts2d.push([p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t]);
+          }
+        }
+
+        for (const h of holes) {
+          const rOuterTop = h.cbRadius || h.r;
+          for (let i = 0; i < segsHole; i++) {
+            const a = (i / segsHole) * Math.PI * 2;
+            pts2d.push([h.x + Math.cos(a) * rOuterTop, h.y + Math.sin(a) * rOuterTop]);
+          }
+        }
+
+        const trisTop = this.bowyerWatson(pts2d, (cx, cy) => {
+          if (!this.pointInPoly(cx, cy, outerContour)) return false;
+          for (const h of holes) {
+            const rTop = h.cbRadius || h.r;
+            if (Math.hypot(cx - h.x, cy - h.y) < rTop * 0.96) return false;
+          }
+          return true;
+        });
+
+        for (const [i0, i1, i2] of trisTop) {
+          const a = pts2d[i0], b = pts2d[i1], c = pts2d[i2];
+          pos.push(a[0], a[1], zTop, b[0], b[1], zTop, c[0], c[1], zTop);
+          norm.push(0, 0, 1, 0, 0, 1, 0, 0, 1);
+        }
+
+        const ptsBot = [];
+        for (let i = 0; i < outerContour.length; i++) {
+          const p0 = outerContour[i];
+          const p1 = outerContour[(i + 1) % outerContour.length];
+          const dist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+          const steps = Math.max(1, Math.ceil(dist / 35));
+          for (let s = 0; s < steps; s++) {
+            const t = s / steps;
+            ptsBot.push([p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t]);
+          }
+        }
+        for (const h of holes) {
+          for (let i = 0; i < segsHole; i++) {
+            const a = (i / segsHole) * Math.PI * 2;
+            ptsBot.push([h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r]);
+          }
+        }
+        const trisBot = this.bowyerWatson(ptsBot, (cx, cy) => {
+          if (!this.pointInPoly(cx, cy, outerContour)) return false;
+          for (const h of holes) {
+            if (Math.hypot(cx - h.x, cy - h.y) < h.r * 0.96) return false;
+          }
+          return true;
+        });
+        for (const [i0, i1, i2] of trisBot) {
+          const a = ptsBot[i0], b = ptsBot[i1], c = ptsBot[i2];
+          pos.push(a[0], a[1], zBot, c[0], c[1], zBot, b[0], b[1], zBot);
+          norm.push(0, 0, -1, 0, 0, -1, 0, 0, -1);
+        }
+
+        // Outer Perimeter Walls + True B-Rep Feature Edges
+        for (let i = 0; i < outerContour.length; i++) {
+          const p0 = outerContour[i];
+          const p1 = outerContour[(i + 1) % outerContour.length];
+          const pPrev = outerContour[(i - 1 + outerContour.length) % outerContour.length];
+          const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+          const len = Math.hypot(dx, dy) || 1;
+          const nx = dy / len, ny = -dx / len;
+
+          pos.push(
+            p0[0], p0[1], zBot, p1[0], p1[1], zBot, p1[0], p1[1], zTop,
+            p0[0], p0[1], zBot, p1[0], p1[1], zTop, p0[0], p0[1], zTop
+          );
+          for (let k = 0; k < 6; k++) norm.push(nx, ny, 0);
+
+          lines.push(p0[0], p0[1], zTop, p1[0], p1[1], zTop);
+          lines.push(p0[0], p0[1], zBot, p1[0], p1[1], zBot);
+
+          const dxPrev = p0[0] - pPrev[0], dyPrev = p0[1] - pPrev[1];
+          const lPrev = Math.hypot(dxPrev, dyPrev) || 1;
+          const dot = (dx * dxPrev + dy * dyPrev) / (len * lPrev);
+          if (dot < 0.92) {
+            lines.push(p0[0], p0[1], zBot, p0[0], p0[1], zTop);
+          }
+        }
+
+        // Cylindrical Hole Walls & Stepped Counterbores
+        for (const h of holes) {
+          const zMid = h.cbRadius ? (zTop - (h.cbDepth || 5)) : zTop;
+          this.appendInnerBore(pos, norm, lines, h.x, h.y, h.r, zBot, zMid, segsHole, true, !h.cbRadius);
+          if (h.cbRadius) {
+            this.appendInnerBore(pos, norm, lines, h.x, h.y, h.cbRadius, zMid, zTop, segsHole, false, true);
+            for (let i = 0; i < segsHole; i++) {
+              const a0 = (i / segsHole) * Math.PI * 2;
+              const a1 = ((i + 1) / segsHole) * Math.PI * 2;
+              const c0 = Math.cos(a0), s0 = Math.sin(a0);
+              const c1 = Math.cos(a1), s1 = Math.sin(a1);
+              pos.push(
+                h.x + c0 * h.r, h.y + s0 * h.r, zMid,
+                h.x + c0 * h.cbRadius, h.y + s0 * h.cbRadius, zMid,
+                h.x + c1 * h.cbRadius, h.y + s1 * h.cbRadius, zMid,
+                h.x + c0 * h.r, h.y + s0 * h.r, zMid,
+                h.x + c1 * h.cbRadius, h.y + s1 * h.cbRadius, zMid,
+                h.x + c1 * h.r, h.y + s1 * h.r, zMid
+              );
+              for (let k = 0; k < 6; k++) norm.push(0, 0, 1);
+            }
+            this.appendCircleLoop(lines, h.x, h.y, h.r, zMid, segsHole);
+          }
+        }
+
+        return {
+          pos: new Float32Array(pos),
+          norm: new Float32Array(norm),
+          count: pos.length / 3,
+          linePos: new Float32Array(lines),
+          lineCount: lines.length / 3
+        };
+      },
+
+      bowyerWatson(pts, filterCentroid) {
+        const n = pts.length;
+        const px = new Float64Array(n + 3);
+        const py = new Float64Array(n + 3);
+        for (let i = 0; i < n; i++) {
+          px[i] = pts[i][0] + Math.sin(i * 12.9898 + 1.23) * 1e-4;
+          py[i] = pts[i][1] + Math.cos(i * 78.233 + 4.56) * 1e-4;
+        }
+        px[n] = -4000; py[n] = -4000;
+        px[n + 1] = 8000; py[n + 1] = -4000;
+        px[n + 2] = 0; py[n + 2] = 8000;
+
+        const tris = [[n, n + 1, n + 2]];
+
+        for (let i = 0; i < n; i++) {
+          const x = px[i], y = py[i];
+          const bad = [];
+
+          for (let t = 0; t < tris.length; t++) {
+            const tri = tris[t];
+            const ax = px[tri[0]], ay = py[tri[0]];
+            const bx = px[tri[1]], by = py[tri[1]];
+            const cx = px[tri[2]], cy = py[tri[2]];
+
+            const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+            if (Math.abs(d) < 1e-12) continue;
+            const a2 = ax * ax + ay * ay;
+            const b2 = bx * bx + by * by;
+            const c2 = cx * cx + cy * cy;
+            const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d;
+            const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+            const r2 = (ax - ux) * (ax - ux) + (ay - uy) * (ay - uy);
+            const dist2 = (x - ux) * (x - ux) + (y - uy) * (y - uy);
+            if (dist2 <= r2) bad.push(t);
+          }
+
+          const edgeMap = new Map();
+          for (const idx of bad) {
+            const tri = tris[idx];
+            for (let e = 0; e < 3; e++) {
+              const u = tri[e], v = tri[(e + 1) % 3];
+              const key = u < v ? `${u}_${v}` : `${v}_${u}`;
+              if (edgeMap.has(key)) edgeMap.delete(key);
+              else edgeMap.set(key, [u, v]);
+            }
+          }
+
+          for (let b = bad.length - 1; b >= 0; b--) {
+            tris.splice(bad[b], 1);
+          }
+
+          for (const [u, v] of edgeMap.values()) {
+            const ux = px[u] - x, uy = py[u] - y;
+            const vx = px[v] - x, vy = py[v] - y;
+            if (ux * vy - uy * vx > 0) tris.push([i, u, v]);
+            else tris.push([i, v, u]);
+          }
+        }
+
+        const out = [];
+        for (const tri of tris) {
+          if (tri[0] >= n || tri[1] >= n || tri[2] >= n) continue;
+          const a = pts[tri[0]], b = pts[tri[1]], c = pts[tri[2]];
+          const area2 = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+          if (Math.abs(area2) < 1e-5) continue;
+          const cx = (a[0] + b[0] + c[0]) / 3;
+          const cy = (a[1] + b[1] + c[1]) / 3;
+          if (filterCentroid(cx, cy)) {
+            out.push(area2 > 0 ? tri : [tri[0], tri[2], tri[1]]);
+          }
+        }
+        return out;
+      },
+
+      appendInnerBore(pos, norm, lines, cx, cy, r, z0, z1, segs, loopBot, loopTop) {
+        for (let i = 0; i < segs; i++) {
+          const a0 = (i / segs) * Math.PI * 2;
+          const a1 = ((i + 1) / segs) * Math.PI * 2;
+          const c0 = Math.cos(a0), s0 = Math.sin(a0);
+          const c1 = Math.cos(a1), s1 = Math.sin(a1);
+          pos.push(
+            cx + c0 * r, cy + s0 * r, z0,
+            cx + c0 * r, cy + s0 * r, z1,
+            cx + c1 * r, cy + s1 * r, z1,
+            cx + c0 * r, cy + s0 * r, z0,
+            cx + c1 * r, cy + s1 * r, z1,
+            cx + c1 * r, cy + s1 * r, z0
+          );
+          norm.push(-c0, -s0, 0, -c0, -s0, 0, -c1, -s1, 0, -c0, -s0, 0, -c1, -s1, 0, -c1, -s1, 0);
+        }
+        if (loopBot) this.appendCircleLoop(lines, cx, cy, r, z0, segs);
+        if (loopTop) this.appendCircleLoop(lines, cx, cy, r, z1, segs);
+      },
+
+      appendCircleLoop(lines, cx, cy, r, z, segs) {
+        if (r < 0.2) return;
+        for (let i = 0; i < segs; i++) {
+          const a0 = (i / segs) * Math.PI * 2;
+          const a1 = ((i + 1) / segs) * Math.PI * 2;
+          lines.push(
+            cx + Math.cos(a0) * r, cy + Math.sin(a0) * r, z,
+            cx + Math.cos(a1) * r, cy + Math.sin(a1) * r, z
+          );
+        }
+      },
+
+      makeStadiumContour(x0, x1, radius, arcSegs) {
+        const pts = [];
+        for (let i = 0; i <= arcSegs; i++) {
+          const a = -Math.PI / 2 + (i / arcSegs) * Math.PI;
+          pts.push([x1 + Math.cos(a) * radius, Math.sin(a) * radius]);
+        }
+        for (let i = 0; i <= arcSegs; i++) {
+          const a = Math.PI / 2 + (i / arcSegs) * Math.PI;
+          pts.push([x0 + Math.cos(a) * radius, Math.sin(a) * radius]);
+        }
+        return pts;
+      },
+
+      makeChamferRectContour(w, d, ch) {
+        const hx = w / 2, hy = d / 2;
+        return [
+          [hx - ch, -hy], [hx, -hy + ch],
+          [hx, hy - ch], [hx - ch, hy],
+          [-hx + ch, hy], [-hx, hy - ch],
+          [-hx, -hy + ch], [-hx + ch, -hy]
+        ];
+      },
+
+      // Archetype 2: REVOLVED_LATHE around Z-Axis
+      createLatheZ(profile, segs, cx = 0, cy = 0) {
+        const pos = [], norm = [], lines = [];
+        for (let p = 0; p < profile.length - 1; p++) {
+          const r0 = profile[p][0], z0 = profile[p][1];
+          const r1 = profile[p + 1][0], z1 = profile[p + 1][1];
+          const dr = r1 - r0, dz = z1 - z0;
+          const segLen = Math.hypot(dr, dz);
+          if (segLen < 1e-6) continue;
+
+          const nr = dz / segLen;
+          const nz = -dr / segLen;
+
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2;
+            const a1 = ((i + 1) / segs) * Math.PI * 2;
+            const c0 = Math.cos(a0), s0 = Math.sin(a0);
+            const c1 = Math.cos(a1), s1 = Math.sin(a1);
+
+            if (r0 < 1e-4) {
+              pos.push(cx, cy, z0, cx + c1 * r1, cy + s1 * r1, z1, cx + c0 * r1, cy + s0 * r1, z1);
+              norm.push(0, 0, nz, c1 * nr, s1 * nr, nz, c0 * nr, s0 * nr, nz);
+            } else if (r1 < 1e-4) {
+              pos.push(cx + c0 * r0, cy + s0 * r0, z0, cx + c1 * r0, cy + s1 * r0, z0, cx, cy, z1);
+              norm.push(c0 * nr, s0 * nr, nz, c1 * nr, s1 * nr, nz, 0, 0, nz);
+            } else {
+              pos.push(
+                cx + c0 * r0, cy + s0 * r0, z0,
+                cx + c1 * r0, cy + s1 * r0, z0,
+                cx + c1 * r1, cy + s1 * r1, z1,
+                cx + c0 * r0, cy + s0 * r0, z0,
+                cx + c1 * r1, cy + s1 * r1, z1,
+                cx + c0 * r1, cy + s0 * r1, z1
+              );
+              norm.push(
+                c0 * nr, s0 * nr, nz,
+                c1 * nr, s1 * nr, nz,
+                c1 * nr, s1 * nr, nz,
+                c0 * nr, s0 * nr, nz,
+                c1 * nr, s1 * nr, nz,
+                c0 * nr, s0 * nr, nz
+              );
+            }
+          }
+
+          if (r0 > 0.3) this.appendCircleLoop(lines, cx, cy, r0, z0, segs);
+        }
+        const last = profile[profile.length - 1];
+        if (last[0] > 0.3) this.appendCircleLoop(lines, cx, cy, last[0], last[1], segs);
+
+        return {
+          pos: new Float32Array(pos),
+          norm: new Float32Array(norm),
+          count: pos.length / 3,
+          linePos: new Float32Array(lines),
+          lineCount: lines.length / 3
+        };
+      },
+
+      // Archetype 4: SHELL_OR_LOWPOLY — Contoured SCARA Arm 2 Hood + Base Link (EID 457)
+      createScaraArm2Shell(lod) {
+        const arcSegs = lod === 'lod0' ? 18 : 8;
+        const holeSegs = lod === 'lod0' ? 18 : 10;
+
+        const baseContour = this.makeStadiumContour(0, 290, 45, arcSegs);
+        const lowerLink = this.createPerforatedPlate(
+          baseContour,
+          [{ x: 290, y: 0, r: 14 }],
+          316, 356, holeSegs
+        );
+
+        const upperContour = this.makeStadiumContour(0, 290, 41, arcSegs);
+        const hood = this.createDomedStadium(upperContour, 356, 434, 14);
+
+        return this.mergeGeoms([lowerLink, hood]);
+      },
+
+      createDomedStadium(contour, z0, zPeak, crownH) {
+        const pos = [], norm = [], lines = [];
+        const zShoulder = zPeak - crownH;
+
+        for (let i = 0; i < contour.length; i++) {
+          const p0 = contour[i];
+          const p1 = contour[(i + 1) % contour.length];
+          const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+          const len = Math.hypot(dx, dy) || 1;
+          const nx = dy / len, ny = -dx / len;
+          pos.push(
+            p0[0], p0[1], z0, p1[0], p1[1], z0, p1[0], p1[1], zShoulder,
+            p0[0], p0[1], z0, p1[0], p1[1], zShoulder, p0[0], p0[1], zShoulder
+          );
+          for (let k = 0; k < 6; k++) norm.push(nx, ny, 0);
+          lines.push(p0[0], p0[1], z0, p1[0], p1[1], z0);
+          lines.push(p0[0], p0[1], zShoulder, p1[0], p1[1], zShoulder);
+        }
+
+        const cx = 145, cy = 0;
+        const inner = contour.map(p => [cx + (p[0] - cx) * 0.76, cy + (p[1] - cy) * 0.68]);
+        for (let i = 0; i < contour.length; i++) {
+          const a0 = contour[i], a1 = contour[(i + 1) % contour.length];
+          const b0 = inner[i], b1 = inner[(i + 1) % inner.length];
+          const ux = a1[0] - a0[0], uy = a1[1] - a0[1], uz = 0;
+          const vx = b0[0] - a0[0], vy = b0[1] - a0[1], vz = crownH;
+          let nx = uy * vz - uz * vy;
+          let ny = uz * vx - ux * vz;
+          let nz = ux * vy - uy * vx;
+          const l = Math.hypot(nx, ny, nz) || 1;
+          nx /= l; ny /= l; nz /= l;
+
+          pos.push(
+            a0[0], a0[1], zShoulder, a1[0], a1[1], zShoulder, b1[0], b1[1], zPeak,
+            a0[0], a0[1], zShoulder, b1[0], b1[1], zPeak, b0[0], b0[1], zPeak
+          );
+          for (let k = 0; k < 6; k++) norm.push(nx, ny, nz);
+          lines.push(b0[0], b0[1], zPeak, b1[0], b1[1], zPeak);
+        }
+
+        for (let i = 1; i < inner.length - 1; i++) {
+          pos.push(
+            inner[0][0], inner[0][1], zPeak,
+            inner[i][0], inner[i][1], zPeak,
+            inner[i + 1][0], inner[i + 1][1], zPeak
+          );
+          norm.push(0, 0, 1, 0, 0, 1, 0, 0, 1);
+        }
+
+        return {
+          pos: new Float32Array(pos),
+          norm: new Float32Array(norm),
+          count: pos.length / 3,
+          linePos: new Float32Array(lines),
+          lineCount: lines.length / 3
+        };
+      },
+
+      mergeGeoms(list) {
+        let pLen = 0, lLen = 0;
+        for (const g of list) { pLen += g.pos.length; lLen += g.linePos.length; }
+        const pos = new Float32Array(pLen);
+        const norm = new Float32Array(pLen);
+        const linePos = new Float32Array(lLen);
+        let pOff = 0, lOff = 0;
+        for (const g of list) {
+          pos.set(g.pos, pOff);
+          norm.set(g.norm, pOff);
+          pOff += g.pos.length;
+          linePos.set(g.linePos, lOff);
+          lOff += g.linePos.length;
+        }
+        return { pos, norm, count: pLen / 3, linePos, lineCount: lLen / 3 };
+      }
+    };
+
+    /* =========================================================================
+       <<<BEGIN_OPENVI_PART_CARTRIDGE: P20_UNLOAD_SCARA_2000>>>
+       Sub-Assembly Cartridge: 2000-Unload SCARA (IAI IXP-4N6520 + VSP-C20)
+       Standard: OpenVIRegistry v2.0 | Dossier: DG-2026-103 / Catalog Page 19-20
+       ========================================================================= */
+    window.OpenVIRegistry.registerPart("P20_UNLOAD_SCARA_2000", {
+      version: "2.0.0",
+      layer: "L04",
+      sourceStep: "2000-Unload_scara_Sanitized",
+      uutId: "UUT_DUMMY",
+      boundingBoxMm: { min: [-382.0, -100.0, 0.0], max: [290.0, 430.0, 450.0], size: [672.0, 530.0, 450.0] },
+
+      // 1. Mating Ports & Calibrated Kinematics (Right-Handed Z-Up, units: mm / deg)
+      exportsDatum(state = {}) {
+        const zMount = state.zMountFaceMm ?? 0.0;
+        const j1Deg = state.j1Deg ?? 15.0;
+        const j2Deg = state.j2Deg ?? 45.0;
+        const zStrokeMm = state.zStrokeMm ?? -40.0;
+        const rDeg = state.rDeg ?? 0.0;
+
+        const j1 = j1Deg * Math.PI / 180.0;
+        const j12 = (j1Deg + j2Deg) * Math.PI / 180.0;
+        const j12r = (j1Deg + j2Deg + rDeg) * Math.PI / 180.0;
+
+        const L1 = 360.0;    // Calibrated Axis 1 link (Shoulder-Elbow)
+        const L2 = 290.0;    // Calibrated Axis 2 link (Elbow-Quill)
+        const LTool = 85.0;  // Calibrated Tool offset center to vacuum nozzle center (mm)
+
+        const elbowX = L1 * Math.cos(j1);
+        const elbowY = L1 * Math.sin(j1);
+
+        const quillX = elbowX + L2 * Math.cos(j12);
+        const quillY = elbowY + L2 * Math.sin(j12);
+
+        const tcpX = quillX + LTool * Math.cos(j12r);
+        const tcpY = quillY + LTool * Math.sin(j12r);
+        const tcpZ = zMount + 165.0 + zStrokeMm; // At Z = -165 mm spline stroke, tool tip sits at Z = 0.0 mm
+
+        return {
+          partId: "P20_UNLOAD_SCARA_2000",
+          uutIdentifier: "UUT_DUMMY",
+          mountingBasePort: {
+            positionMm: [0.0, 0.0, zMount],
+            normal: [0.0, 0.0, -1.0],
+            plateSizeMm: [200.0, 200.0, 15.0],
+            boltPattern: "8x M10x1.5 (Minor Ø8.376mm) on PCD 165mm + 4x Ø12/Ø6.5 CB"
+          },
+          quillFlangePort: {
+            positionMm: [Number(quillX.toFixed(3)), Number(quillY.toFixed(3)), Number((zMount + 247.0 + zStrokeMm).toFixed(3))],
+            boltPattern: "4x M6x1.0 (Minor Ø4.917mm) on PCD 38mm"
+          },
+          vacuumToolPort: {
+            positionMm: [Number(tcpX.toFixed(3)), Number(tcpY.toFixed(3)), Number(tcpZ.toFixed(3))],
+            normal: [0.0, 0.0, -1.0],
+            cupModel: "VSP-C20-10BN-6 (Ø20mm Pad)",
+            stemThread: "M16x2.0 (Minor Ø13.800mm)"
+          },
+          kinematics: { j1Deg, j2Deg, zStrokeMm, rDeg }
+        };
+      },
+
+      // 2. Build GPU VBOs once per LOD
+      buildMeshes(kernel, lod = "lod0") {
+        const segLathe = lod === "lod0" ? 40 : 18;
+        const segHole = lod === "lod0" ? 20 : 10;
+        const segArc = lod === "lod0" ? 18 : 8;
+
+        // EID 455: Base Mounting Plate (200 x 200 x 15 mm)
+        const baseHoles = [
+          { x: 0, y: 0, r: 10.0 },
+          { x: -80, y: -80, r: 3.25, cbRadius: 6.0, cbDepth: 7.0 },
+          { x: -80, y:  80, r: 3.25, cbRadius: 6.0, cbDepth: 7.0 },
+          { x:  80, y: -80, r: 3.25, cbRadius: 6.0, cbDepth: 7.0 },
+          { x:  80, y:  80, r: 3.25, cbRadius: 6.0, cbDepth: 7.0 },
+          { x: -82.731, y:  2.121, r: 4.188 },
+          { x:  -2.121, y: 82.731, r: 4.188 },
+          { x:   0.707, y: -81.317, r: 4.188 },
+          { x:  81.317, y:  -0.707, r: 4.188 }
+        ];
+        const eid455 = kernel.uploadMesh(
+          BRepBuilder.createPerforatedPlate(
+            BRepBuilder.makeChamferRectContour(200, 200, 8),
+            baseHoles, 70.0, 85.0, segHole // Stacks Z = 70..85
+          )
+        );
+
+        // EID 460: Motor/Gear Riser Pedestal (Z = 0..70)
+        const eid460 = kernel.uploadMesh(
+          BRepBuilder.createPerforatedPlate(
+            BRepBuilder.makeChamferRectContour(156, 156, 14),
+            [
+              { x: -62, y: -62, r: 5.5 },
+              { x: -62, y:  62, r: 5.5 },
+              { x:  62, y: -62, r: 5.5 },
+              { x:  62, y:  62, r: 5.5 }
+            ],
+            0.0, 70.0, segHole // Stacks Z = 0..70 at bottom
+          )
+        );
+
+        // EID 459: SCARA Base Column & Beveled Rear Controller Spine (Z = 85..250)
+        const colLathe = BRepBuilder.createLatheZ([
+          [0, 85], [67, 85], [67, 102], [60, 108], [60, 232], [66, 236], [66, 250], [32, 250], [0, 250]
+        ], segLathe, 0, 0);
+        const colSpine = BRepBuilder.createPerforatedPlate(
+          [[-145, -42], [-133, -52], [0, -52], [0, 52], [-133, 52], [-145, 42]],
+          [], 85.0, 232.0, segHole
+        );
+        const eid459 = kernel.uploadMesh(BRepBuilder.mergeGeoms([colLathe, colSpine]));
+
+        // EID 458: Primary SCARA Arm J1 (Stadium L1=360 mm, W=70 mm, Z=250..316)
+        const eid458 = kernel.uploadMesh(
+          BRepBuilder.createPerforatedPlate(
+            BRepBuilder.makeStadiumContour(0, 360, 35, segArc),
+            [
+              { x: 0, y: 0, r: 16.0, cbRadius: 24.0, cbDepth: 8.0 },
+              { x: 360, y: 0, r: 15.0, cbRadius: 21.0, cbDepth: 8.0 }
+            ],
+            250.0, 316.0, segHole
+          )
+        );
+
+        // EID 457: Secondary SCARA Arm J2 + Curved Hood (L2=290 mm, W=90 mm, Z=316..434)
+        const eid457 = kernel.uploadMesh(BRepBuilder.createScaraArm2Shell(lod));
+
+        // EID 456: Ball-Screw Spline Quill Shaft (Ø16 mm x 350 mm, local Z = 253..603)
+        const eid456 = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([
+            [0, 253], [12, 253], [12, 265], [8.0, 265], [8.0, 598], [6.5, 603], [0, 603]
+          ], segLathe, 0, 0)
+        );
+
+        // EID 462: Quill Flange Coupling Collar (local Z = 247..262)
+        const eid462 = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([
+            [0, 247], [25, 247], [25, 252], [14, 252], [14, 262], [0, 262]
+          ], segLathe, 0, 0)
+        );
+
+        // EID 461: End-Effector Tool Adaptor Plate (extends X = 0..85 mm, W = 56 mm, Z = 241..247)
+        const eid461 = kernel.uploadMesh(
+          BRepBuilder.createPerforatedPlate(
+            BRepBuilder.makeStadiumContour(-5, 88, 28, segArc),
+            [
+              { x: 0, y: 0, r: 7.25 },
+              { x: -19, y: 0, r: 3.3, cbRadius: 5.5, cbDepth: 3.5 },
+              { x:  19, y: 0, r: 3.3, cbRadius: 5.5, cbDepth: 3.5 },
+              { x: 0, y: -19, r: 3.3, cbRadius: 5.5, cbDepth: 3.5 },
+              { x: 0, y:  19, r: 3.3, cbRadius: 5.5, cbDepth: 3.5 },
+              { x: 85, y: 0, r: 7.25 }
+            ],
+            241.0, 247.0, segHole
+          )
+        );
+
+        // EID 463: M16x2.0 Vacuum Locknut & Fitting (local Z = 232..261)
+        const eid463 = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([
+            [0, 232], [10, 232], [10, 241], [7, 241], [7, 247], [10, 247], [10, 255], [5.5, 255], [5.5, 261], [0, 261]
+          ], segLathe, 0, 0)
+        );
+
+        // EID 464: VSP-C20 Spring Buffer Stem (local Z = 177..232)
+        const eid464 = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([
+            [0, 177], [6.5, 177], [6.5, 192], [5.0, 192], [5.0, 222], [8.0, 222], [8.0, 232], [0, 232]
+          ], segLathe, 0, 0)
+        );
+
+        // EID 465: VSP-C20-10BN-6 Vacuum Suction Pad Ø20 mm (local Z = 165..177)
+        const eid465 = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([
+            [0, 165], [9.815, 165], [8.2, 169], [6.8, 171], [8.5, 174], [7.0, 177], [0, 177]
+          ], segLathe, 0, 0)
+        );
+
+        // Datum Indicator Rings
+        const baseDatumRing = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([[80, 0.2], [85, 0.2], [85, 2.2], [80, 2.2], [80, 0.2]], 36)
+        );
+        const tcpDatumRing = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([[0, -1.5], [11.5, -1.5], [11.5, 0.5], [0, 0.5]], 28)
+        );
+
+        // Prohibited inner workspace warning ring (R = 296.717 mm)
+        const prohibitRing = kernel.uploadMesh(
+          BRepBuilder.createLatheZ([[294.0, 0.2], [299.4, 0.2], [299.4, 2.0], [294.0, 2.0]], 48)
+        );
+
+        const totalTris = (
+          eid455.count + eid460.count + eid459.count + eid458.count +
+          eid457.count + eid456.count + eid462.count + eid461.count +
+          eid463.count + eid464.count + eid465.count
+        ) / 3;
+
+        return {
+          eid455, eid460, eid459, eid458, eid457,
+          eid456, eid462, eid461, eid463, eid464, eid465,
+          baseDatumRing, tcpDatumRing, prohibitRing, totalTris
+        };
+      },
+
+      // 3. Hierarchical Kinematic Scene Graph Draw
+      drawInstance(kernel, meshes, worldMat, animState = {}) {
+        const j1Rad = (animState.j1Deg ?? 0) * Math.PI / 180;
+        const j2Rad = (animState.j2Deg ?? 0) * Math.PI / 180;
+        const zStroke = animState.zStrokeMm ?? 0;
+        const rRad = (animState.rDeg ?? 0) * Math.PI / 180;
+        const vis = animState.visibility || {};
+
+        // Riser Pedestal Base Solid 460 is at Z = 0..70 (Stationary)
+        if (vis[460] !== false) kernel.drawPart(meshes.eid460, worldMat, [0.18, 0.20, 0.25]);
+
+        // Base Mounting Plate Solid 455 is placed at Z = 70..85, rotated JBaseOffset = 45 deg (Stationary)
+        if (vis[455] !== false) {
+          const mPlate = Mat4.create();
+          Mat4.rotateZ(mPlate, worldMat, 45.0 * Math.PI / 180.0);
+          kernel.drawPart(meshes.eid455, mPlate, [0.55, 0.58, 0.65]);
+        }
+
+        // Base Column Shoulder starts at Z = 85.0 mm (Stationary)
+        if (vis[459] !== false) kernel.drawPart(meshes.eid459, worldMat, [0.72, 0.75, 0.80]);
+
+        // J1 Primary Arm Frame J1 rotates around J_1 joint
+        const mJ1 = Mat4.create();
+        Mat4.rotateZ(mJ1, worldMat, j1Rad);
+        if (vis[458] !== false) kernel.drawPart(meshes.eid458, mJ1, [0.86, 0.89, 0.94]);
+
+        // J2 Secondary Arm Frame (+360 mm along Arm 1 X)
+        const mJ2 = Mat4.create();
+        Mat4.translate(mJ2, mJ1, [360.0, 0.0, 0.0]);
+        Mat4.rotateZ(mJ2, mJ2, j2Rad);
+        if (vis[457] !== false) kernel.drawPart(meshes.eid457, mJ2, [0.90, 0.92, 0.96]);
+
+        // Wrist Quill Frame (+290 mm along Arm 2 X, Z-stroke + R-roll)
+        const mWrist = Mat4.create();
+        Mat4.translate(mWrist, mJ2, [290.0, 0.0, zStroke]);
+        Mat4.rotateZ(mWrist, mWrist, rRad);
+
+        if (vis[456] !== false) kernel.drawPart(meshes.eid456, mWrist, [0.72, 0.75, 0.80]);
+        if (vis[462] !== false) kernel.drawPart(meshes.eid462, mWrist, [0.28, 0.32, 0.38]);
+        if (vis[461] !== false) kernel.drawPart(meshes.eid461, mWrist, [0.18, 0.22, 0.28]);
+
+        // Offset Vacuum Assembly at +85.0 mm on Tool Adaptor Plate
+        const mVac = Mat4.create();
+        Mat4.translate(mVac, mWrist, [85.0, 0.0, 0.0]);
+        if (vis[463] !== false) kernel.drawPart(meshes.eid463, mVac, [0.80, 0.65, 0.25]);
+        if (vis[464] !== false) kernel.drawPart(meshes.eid464, mVac, [0.70, 0.73, 0.77]);
+        if (vis[465] !== false) kernel.drawPart(meshes.eid465, mVac, [0.08, 0.62, 0.92]);
+      }
+    });
+    /* <<<END_OPENVI_PART_CARTRIDGE: P20_UNLOAD_SCARA_2000>>> */
+
+    // =========================================================================
+    // 3. WebGL Workbench Engine (PolygonOffset B-Rep Edges + Z-Section Shader)
+    // =========================================================================
+    const canvas = document.getElementById('gl-canvas');
+    const gl = canvas.getContext('webgl', { antialias: true, alpha: false, stencil: false });
+
+    const vsSource = `
+      attribute vec3 aPosition;
+      attribute vec3 aNormal;
+      uniform mat4 uModel;
+      uniform mat4 uView;
+      uniform mat4 uProj;
+      varying vec3 vNormal;
+      varying vec3 vWorldPos;
+      void main() {
+        vec4 wp = uModel * vec4(aPosition, 1.0);
+        vWorldPos = wp.xyz;
+        vNormal = mat3(uModel) * aNormal;
+        gl_Position = uProj * uView * wp;
+      }
+    `;
+
+    const fsSource = `
+      precision mediump float;
+      varying vec3 vNormal;
+      varying vec3 vWorldPos;
+      uniform vec3 uColor;
+      uniform float uClipZ;
+      uniform bool uUseClip;
+      uniform bool uIsFlat;
+      void main() {
+        if (uUseClip && vWorldPos.z > uClipZ) discard;
+        if (uIsFlat) {
+          gl_FragColor = vec4(uColor, 1.0);
+          return;
+        }
+        if (uUseClip && abs(vWorldPos.z - uClipZ) < 1.8) {
+          gl_FragColor = vec4(0.98, 0.65, 0.08, 1.0);
+          return;
+        }
+        vec3 n = normalize(vNormal);
+        if (!gl_FrontFacing) {
+          n = -n;
+        }
+        vec3 l1 = normalize(vec3(0.45, -0.35, 0.82));
+        vec3 l2 = normalize(vec3(-0.60, 0.50, 0.35));
+        float d1 = max(dot(n, l1), 0.0);
+        float d2 = max(dot(n, l2), 0.0);
+        vec3 baseCol = (!gl_FrontFacing && uUseClip) ? mix(uColor, vec3(0.92, 0.48, 0.12), 0.55) : uColor;
+        vec3 lit = baseCol * (0.28 + d1 * 0.68 + d2 * 0.26);
+        gl_FragColor = vec4(lit, 1.0);
+      }
+    `;
+
+    function compileShader(src, type) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    }
+
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compileShader(vsSource, gl.VERTEX_SHADER));
+    gl.attachShader(prog, compileShader(fsSource, gl.FRAGMENT_SHADER));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const loc = {
+      aPos: gl.getAttribLocation(prog, 'aPosition'),
+      aNorm: gl.getAttribLocation(prog, 'aNormal'),
+      uModel: gl.getUniformLocation(prog, 'uModel'),
+      uView: gl.getUniformLocation(prog, 'uView'),
+      uProj: gl.getUniformLocation(prog, 'uProj'),
+      uColor: gl.getUniformLocation(prog, 'uColor'),
+      uClipZ: gl.getUniformLocation(prog, 'uClipZ'),
+      uUseClip: gl.getUniformLocation(prog, 'uUseClip'),
+      uIsFlat: gl.getUniformLocation(prog, 'uIsFlat')
+    };
+
+    const ui = {
+      j1: document.getElementById('slider-j1'),
+      j2: document.getElementById('slider-j2'),
+      z: document.getElementById('slider-z'),
+      r: document.getElementById('slider-r'),
+      vJ1: document.getElementById('val-j1'),
+      vJ2: document.getElementById('val-j2'),
+      vZ: document.getElementById('val-z'),
+      vR: document.getElementById('val-r'),
+      edges: document.getElementById('chk-edges'),
+      wire: document.getElementById('chk-wire'),
+      lod1: document.getElementById('chk-lod1'),
+      datum: document.getElementById('chk-datum'),
+      section: document.getElementById('chk-section'),
+      secSlider: document.getElementById('slider-sec'),
+      valSec: document.getElementById('val-sec'),
+      fkX: document.getElementById('fk-x'),
+      fkY: document.getElementById('fk-y'),
+      fkZ: document.getElementById('fk-z'),
+      hudTris: document.getElementById('hud-tris')
+    };
+
+    const kernel = {
+      Mat4,
+      uploadMesh(geom) {
+        const pBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, geom.pos, gl.STATIC_DRAW);
+
+        const nBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, nBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, geom.norm, gl.STATIC_DRAW);
+
+        let lBuf = null;
+        if (geom.linePos && geom.linePos.length > 0) {
+          lBuf = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, geom.linePos, gl.STATIC_DRAW);
+        }
+        return { pBuf, nBuf, lBuf, count: geom.count, lineCount: geom.lineCount || 0 };
+      },
+
+      drawPart(buf, modelMat, rgb) {
+        gl.uniformMatrix4fv(loc.uModel, false, modelMat);
+        const wireOnly = ui.wire.checked;
+
+        if (!wireOnly) {
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.15, 1.15);
+          gl.uniform1i(loc.uIsFlat, 0);
+          gl.uniform3fv(loc.uColor, rgb);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf.pBuf);
+          gl.vertexAttribPointer(loc.aPos, 3, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(loc.aPos);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf.nBuf);
+          gl.vertexAttribPointer(loc.aNorm, 3, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(loc.aNorm);
+
+          gl.drawArrays(gl.TRIANGLES, 0, buf.count);
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+        }
+
+        if ((ui.edges.checked || wireOnly) && buf.lBuf && buf.lineCount > 0) {
+          gl.disableVertexAttribArray(loc.aNorm);
+          gl.vertexAttrib3f(loc.aNorm, 0, 0, 1);
+          gl.uniform1i(loc.uIsFlat, 1);
+          gl.uniform3fv(loc.uColor, wireOnly ? [0.22, 0.74, 0.97] : [0.10, 0.16, 0.24]);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf.lBuf);
+          gl.vertexAttribPointer(loc.aPos, 3, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(loc.aPos);
+
+          gl.drawArrays(gl.LINES, 0, buf.lineCount);
+        }
+      },
+
+      drawLinesOnly(lBuf, lineCount, modelMat, rgb) {
+        gl.uniformMatrix4fv(loc.uModel, false, modelMat);
+        gl.disableVertexAttribArray(loc.aNorm);
+        gl.vertexAttrib3f(loc.aNorm, 0, 0, 1);
+        gl.uniform1i(loc.uIsFlat, 1);
+        gl.uniform3fv(loc.uColor, rgb);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);
+        gl.vertexAttribPointer(loc.aPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(loc.aPos);
+        gl.drawArrays(gl.LINES, 0, lineCount);
+      }
+    };
+
+    function buildSceneHelpers() {
+      const gPos = [];
+      const half = 600, step = 50;
+      for (let i = -half; i <= half; i += step) {
+        if (i === 0) continue;
+        gPos.push(-half, i, 0, half, i, 0);
+        gPos.push(i, -half, 0, i, half, 0);
+      }
+      const gridBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, gridBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gPos), gl.STATIC_DRAW);
+
+      function makeLineBuf(arr) {
+        const b = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, b);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+        return b;
+      }
+
+      return {
+        gridBuf,
+        gridCount: gPos.length / 3,
+        axisX: makeLineBuf([-600, 0, 0.2, 600, 0, 0.2]),
+        axisY: makeLineBuf([0, -600, 0.2, 0, 600, 0.2]),
+        axisZ: makeLineBuf([0, 0, 0, 0, 0, 460]),
+        cutPlaneLoop: makeLineBuf([
+          -450, -450, 0,  450, -450, 0,
+           450, -450, 0,  450,  450, 0,
+           450,  450, 0, -450,  450, 0,
+          -450,  450, 0, -450, -450, 0
+        ])
+      };
+    }
+
+    const cartridge = window.OpenVIRegistry.parts["P20_UNLOAD_SCARA_2000"];
+    const meshCache = {
+      lod0: cartridge.buildMeshes(kernel, "lod0"),
+      lod1: cartridge.buildMeshes(kernel, "lod1")
+    };
+    let activeMeshes = meshCache.lod0;
+    const helpers = buildSceneHelpers();
+
+    function rebuildActiveLod() {
+      const isLod1 = ui.lod1.checked;
+      activeMeshes = isLod1 ? meshCache.lod1 : meshCache.lod0;
+      ui.hudTris.textContent = `${isLod1 ? 'LOD-1' : 'LOD-0'} (${Math.round(activeMeshes.totalTris)} tris)`;
+    }
+    rebuildActiveLod();
+
+    // =========================================================================
+    // 4. B-Rep Solids Browser Tree Setup (All 11 Solids)
+    // =========================================================================
+    const treeSpecs = [
+      { eid: 455, label: "Base Mounting Plate (#455)", color: "#9ea8b8" },
+      { eid: 460, label: "Riser Pedestal Base (#460)", color: "#475569" },
+      { eid: 459, label: "Base Column Shoulder (#459)", color: "#cbd5e1" },
+      { eid: 458, label: "Primary Arm J1 (#458)", color: "#e2e8f0" },
+      { eid: 457, label: "Secondary Arm J2 (#457)", color: "#f1f5f9" },
+      { eid: 456, label: "Spline Quill Shaft (#456)", color: "#94a3b8" },
+      { eid: 462, label: "Quill Flange Collar (#462)", color: "#64748b" },
+      { eid: 461, label: "Tool Adaptor Plate (#461)", color: "#334155" },
+      { eid: 463, label: "M16 Vacuum Fitting (#463)", color: "#eab308" },
+      { eid: 464, label: "Spring Buffer Stem (#464)", color: "#cbd5e1" },
+      { eid: 465, label: "VSP-C20 Suction Pad (#465)", color: "#0ea5e9" }
+    ];
+
+    const partVisibility = {};
+    const treeContainer = document.getElementById('tree-container');
+    treeSpecs.forEach(item => {
+      partVisibility[item.eid] = true;
+      const row = document.createElement('div');
+      row.className = 'tree-node';
+      row.innerHTML = `
+        <span class="tree-node-name" title="${item.label}">
+          <span class="swatch" style="background:${item.color}"></span>
+          <span>${item.label}</span>
+        </span>
+        <button type="button" class="vis-btn" id="vis-${item.eid}" onclick="togglePart(${item.eid})">ON</button>
+      `;
+      treeContainer.appendChild(row);
+    });
+
+    function togglePart(eid) {
+      partVisibility[eid] = !partVisibility[eid];
+      const btn = document.getElementById(`vis-${eid}`);
+      btn.textContent = partVisibility[eid] ? 'ON' : 'OFF';
+      btn.classList.toggle('off', !partVisibility[eid]);
+    }
+
+    function showAllParts() {
+      treeSpecs.forEach(item => {
+        partVisibility[item.eid] = true;
+        const btn = document.getElementById(`vis-${item.eid}`);
+        btn.textContent = 'ON';
+        btn.classList.remove('off');
+      });
+    }
+
+    // =========================================================================
+    // 5. Kinematics, Datum Modal & Viewport Orbit/Pan/Zoom Controls
+    // =========================================================================
+    function getKinematicState() {
+      return {
+        j1Deg: parseFloat(ui.j1.value),
+        j2Deg: parseFloat(ui.j2.value),
+        zStrokeMm: parseFloat(ui.z.value),
+        rDeg: parseFloat(ui.r.value),
+        visibility: partVisibility
+      };
+    }
+
+    function updateKinematicUI() {
+      const st = getKinematicState();
+      ui.vJ1.textContent = st.j1Deg.toFixed(1) + '°';
+      ui.vJ2.textContent = st.j2Deg.toFixed(1) + '°';
+      ui.vZ.textContent = st.zStrokeMm.toFixed(1) + ' mm';
+      ui.vR.textContent = st.rDeg.toFixed(1) + '°';
+
+      const datum = cartridge.exportsDatum(st);
+      const tcp = datum.vacuumToolPort.positionMm;
+      ui.fkX.textContent = tcp[0].toFixed(2);
+      ui.fkY.textContent = tcp[1].toFixed(2);
+      ui.fkZ.textContent = tcp[2].toFixed(2);
+
+      if (document.getElementById('datum-modal').classList.contains('open')) {
+        document.getElementById('datum-json-output').textContent = JSON.stringify(datum, null, 2);
+      }
+    }
+
+    [ui.j1, ui.j2, ui.z, ui.r].forEach(el => {
+      el.addEventListener('input', () => {
+        if (isPlaying) togglePlayAnimation();
+        updateKinematicUI();
+      });
+    });
+
+    function resetKinematics() {
+      if (isPlaying) togglePlayAnimation();
+      ui.j1.value = 15;
+      ui.j2.value = 45;
+      ui.z.value = -40;
+      ui.r.value = 0;
+      updateKinematicUI();
+    }
+
+    function toggleSectionAnalysis() {
+      document.getElementById('section-slider-container').style.display = ui.section.checked ? 'block' : 'none';
+    }
+
+    ui.secSlider.addEventListener('input', () => {
+      ui.valSec.textContent = parseFloat(ui.secSlider.value).toFixed(1) + ' mm';
+    });
+
+    function openDatumModal() {
+      const datum = cartridge.exportsDatum(getKinematicState());
+      document.getElementById('datum-json-output').textContent = JSON.stringify(datum, null, 2);
+      document.getElementById('datum-modal').classList.add('open');
+    }
+
+    function closeDatumModal() {
+      document.getElementById('datum-modal').classList.remove('open');
+    }
+
+    function copyDatumJson() {
+      const txt = document.getElementById('datum-json-output').textContent;
+      const btn = document.getElementById('copy-datum-btn');
+      const done = () => {
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = 'Copy JSON'; }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
+      } else {
+        fallbackCopy(txt, done);
+      }
+    }
+
+    function fallbackCopy(txt, cb) {
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      cb();
+    }
+
+    // Camera Orbit / Pan / Zoom via Pointer Events
+    let camYaw = -0.72;
+    let camPitch = 0.46;
+    let camDist = 1180;
+    let camTarget = [160, 90, 210];
+
+    function setCameraView(mode) {
+      if (mode === 'iso') {
+        camYaw = -0.72; camPitch = 0.46; camDist = 1180; camTarget = [160, 90, 210];
+      } else if (mode === 'top') {
+        camYaw = 0; camPitch = Math.PI / 2 - 0.01; camDist = 1250; camTarget = [160, 90, 150];
+      } else if (mode === 'front') {
+        camYaw = 0; camPitch = 0.03; camDist = 1150; camTarget = [160, 0, 220];
+      } else if (mode === 'right') {
+        camYaw = Math.PI / 2; camPitch = 0.03; camDist = 1150; camTarget = [0, 120, 220];
+      }
+    }
+
+    let dragging = false;
+    let panning = false;
+    let lastX = 0, lastY = 0;
+
+    canvas.addEventListener('pointerdown', e => {
+      dragging = true;
+      panning = (e.button === 1 || e.button === 2 || e.shiftKey);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    canvas.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      if (panning) {
+        const panScale = camDist * 0.0011;
+        const rightX = Math.cos(camYaw), rightY = Math.sin(camYaw);
+        const fwdX = -Math.sin(camYaw) * Math.sin(camPitch);
+        const fwdY = Math.cos(camYaw) * Math.sin(camPitch);
+        const upZ = Math.cos(camPitch);
+
+        camTarget[0] -= (dx * rightX - dy * fwdX) * panScale;
+        camTarget[1] -= (dx * rightY - dy * fwdY) * panScale;
+        camTarget[2] += dy * upZ * panScale;
+      } else {
+        camYaw -= dx * 0.0065;
+        camPitch = Math.max(-0.25, Math.min(Math.PI / 2 - 0.02, camPitch + dy * 0.0065));
+      }
+    });
+
+    const stopDrag = e => {
+      dragging = false;
+      panning = false;
+      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+    canvas.addEventListener('pointerup', stopDrag);
+    canvas.addEventListener('pointercancel', stopDrag);
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const factor = Math.exp(e.deltaY * 0.001);
+      camDist = Math.max(260, Math.min(2800, camDist * factor));
+    }, { passive: false });
+
+    canvas.addEventListener('dblclick', () => setCameraView('iso'));
+
+    // Pick-and-Place Demo Animation
+    let isPlaying = false;
+    let animPhase = 0;
+    function togglePlayAnimation() {
+      isPlaying = !isPlaying;
+      const btn = document.getElementById('play-btn');
+      btn.textContent = isPlaying ? '■ Stop Demo' : '► Play Pick-Place';
+      btn.classList.toggle('playing', isPlaying);
+    }
+
+    // =========================================================================
+    // 6. Main Render Loop
+    // =========================================================================
+    const mIdentity = Mat4.create();
+    const mProj = Mat4.create();
+    const mView = Mat4.create();
+    const mTemp = Mat4.create();
+
+    function render() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const targetW = Math.max(1, Math.floor(rect.width * dpr));
+      const targetH = Math.max(1, Math.floor(rect.height * dpr));
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+        gl.viewport(0, 0, targetW, targetH);
+      }
+
+      if (isPlaying) {
+        animPhase += 0.022;
+        ui.j1.value = (15 + Math.sin(animPhase) * 55).toFixed(1);
+        ui.j2.value = (35 + Math.cos(animPhase * 1.0) * 50).toFixed(1);
+        ui.z.value = (-100 + Math.sin(animPhase * 2.0) * 98).toFixed(0);
+        ui.r.value = (Math.sin(animPhase * 1.5) * 120).toFixed(0);
+        updateKinematicUI();
+      }
+
+      gl.clearColor(0.055, 0.082, 0.145, 1.0);
+      gl.enable(gl.DEPTH_TEST);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      Mat4.perspective(mProj, 38 * Math.PI / 180, targetW / targetH, 8, 6000);
+      gl.uniformMatrix4fv(loc.uProj, false, mProj);
+
+      const eye = [
+        camTarget[0] + camDist * Math.cos(camPitch) * Math.sin(camYaw),
+        camTarget[1] - camDist * Math.cos(camPitch) * Math.cos(camYaw),
+        camTarget[2] + camDist * Math.sin(camPitch)
+      ];
+      Mat4.lookAt(mView, eye, camTarget, [0, 0, 1]);
+      gl.uniformMatrix4fv(loc.uView, false, mView);
+
+      // 1. Floor Grid & Right-Handed Z-Up Origin Axes (unclipped)
+      gl.uniform1i(loc.uUseClip, 0);
+      kernel.drawLinesOnly(helpers.gridBuf, helpers.gridCount, mIdentity, [0.15, 0.22, 0.33]);
+      kernel.drawLinesOnly(helpers.axisX, 2, mIdentity, [0.85, 0.25, 0.25]); // X Axis (Red)
+      kernel.drawLinesOnly(helpers.axisY, 2, mIdentity, [0.15, 0.72, 0.38]); // Y Axis (Green)
+      kernel.drawLinesOnly(helpers.axisZ, 2, mIdentity, [0.24, 0.54, 0.96]); // Z Axis (Blue)
+
+      // Prohibited inner workspace warning ring (R = 296.717 mm)
+      if (document.getElementById('chk-prohibit').checked) {
+        kernel.drawPart(activeMeshes.prohibitRing, mIdentity, [0.95, 0.15, 0.15]);
+      }
+
+      // 2. Robot Cartridge Instance (with optional Z-Section Clip)
+      const useSection = ui.section.checked;
+      const clipZ = parseFloat(ui.secSlider.value);
+      gl.uniform1i(loc.uUseClip, useSection ? 1 : 0);
+      gl.uniform1f(loc.uClipZ, clipZ);
+
+      const state = getKinematicState();
+      cartridge.drawInstance(kernel, activeMeshes, mIdentity, state);
+
+      if (useSection) {
+        gl.uniform1i(loc.uUseClip, 0);
+        Mat4.translate(mTemp, mIdentity, [100, 80, clipZ]);
+        kernel.drawLinesOnly(helpers.cutPlaneLoop, 8, mTemp, [0.98, 0.65, 0.08]);
+      }
+
+      // 3. Mating Datum Ports (Base PCD 165 Ring + Live TCP Vacuum Port Ring)
+      if (ui.datum.checked) {
+        gl.uniform1i(loc.uUseClip, 0);
+        
+        // Base plate port at Z=0.0 relative to base riser pedestal
+        kernel.drawPart(activeMeshes.baseDatumRing, mIdentity, [0.95, 0.24, 0.24]);
+
+        const datum = cartridge.exportsDatum(state);
+        const tcp = datum.vacuumToolPort.positionMm;
+        Mat4.translate(mTemp, mIdentity, tcp);
+        kernel.drawPart(activeMeshes.tcpDatumRing, mTemp, [0.06, 0.88, 0.45]);
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    resetKinematics();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>

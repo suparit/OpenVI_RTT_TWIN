@@ -1,0 +1,1422 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Layer 01 Sub-Assembly Workbench — Plate + CJHB75 Caster + C-AJPJ16-148 Foot</title>
+  <style>
+    :root {
+      --bg: #0c1017;
+      --surface: #151b24;
+      --surface-2: #1c2430;
+      --surface-3: #252f3f;
+      --border: #2d384a;
+      --border-hi: #43536d;
+      --ink: #e8edf5;
+      --muted: #93a2b8;
+      --brand: #38bdf8;
+      --brand-ink: #06131f;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --radius: 10px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 13.5px;
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: 12px 20px;
+      background: linear-gradient(180deg, #19202b 0%, #11161f 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .tag-chip {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 5px;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #7dd3fc;
+    }
+    .page-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .page-sub {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .mode-pill {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.55);
+      background: rgba(16, 185, 129, 0.14);
+      color: #6ee7b7;
+    }
+    .mode-pill.rolling {
+      border-color: rgba(56, 189, 248, 0.55);
+      background: rgba(56, 189, 248, 0.14);
+      color: #7dd3fc;
+    }
+
+    .layout {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: var(--space-4);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+    @media (min-width: 1024px) {
+      .layout {
+        grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.95fr);
+        align-items: start;
+      }
+    }
+
+    /* 3D Viewport Card */
+    .stage-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .btn {
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border-hi);
+      background: var(--surface-3);
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, transform 0.06s;
+    }
+    .btn:hover { background: #313e52; border-color: #5c7191; }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .btn.active {
+      background: rgba(56, 189, 248, 0.22);
+      border-color: var(--brand);
+      color: #bae6fd;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 560px;
+      background: radial-gradient(circle at 50% 42%, #1d2636 0%, #0a0e14 100%);
+      user-select: none;
+    }
+    @media (max-width: 640px) {
+      .canvas-wrap { height: 420px; }
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    .hud-overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(11, 15, 22, 0.86);
+      border: 1px solid rgba(67, 83, 109, 0.72);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .hud-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .hud-line .k { color: var(--muted); }
+    .hud-line .v { color: #38f29c; font-weight: 700; }
+
+    .canvas-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      background: rgba(11, 15, 22, 0.78);
+      border: 1px solid rgba(67, 83, 109, 0.5);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* Step Sequencer Footer */
+    .step-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 10px 14px;
+      background: #11161f;
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 640px) {
+      .step-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+    .step-btn {
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--ink);
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .step-btn:hover { border-color: var(--border-hi); }
+    .step-btn.active {
+      border-color: var(--brand);
+      background: rgba(56, 189, 248, 0.14);
+    }
+    .step-num {
+      display: block;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--brand);
+      font-weight: 700;
+    }
+    .step-name {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Right Control & Spec Column */
+    .side-col {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #f1f5f9;
+    }
+
+    .control-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ctrl-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ctrl-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12.5px;
+    }
+    .ctrl-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #7dd3fc;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--brand);
+      cursor: pointer;
+    }
+    .preset-links {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+    .mini-btn {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--surface-2);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--ink); border-color: var(--brand); }
+
+    /* Live Datum & Clearance Telemetry Grid */
+    .datum-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .datum-box {
+      background: #0f141c;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+    .datum-box .dk {
+      display: block;
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+    .datum-box .dv {
+      font-family: var(--mono);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* 3-Part BOM & STEP Feature Selector */
+    .part-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .part-item {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: #10151e;
+      padding: 9px 11px;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .part-item:hover { border-color: var(--border-hi); }
+    .part-item.selected {
+      border-color: var(--brand);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .part-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .part-code {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .vis-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--surface-3);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vis-btn.off {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+    .part-meta {
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .spec-detail {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title-wrap">
+      <span class="tag-chip">LAYER 01 · 3-PART SUB-ASSEMBLY</span>
+      <div>
+        <h1 class="page-title">ประกอบชุดมุมฐานเครื่อง 3 ชิ้น — เพลท Solid1 (64) + ล้อ CJHB75 + ขาหยั่ง C-AJPJ16-148</h1>
+        <div class="page-sub">สัดส่วนจริง 1:1 จากไฟล์ ISO-10303-21 STEP (160×160×15 mm, 12 รูเจาะจริง) และแคตตาล็อกมาตรฐาน MISUMI</div>
+      </div>
+    </div>
+    <div class="mode-pill" id="modeBadge">STATIONARY MODE · ล้อลอย +9.0 mm</div>
+  </header>
+
+  <main class="layout">
+    <!-- LEFT: 3D INTERACTIVE ASSEMBLY VIEWPORT -->
+    <section class="stage-card" aria-label="3D 3-Part Assembly Viewport">
+      <div class="toolbar">
+        <div class="btn-group">
+          <button type="button" class="btn active" data-cam="iso">ISO มุมประกอบ</button>
+          <button type="button" class="btn" data-cam="under">หงายท้องเทียบ CAD</button>
+          <button type="button" class="btn" data-cam="side">มองข้างเช็กล้อลอย Z=0</button>
+          <button type="button" class="btn" data-cam="top">มองบนส่อง 12 รูเจาะ</button>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn active" id="btnFloorToggle">FLOOR Z=0: ON</button>
+          <button type="button" class="btn" id="btnGhostFrame" title="แสดงกรอบอ้างอิงเสาโปรไฟล์ 80×80 mm แบบโปร่งแสงเพื่อดูว่าตรงร่อง T-Slot อย่างไร">80×80 REF: OFF</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="glCanvas"></canvas>
+
+        <div class="hud-overlay">
+          <div class="hud-line"><span class="k">FLOOR DATUM:</span><span class="v">Z = 0.0 mm</span></div>
+          <div class="hud-line"><span class="k">PLATE BOTTOM / TOP:</span><span class="v" id="hudPlateZ">115.0 / 130.0 mm</span></div>
+          <div class="hud-line"><span class="k">CJHB75 WHEEL CLEARANCE:</span><span class="v" id="hudWheelClr">+9.0 mm (FLOATING)</span></div>
+          <div class="hud-line"><span class="k">C-AJPJ16 PAD CLEARANCE:</span><span class="v" id="hudFootClr">0.0 mm (ON FLOOR)</span></div>
+          <div class="hud-line"><span class="k">SWIVEL-TO-STUD GAP:</span><span class="v" id="hudSwingGap">21.3 mm (SAFE)</span></div>
+        </div>
+
+        <div class="canvas-hint">
+          ลากเมาส์ซ้าย: หมุนดูรอบทิศ 360° (มุดส่องใต้ท้องเพลทได้) · ล้อเมาส์: ซูมเข้าดูบ่าคว้าน Counterbore และเกลียว M16
+        </div>
+      </div>
+
+      <!-- Human Step-by-Step Build Sequence -->
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-step="1">
+          <span class="step-num">STEP 01</span>
+          <span class="step-name">1. วางพื้น + เพลท 15mm</span>
+        </button>
+        <button type="button" class="step-btn" data-step="2">
+          <span class="step-num">STEP 02</span>
+          <span class="step-name">2. ยึดล้อ CJHB75 (4×M10)</span>
+        </button>
+        <button type="button" class="step-btn active" data-step="3">
+          <span class="step-num">STEP 03</span>
+          <span class="step-name">3. ขันขาหยั่ง C-AJPJ16-148</span>
+        </button>
+        <button type="button" class="step-btn" data-step="4">
+          <span class="step-num">EXPLODE</span>
+          <span class="step-name">คลี่แยกชิ้นส่วนดูแนวสกรู</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- RIGHT: ASSEMBLY CONTROLS & REVERSE-ENGINEERED SPECS -->
+    <aside class="side-col">
+      <!-- Interactive Kinematics Panel -->
+      <div class="panel">
+        <div class="panel-head">
+          <span>ทดลองขันขาหยั่ง หมุนล้อ และแยกชิ้นประกอบ</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">LIVE KINEMATICS</span>
+        </div>
+
+        <div class="control-stack">
+          <div class="ctrl-row">
+            <div class="ctrl-label">
+              <label for="rngJack">ขันสตัดขาหยั่ง M16×2.0 ยืดลงใต้เพลท</label>
+              <span class="ctrl-val" id="lblJack">115.0 mm (+4.5 รอบ)</span>
+            </div>
+            <input type="range" id="rngJack" min="96" max="126" step="0.5" value="115">
+            <div class="preset-links">
+              <button type="button" class="mini-btn" id="btnModeRoll">โหมดเข็นย้าย (98 mm · ล้อแตะพื้น)</button>
+              <button type="button" class="mini-btn" id="btnModeTouch">แตะพื้นคู่ (106 mm)</button>
+              <button type="button" class="mini-btn" id="btnModeLock">โหมดตั้งเครื่อง (115 mm · ล้อลอย +9)</button>
+            </div>
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label">
+              <label for="rngSwivel">หมุนคอแบริ่งลูกล้อ CJHB75 เช็กการชนขาหยั่ง</label>
+              <span class="ctrl-val" id="lblSwivel">45°</span>
+            </div>
+            <input type="range" id="rngSwivel" min="0" max="360" step="1" value="45">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label">
+              <label for="rngExplode">ระยะคลี่แยกชิ้นประกอบ (Exploded View)</label>
+              <span class="ctrl-val" id="lblExplode">0% (ประกอบสนิท)</span>
+            </div>
+            <input type="range" id="rngExplode" min="0" max="100" step="1" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Stack-Up Readouts -->
+      <div class="panel">
+        <div class="panel-head">
+          <span>ตัวเลขระดับความสูงและเกลียวคงเหลือ (Datum Check)</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--ok);">STEP VERIFIED</span>
+        </div>
+        <div class="datum-grid">
+          <div class="datum-box">
+            <span class="dk">ความสูงบนหลังเพลท (Z_top)</span>
+            <span class="dv" id="valZTop">130.0 mm</span>
+          </div>
+          <div class="datum-box">
+            <span class="dk">ระยะล้อลอยพ้นพื้นโรงงาน</span>
+            <span class="dv" id="valWheelLift" style="color:var(--ok);">+9.0 mm</span>
+          </div>
+          <div class="datum-box">
+            <span class="dk">ปลายสตัด M16 โผล่พ้นบนเพลท</span>
+            <span class="dv" id="valStudTop">+38.0 mm</span>
+          </div>
+          <div class="datum-box">
+            <span class="dk">น้ำหนักรวม 1 ชุดมุม (3 ชิ้น)</span>
+            <span class="dv">~4.65 kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Part Inspector -->
+      <div class="panel">
+        <div class="panel-head">
+          <span>ข้อมูลจำเพาะทั้ง 3 ชิ้น (คลิกเพื่อไฮไลต์ดูใน 3D)</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">3 ITEMS</span>
+        </div>
+
+        <div class="part-cards" id="partCards">
+          <div class="part-item selected" data-part="plate">
+            <div class="part-top">
+              <span class="part-code">1. Solid1 (64) — Steel Corner Plate</span>
+              <button type="button" class="vis-btn" data-vis="plate">SHOW</button>
+            </div>
+            <div class="part-meta">เหล็กกล้า 160×160×15 mm (R5) · 2.86 kg · เจาะ/ต๊าป 12 รู</div>
+          </div>
+
+          <div class="part-item" data-part="caster">
+            <div class="part-top">
+              <span class="part-code">2. MISUMI CJHB75 — Swivel Caster</span>
+              <button type="button" class="vis-btn" data-vis="caster">SHOW</button>
+            </div>
+            <div class="part-meta">ล้อ MC ไนล่อนฟ้า Ø75 mm · สูง H=106 mm · แป้น 90×90 (Pitch 71×71) · 2,083.90 ฿</div>
+          </div>
+
+          <div class="part-item" data-part="foot">
+            <div class="part-top">
+              <span class="part-code">3. MISUMI C-AJPJ16-148 — Leveling Foot</span>
+              <button type="button" class="vis-btn" data-vis="foot">SHOW</button>
+            </div>
+            <div class="part-meta">สตัด S45C M16×2.0 ยาว 148 mm + แป้นฐานสูง 20 mm + น็อตล็อก M16 · รับโหลด 306 kgf</div>
+          </div>
+        </div>
+
+        <div class="spec-detail" id="specDetailBox"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      // =========================================================================
+      // 1. EXACT GEOMETRIC DATA EXTRACTED FROM Solid1 (64).step & MISUMI CATALOG
+      // =========================================================================
+      const PLATE_HOLES = [
+        // 3x Counterbored M8 SHCS for 80x80 Corner Column: Ø9 thru, Ø15 counterbore x 10.0 mm deep from z=0
+        { x: -60.0, y:  60.0, rTop: 4.5, rBot: 7.5, cbDepth: 10.0, group: "CB10_COL" },
+        { x: -20.0, y:  60.0, rTop: 4.5, rBot: 7.5, cbDepth: 10.0, group: "CB10_COL" },
+        { x: -60.0, y:  20.0, rTop: 4.5, rBot: 7.5, cbDepth: 10.0, group: "CB10_COL" },
+        // 4x Counterbored M8 SHCS for Side Extrusion Rails: Ø9 thru, Ø15 counterbore x 8.5 mm deep from z=0
+        { x:  20.0, y:  60.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x:  60.0, y:  20.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x: -60.0, y: -20.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x: -20.0, y: -60.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        // 1x M16x2.0 Tapped Hole (minor dia Ø13.835 mm) for MISUMI C-AJPJ16-148 Leveling Foot
+        { x: -20.0, y:  20.0, rTop: 6.9175, rBot: 6.9175, cbDepth: 0.0, threaded: true, group: "M16_FOOT" },
+        // 4x M10x1.5 Tapped Holes (minor dia Ø8.376 mm, 71.0x71.0 pitch centered at +35.0, -35.0) for MISUMI CJHB75
+        { x:  -0.5, y:   0.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" },
+        { x:  70.5, y:   0.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" },
+        { x:  -0.5, y: -70.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" },
+        { x:  70.5, y: -70.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" }
+      ];
+
+      const CASTER_CENTER = [35.0, -35.0];
+      const FOOT_CENTER   = [-20.0, 20.0];
+
+      const PART_SPECS = {
+        plate:
+          "• ไฟล์ต้นฉบับ: Solid1 (64).step (1,125 ISO-10303-21 entities)\n" +
+          "• ขนาดจริง: 160.0 × 160.0 × 15.0 mm, ลบมุมโค้ง R5.0 mm ทั้ง 4 มุม\n" +
+          "• รูยึดเสามุม 80×80 (3 รู): Ø9 ทะลุ / คว้านหัวจม Ø15 ลึก 10.0 mm ที่ (-60,60), (-20,60), (-60,20)\n" +
+          "• รูยึดคานข้าง (4 รู): Ø9 ทะลุ / คว้านหัวจม Ø15 ลึก 8.5 mm ที่ (20,60), (60,20), (-60,-20), (-20,-60)\n" +
+          "• รูต๊าปยึดล้อ (4 รู): M10×1.5 (Ø8.376) ระยะพิตช์ 71×71 mm ศูนย์กลางที่ (+35.0, -35.0)\n" +
+          "• รูต๊าปขาหยั่ง (1 รู): M16×2.0 (Ø13.835) ที่ (-20.0, +20.0)",
+        caster:
+          "• รหัสสั่งซื้อ: MISUMI CJHB75 (Heavy-Duty Swivel Type Caster)\n" +
+          "• ลูกล้อ: MC Nylon สีน้ำเงิน Ø75.0 mm × กว้าง 32 mm (เข็นลื่น ไม่ยุบตัวเมื่อจอดนาน)\n" +
+          "• ความสูงติดตั้งรวม (H): 106.0 mm จากใต้ท้องเพลทถึงขอบยางล้อล่างสุด\n" +
+          "• แป้นยึด: 90.0 × 90.0 mm, ระยะรูยึด 71.0 × 71.0 mm (ยึดด้วยสกรู M10×20 จำนวน 4 ตัว)\n" +
+          "• พิกัดรับโหลด: 392.3 daN (~400 kgf / ลูก) · ราคาอ้างอิง 2,083.90 บาท (ส่งใน 1 วัน)",
+        foot:
+          "• รหัสสั่งซื้อ: MISUMI C-AJPJ16-148 (Swivel Leveling Mount)\n" +
+          "• สตัดเกลียว: เหล็กกล้า S45C ขนาด M16×2.0 ความยาวเกลียว L = 148.0 mm\n" +
+          "• แป้นฐานรับน้ำหนัก: Ø60 mm ความสูงชุดฐาน H_pad = 20.0 mm พร้อมข้อต่อเอียงรับพื้นได้\n" +
+          "• น็อตล็อกกันคลาย: หัวน็อตหกเหลี่ยม M16 (กว้าง 24 mm หนา 13 mm) ขันอัดล็อกกับเพลท\n" +
+          "• เหตุผลที่ต้องใช้รุ่น -148: เมื่อยกล้อลอย +9 mm (ใต้เพลทสูง 115 mm) สตัดยังโผล่พ้นบนเพลท +38 mm มั่นคงเต็มเกลียว"
+      };
+
+      // =========================================================================
+      // 2. MATRIX MATH & BOWYER-WATSON 2D DELAUNAY PERFORATED-PLATE BUILDER
+      // =========================================================================
+      const Mat4 = {
+        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
+        identity(out) { out.fill(0); out[0]=out[5]=out[10]=out[15]=1; return out; },
+        multiply(out, a, b) {
+          const a00=a[0],a01=a[1],a02=a[2],a03=a[3], a10=a[4],a11=a[5],a12=a[6],a13=a[7];
+          const a20=a[8],a21=a[9],a22=a[10],a23=a[11], a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+          for (let i = 0; i < 4; i++) {
+            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];
+            out[i*4]   = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+            out[i*4+1] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+            out[i*4+2] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+            out[i*4+3] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+          }
+          return out;
+        },
+        perspective(out, fovy, aspect, near, far) {
+          const f = 1.0 / Math.tan(fovy / 2);
+          out.fill(0);
+          out[0] = f / aspect; out[5] = f;
+          out[10] = (far + near) / (near - far); out[11] = -1;
+          out[14] = (2 * far * near) / (near - far);
+          return out;
+        },
+        lookAt(out, eye, center, up) {
+          let zx = eye[0]-center[0], zy = eye[1]-center[1], zz = eye[2]-center[2];
+          let len = Math.hypot(zx,zy,zz) || 1; zx/=len; zy/=len; zz/=len;
+          let xx = up[1]*zz - up[2]*zy, xy = up[2]*zx - up[0]*zz, xz = up[0]*zy - up[1]*zx;
+          len = Math.hypot(xx,xy,xz) || 1; xx/=len; xy/=len; xz/=len;
+          const yx = zy*xz - zz*xy, yy = zz*xx - zx*xz, yz = zx*xy - zy*xx;
+          out[0]=xx; out[1]=yx; out[2]=zx; out[3]=0;
+          out[4]=xy; out[5]=yy; out[6]=zy; out[7]=0;
+          out[8]=xz; out[9]=yz; out[10]=zz; out[11]=0;
+          out[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+          out[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+          out[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+          out[15]=1;
+          return out;
+        },
+        translate(out, a, x, y, z) {
+          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;
+          return Mat4.multiply(out, a, t);
+        },
+        rotateZ(out, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;
+          return Mat4.multiply(out, a, r);
+        }
+      };
+
+      function buildRoundedRectLoop(halfW, rCorner, cornerSegs, edgeSubdiv) {
+        const pts = [];
+        const inner = halfW - rCorner;
+        const corners = [
+          { cx:  inner, cy:  inner, a0: 0,               a1: Math.PI * 0.5 },
+          { cx: -inner, cy:  inner, a0: Math.PI * 0.5,   a1: Math.PI },
+          { cx: -inner, cy: -inner, a0: Math.PI,         a1: Math.PI * 1.5 },
+          { cx:  inner, cy: -inner, a0: Math.PI * 1.5,   a1: Math.PI * 2.0 }
+        ];
+        for (let c = 0; c < 4; c++) {
+          const cur = corners[c];
+          for (let k = 0; k <= cornerSegs; k++) {
+            const a = cur.a0 + (k / cornerSegs) * (cur.a1 - cur.a0);
+            pts.push([cur.cx + Math.cos(a) * rCorner, cur.cy + Math.sin(a) * rCorner]);
+          }
+          const nxt = corners[(c + 1) % 4];
+          const pEnd = [cur.cx + Math.cos(cur.a1) * rCorner, cur.cy + Math.sin(cur.a1) * rCorner];
+          const pNextStart = [nxt.cx + Math.cos(nxt.a0) * rCorner, nxt.cy + Math.sin(nxt.a0) * rCorner];
+          for (let s = 1; s < edgeSubdiv; s++) {
+            const u = s / edgeSubdiv;
+            pts.push([pEnd[0] + (pNextStart[0] - pEnd[0]) * u, pEnd[1] + (pNextStart[1] - pEnd[1]) * u]);
+          }
+        }
+        return pts;
+      }
+
+      function insideRoundedSquare(x, y, halfW, r) {
+        const ax = Math.abs(x), ay = Math.abs(y);
+        if (ax > halfW - 0.02 || ay > halfW - 0.02) return false;
+        const inner = halfW - r;
+        if (ax > inner && ay > inner) {
+          return Math.hypot(ax - inner, ay - inner) <= r - 0.02;
+        }
+        return true;
+      }
+
+      function triangulatePerforatedFace(outerPts, holesList) {
+        const verts = [];
+        outerPts.forEach(p => verts.push([p[0], p[1]]));
+        const holeSegs = 24;
+        for (const h of holesList) {
+          for (let i = 0; i < holeSegs; i++) {
+            const a = (i / holeSegs) * Math.PI * 2;
+            verts.push([h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r]);
+          }
+        }
+        for (let gx = -68; gx <= 68; gx += 17) {
+          for (let gy = -68; gy <= 68; gy += 17) {
+            if (!insideRoundedSquare(gx, gy, 76, 5)) continue;
+            let clear = true;
+            for (const h of holesList) {
+              if (Math.hypot(gx - h.x, gy - h.y) < h.r + 3.5) { clear = false; break; }
+            }
+            if (clear) verts.push([gx, gy]);
+          }
+        }
+
+        const n0 = verts.length;
+        verts.push([-500, -500], [500, -500], [0, 600]);
+
+        function makeTri(i, j, k) {
+          const ax = verts[i][0], ay = verts[i][1];
+          const bx = verts[j][0], by = verts[j][1];
+          const cx = verts[k][0], cy = verts[k][1];
+          const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+          if (Math.abs(d) < 1e-8) return null;
+          const a2 = ax * ax + ay * ay, b2 = bx * bx + by * by, c2 = cx * cx + cy * cy;
+          const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d;
+          const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+          const r2 = (ax - ux) * (ax - ux) + (ay - uy) * (ay - uy);
+          return { i, j, k, ux, uy, r2 };
+        }
+
+        let tris = [makeTri(n0, n0 + 1, n0 + 2)];
+        for (let pIdx = 0; pIdx < n0; pIdx++) {
+          const px = verts[pIdx][0], py = verts[pIdx][1];
+          const bad = [];
+          const good = [];
+          for (const t of tris) {
+            const dx = px - t.ux, dy = py - t.uy;
+            if (dx * dx + dy * dy <= t.r2 * (1 + 1e-7)) bad.push(t);
+            else good.push(t);
+          }
+          const edgeMap = new Map();
+          const addEdge = (u, v) => {
+            const key = u < v ? `${u}_${v}` : `${v}_${u}`;
+            if (edgeMap.has(key)) edgeMap.delete(key);
+            else edgeMap.set(key, [u, v]);
+          };
+          for (const t of bad) {
+            addEdge(t.i, t.j);
+            addEdge(t.j, t.k);
+            addEdge(t.k, t.i);
+          }
+          tris = good;
+          for (const [u, v] of edgeMap.values()) {
+            const nt = makeTri(u, v, pIdx);
+            if (nt) tris.push(nt);
+          }
+        }
+
+        const validTris = [];
+        for (const t of tris) {
+          if (t.i >= n0 || t.j >= n0 || t.k >= n0) continue;
+          const pA = verts[t.i], pB = verts[t.j], pC = verts[t.k];
+          const mx = (pA[0] + pB[0] + pC[0]) / 3;
+          const my = (pA[1] + pB[1] + pC[1]) / 3;
+          if (!insideRoundedSquare(mx, my, 80, 5)) continue;
+          let inHole = false;
+          for (const h of holesList) {
+            if (Math.hypot(mx - h.x, my - h.y) < h.r - 0.04) { inHole = true; break; }
+          }
+          if (inHole) continue;
+          const cross = (pB[0] - pA[0]) * (pC[1] - pA[1]) - (pB[1] - pA[1]) * (pC[0] - pA[0]);
+          if (cross > 0) validTris.push([pA, pB, pC]);
+          else validTris.push([pA, pC, pB]);
+        }
+        return validTris;
+      }
+
+      class MeshBuilder {
+        constructor() { this.verts = []; }
+        pushTri(p1, p2, p3, n, col) {
+          this.verts.push(
+            p1[0], p1[1], p1[2], n[0], n[1], n[2], col[0], col[1], col[2],
+            p2[0], p2[1], p2[2], n[0], n[1], n[2], col[0], col[1], col[2],
+            p3[0], p3[1], p3[2], n[0], n[1], n[2], col[0], col[1], col[2]
+          );
+        }
+        addBox(cx, cy, cz, sx, sy, sz, col) {
+          const hx = sx/2, hy = sy/2, hz = sz/2;
+          const x0 = cx-hx, x1 = cx+hx, y0 = cy-hy, y1 = cy+hy, z0 = cz-hz, z1 = cz+hz;
+          const faces = [
+            [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[0,0,1]],
+            [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[0,0,-1]],
+            [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1],[1,0,0]],
+            [[x0,y1,z0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[-1,0,0]],
+            [[x0,y1,z0],[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[0,1,0]],
+            [[x0,y0,z1],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[0,-1,0]]
+          ];
+          for (const [a,b,c,d,n] of faces) {
+            this.pushTri(a,b,c,n,col);
+            this.pushTri(a,c,d,n,col);
+          }
+        }
+        addCylinderZ(cx, cy, z0, z1, r, segs, col, capped = true, inward = false) {
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2;
+            const a1 = ((i + 1) / segs) * Math.PI * 2;
+            const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+            const x0 = cx + r*c0, y0 = cy + r*s0, x1 = cx + r*c1, y1 = cy + r*s1;
+            const sign = inward ? -1 : 1;
+            const nm = [sign*(c0+c1)*0.5, sign*(s0+s1)*0.5, 0];
+            if (!inward) {
+              this.pushTri([x0,y0,z0], [x1,y1,z0], [x1,y1,z1], nm, col);
+              this.pushTri([x0,y0,z0], [x1,y1,z1], [x0,y0,z1], nm, col);
+              if (capped) {
+                this.pushTri([cx,cy,z1], [x0,y0,z1], [x1,y1,z1], [0,0,1], col);
+                this.pushTri([cx,cy,z0], [x1,y1,z0], [x0,y0,z0], [0,0,-1], col);
+              }
+            } else {
+              this.pushTri([x1,y1,z0], [x0,y0,z0], [x1,y1,z1], nm, col);
+              this.pushTri([x0,y0,z0], [x0,y0,z1], [x1,y1,z1], nm, col);
+            }
+          }
+        }
+        addCylinderY(cx, y0, y1, cz, r, segs, col) {
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2;
+            const a1 = ((i + 1) / segs) * Math.PI * 2;
+            const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+            const x0 = cx + r*c0, z0 = cz + r*s0, x1 = cx + r*c1, z1 = cz + r*s1;
+            const nm = [(c0+c1)*0.5, 0, (s0+s1)*0.5];
+            this.pushTri([x0,y0,z0], [x0,y1,z0], [x1,y1,z1], nm, col);
+            this.pushTri([x0,y0,z0], [x1,y1,z1], [x1,y0,z1], nm, col);
+            this.pushTri([cx,y1,cz], [x1,y1,z1], [x0,y1,z0], [0,1,0], col);
+            this.pushTri([cx,y0,cz], [x0,y0,z0], [x1,y0,z1], [0,-1,0], col);
+          }
+        }
+        addAnnulusZ(cx, cy, z, rIn, rOut, segs, nzSign, col) {
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2;
+            const a1 = ((i + 1) / segs) * Math.PI * 2;
+            const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+            const xi0 = cx + rIn*c0, yi0 = cy + rIn*s0, xi1 = cx + rIn*c1, yi1 = cy + rIn*s1;
+            const xo0 = cx + rOut*c0, yo0 = cy + rOut*s0, xo1 = cx + rOut*c1, yo1 = cy + rOut*s1;
+            if (nzSign > 0) {
+              this.pushTri([xi0,yi0,z], [xo0,yo0,z], [xo1,yo1,z], [0,0,1], col);
+              this.pushTri([xi0,yi0,z], [xo1,yo1,z], [xi1,yi1,z], [0,0,1], col);
+            } else {
+              this.pushTri([xo0,yo0,z], [xi0,yi0,z], [xo1,yo1,z], [0,0,-1], col);
+              this.pushTri([xi0,yi0,z], [xi1,yi1,z], [xo1,yo1,z], [0,0,-1], col);
+            }
+          }
+        }
+      }
+
+      // =========================================================================
+      // 3. WEBGL SHADER SETUP (ALL COORDINATES IN MILLIMETERS FOR 1:1 PRECISION)
+      // =========================================================================
+      const canvas = document.getElementById("glCanvas");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+
+      const vsSrc = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec3 aCol;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        uniform vec3 uTint;
+        varying vec3 vNorm;
+        varying vec3 vPos;
+        varying vec3 vCol;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vPos = wp.xyz;
+          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);
+          vCol = aCol * uTint;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsSrc = `
+        precision mediump float;
+        varying vec3 vNorm;
+        varying vec3 vPos;
+        varying vec3 vCol;
+        uniform vec3 uEye;
+        uniform float uAlpha;
+        uniform float uHighlight;
+        void main() {
+          vec3 N = normalize(vNorm);
+          vec3 L1 = normalize(vec3(0.55, -0.62, 0.78));
+          vec3 L2 = normalize(vec3(-0.65, 0.50, -0.45));
+          vec3 V = normalize(uEye - vPos);
+          float d1 = max(dot(N, L1), 0.0);
+          float d2 = max(dot(N, L2), 0.0) * 0.42;
+          vec3 H = normalize(L1 + V);
+          float spec = pow(max(dot(N, H), 0.0), 32.0) * 0.30;
+          vec3 lit = vCol * (0.36 + 0.64 * d1 + d2) + vec3(spec);
+          lit = mix(lit, lit + vec3(0.10, 0.24, 0.36), uHighlight);
+          gl_FragColor = vec4(lit, uAlpha);
+        }
+      `;
+
+      function compile(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      }
+      const prog = gl.createProgram();
+      gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsSrc));
+      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsSrc));
+      gl.linkProgram(prog);
+      gl.useProgram(prog);
+
+      const loc = {
+        aPos: gl.getAttribLocation(prog, "aPos"),
+        aNorm: gl.getAttribLocation(prog, "aNorm"),
+        aCol: gl.getAttribLocation(prog, "aCol"),
+        uProj: gl.getUniformLocation(prog, "uProj"),
+        uView: gl.getUniformLocation(prog, "uView"),
+        uModel: gl.getUniformLocation(prog, "uModel"),
+        uTint: gl.getUniformLocation(prog, "uTint"),
+        uEye: gl.getUniformLocation(prog, "uEye"),
+        uAlpha: gl.getUniformLocation(prog, "uAlpha"),
+        uHighlight: gl.getUniformLocation(prog, "uHighlight")
+      };
+
+      function upload(mb, mode = gl.TRIANGLES) {
+        const buf = gl.createBuffer();
+        const arr = new Float32Array(mb.verts);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+        return { buf, count: arr.length / 9, mode };
+      }
+
+      function draw(mesh, modelMat, opts = {}) {
+        if (!mesh || !mesh.count) return;
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buf);
+        const stride = 36;
+        gl.enableVertexAttribArray(loc.aPos);
+        gl.vertexAttribPointer(loc.aPos, 3, gl.FLOAT, false, stride, 0);
+        gl.enableVertexAttribArray(loc.aNorm);
+        gl.vertexAttribPointer(loc.aNorm, 3, gl.FLOAT, false, stride, 12);
+        gl.enableVertexAttribArray(loc.aCol);
+        gl.vertexAttribPointer(loc.aCol, 3, gl.FLOAT, false, stride, 24);
+        gl.uniformMatrix4fv(loc.uModel, false, modelMat);
+        gl.uniform3fv(loc.uTint, opts.tint || [1, 1, 1]);
+        gl.uniform1f(loc.uAlpha, opts.alpha !== undefined ? opts.alpha : 1.0);
+        gl.uniform1f(loc.uHighlight, opts.highlight || 0.0);
+        gl.drawArrays(mesh.mode, 0, mesh.count);
+      }
+
+      // =========================================================================
+      // 4. CONSTRUCT THE 3 REAL PARTS + FLOOR GRID + EXPLODE ALIGNMENT LINES
+      // =========================================================================
+      const meshes = {};
+
+      // --- 0. Factory Floor Grid at Z = 0.0 mm ---
+      {
+        const mf = new MeshBuilder();
+        mf.addBox(0, 0, -0.8, 340, 340, 1.5, [0.11, 0.14, 0.19]);
+        meshes.floorPad = upload(mf);
+
+        const ml = new MeshBuilder();
+        for (let g = -160; g <= 160; g += 20) {
+          const c = g === 0 ? [0.28, 0.45, 0.62] : [0.20, 0.26, 0.34];
+          ml.verts.push(-160, g, 0.1, 0,0,1, c[0],c[1],c[2], 160, g, 0.1, 0,0,1, c[0],c[1],c[2]);
+          ml.verts.push(g, -160, 0.1, 0,0,1, c[0],c[1],c[2], g, 160, 0.1, 0,0,1, c[0],c[1],c[2]);
+        }
+        meshes.floorGrid = upload(ml, gl.LINES);
+      }
+
+      // --- 1. PART 1: Solid1 (64) Steel Corner Plate (160x160x15 mm, R5, 12 Perforated Holes) ---
+      {
+        const mp = new MeshBuilder();
+        const colFace = [0.302, 0.306, 0.290];
+        const colBore = [0.42, 0.44, 0.46];
+        const colCb   = [0.52, 0.55, 0.58];
+        const colThd1 = [0.24, 0.28, 0.33];
+        const colThd2 = [0.56, 0.60, 0.66];
+
+        const outerLoop = buildRoundedRectLoop(80.0, 5.0, 6, 6);
+
+        const topTris = triangulatePerforatedFace(
+          outerLoop,
+          PLATE_HOLES.map(h => ({ x: h.x, y: h.y, r: h.rTop }))
+        );
+        for (const [a, b, c] of topTris) {
+          mp.pushTri([a[0], a[1], 15.0], [b[0], b[1], 15.0], [c[0], c[1], 15.0], [0, 0, 1], colFace);
+        }
+
+        const botTris = triangulatePerforatedFace(
+          outerLoop,
+          PLATE_HOLES.map(h => ({ x: h.x, y: h.y, r: h.rBot }))
+        );
+        for (const [a, b, c] of botTris) {
+          mp.pushTri([a[0], a[1], 0.0], [c[0], c[1], 0.0], [b[0], b[1], 0.0], [0, 0, -1], colFace);
+        }
+
+        for (let i = 0; i < outerLoop.length; i++) {
+          const p0 = outerLoop[i];
+          const p1 = outerLoop[(i + 1) % outerLoop.length];
+          const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+          const len = Math.hypot(dx, dy) || 1;
+          const n = [dy / len, -dx / len, 0];
+          mp.pushTri([p0[0], p0[1], 0.0], [p1[0], p1[1], 0.0], [p1[0], p1[1], 15.0], n, colFace);
+          mp.pushTri([p0[0], p0[1], 0.0], [p1[0], p1[1], 15.0], [p0[0], p0[1], 15.0], n, colFace);
+        }
+
+        for (const h of PLATE_HOLES) {
+          if (h.cbDepth > 0) {
+            mp.addCylinderZ(h.x, h.y, 0.0, h.cbDepth, h.rBot, 24, colCb, false, true);
+            mp.addAnnulusZ(h.x, h.y, h.cbDepth, h.rTop, h.rBot, 24, -1, colCb);
+            mp.addCylinderZ(h.x, h.y, h.cbDepth, 15.0, h.rTop, 24, colBore, false, true);
+          } else if (h.threaded) {
+            const bands = 10;
+            const dz = 15.0 / bands;
+            for (let b = 0; b < bands; b++) {
+              mp.addCylinderZ(h.x, h.y, b * dz, (b + 1) * dz, h.rTop, 24, b % 2 === 0 ? colThd1 : colThd2, false, true);
+            }
+          }
+        }
+        meshes.plate = upload(mp);
+      }
+
+      // --- 2. PART 2: MISUMI CJHB75 Caster ---
+      {
+        const colZinc = [0.78, 0.82, 0.87];
+        const colBolt = [0.56, 0.60, 0.66];
+        const colBlue = [0.22, 0.42, 0.88];
+
+        const mcTop = new MeshBuilder();
+        mcTop.addBox(0, 0, -3.0, 90.0, 90.0, 6.0, colZinc);
+        mcTop.addCylinderZ(0, 0, -14.0, -6.0, 31.0, 24, [0.70, 0.75, 0.80]);
+        for (const sx of [-35.5, 35.5]) {
+          for (const sy of [-35.5, 35.5]) {
+            mcTop.addCylinderZ(sx, sy, -14.0, -6.0, 7.8, 14, colBolt);
+            mcTop.addCylinderZ(sx, sy, 0.0, 12.0, 4.1, 12, colBolt);
+          }
+        }
+        meshes.casterTop = upload(mcTop);
+
+        const mcFork = new MeshBuilder();
+        mcFork.addCylinderZ(0, 0, -20.0, -14.0, 29.0, 24, colZinc);
+        for (const sideY of [-21.0, 21.0]) {
+          mcFork.addBox(-8.0, sideY, -36.0, 34.0, 5.0, 30.0, colZinc);
+          mcFork.addBox(-20.0, sideY, -56.0, 22.0, 5.0, 28.0, colZinc);
+          mcFork.addCylinderY(-24.0, sideY - 3.0, sideY + 3.0, -68.5, 10.5, 14, colZinc);
+        }
+        mcFork.addCylinderY(-24.0, -26.5, 26.5, -68.5, 5.5, 12, colBolt);
+        mcFork.addCylinderY(-24.0, -16.0, 16.0, -68.5, 37.5, 32, colBlue);
+        mcFork.addCylinderY(-24.0, -17.0, 17.0, -68.5, 14.0, 18, [0.85, 0.88, 0.92]);
+        meshes.casterSwivel = upload(mcFork);
+      }
+
+      // --- 3. PART 3: MISUMI C-AJPJ16-148 Leveling Foot ---
+      {
+        const mfBody = new MeshBuilder();
+        mfBody.addCylinderZ(0, 0, 0.0, 4.0, 30.0, 28, [0.16, 0.18, 0.21]);
+        mfBody.addCylinderZ(0, 0, 4.0, 11.0, 28.0, 28, [0.76, 0.80, 0.85]);
+        mfBody.addCylinderZ(0, 0, 11.0, 20.0, 12.0, 16, [0.64, 0.68, 0.74]);
+        mfBody.addCylinderZ(0, 0, 20.0, 27.0, 9.5, 6, [0.55, 0.59, 0.65]);
+        const rings = 37;
+        const stepZ = (168.0 - 27.0) / rings;
+        for (let r = 0; r < rings; r++) {
+          const zA = 27.0 + r * stepZ;
+          const rad = r % 2 === 0 ? 8.0 : 7.15;
+          const col = r % 2 === 0 ? [0.78, 0.82, 0.87] : [0.46, 0.50, 0.56];
+          mfBody.addCylinderZ(0, 0, zA, zA + stepZ, rad, 18, col, r === rings - 1);
+        }
+        meshes.footStud = upload(mfBody);
+
+        const mNut = new MeshBuilder();
+        mNut.addCylinderZ(0, 0, -13.0, 0.0, 13.8, 6, [0.82, 0.85, 0.90]);
+        meshes.jamNut = upload(mNut);
+      }
+
+      // --- Optional Ghost Reference: 80x80 mm Corner Column + Side Extrusions ---
+      {
+        const mg = new MeshBuilder();
+        const cAlu = [0.28, 0.34, 0.42];
+        mg.addBox(-40.0, 40.0, 85.0, 80.0, 80.0, 140.0, cAlu);
+        mg.addBox(40.0, 40.0, 55.0, 80.0, 80.0, 80.0, cAlu);
+        mg.addBox(-40.0, -40.0, 55.0, 80.0, 80.0, 80.0, cAlu);
+        meshes.ghostFrame = upload(mg);
+      }
+
+      function buildExplodeGuides(zPlateBot, explodeOffset) {
+        const mb = new MeshBuilder();
+        if (explodeOffset < 2) return upload(mb, gl.LINES);
+        const cM10 = [0.22, 0.74, 0.98];
+        const cM16 = [0.98, 0.44, 0.52];
+        for (const h of PLATE_HOLES) {
+          if (h.group === "M10_CASTER") {
+            mb.verts.push(
+              h.x, h.y, zPlateBot, 0,0,1, cM10[0],cM10[1],cM10[2],
+              h.x, h.y, zPlateBot - explodeOffset, 0,0,1, cM10[0],cM10[1],cM10[2]
+            );
+          }
+        }
+        mb.verts.push(
+          FOOT_CENTER[0], FOOT_CENTER[1], zPlateBot + 15, 0,0,1, cM16[0],cM16[1],cM16[2],
+          FOOT_CENTER[0], FOOT_CENTER[1], Math.max(0, zPlateBot - explodeOffset * 1.3), 0,0,1, cM16[0],cM16[1],cM16[2]
+        );
+        return upload(mb, gl.LINES);
+      }
+
+      // =========================================================================
+      // 5. STATE, CAMERA & INTERACTIVE CONTROLS
+      // =========================================================================
+      const state = {
+        jackExtensionMm: 115.0,
+        swivelDeg: 45.0,
+        explodePct: 0.0,
+        showFloor: true,
+        showGhostFrame: false,
+        vis: { plate: true, caster: true, foot: true },
+        selectedPart: "plate"
+      };
+
+      const cam = {
+        yaw: -0.78,
+        pitch: 0.44,
+        dist: 390.0,
+        target: [0.0, 0.0, 72.0],
+        eye: [0, 0, 0]
+      };
+
+      let dragging = false, lx = 0, ly = 0;
+      canvas.addEventListener("pointerdown", (e) => {
+        dragging = true; lx = e.clientX; ly = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        cam.yaw -= dx * 0.008;
+        cam.pitch = Math.max(-1.35, Math.min(1.48, cam.pitch + dy * 0.008));
+      });
+      canvas.addEventListener("pointerup", () => { dragging = false; });
+      canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        cam.dist = Math.max(160.0, Math.min(820.0, cam.dist + e.deltaY * 0.35));
+      }, { passive: false });
+
+      document.querySelectorAll("[data-cam]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("[data-cam]").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const c = btn.getAttribute("data-cam");
+          if (c === "iso") {
+            cam.yaw = -0.78; cam.pitch = 0.44; cam.dist = 390; cam.target = [0, 0, 72];
+          } else if (c === "under") {
+            cam.yaw = -0.65; cam.pitch = -0.68; cam.dist = 350; cam.target = [5, -5, 85];
+          } else if (c === "side") {
+            cam.yaw = -Math.PI * 0.25; cam.pitch = 0.06; cam.dist = 370; cam.target = [8, -8, 62];
+          } else if (c === "top") {
+            cam.yaw = -Math.PI * 0.5; cam.pitch = 1.46; cam.dist = 340; cam.target = [0, 0, 115];
+          }
+        });
+      });
+
+      const btnFloor = document.getElementById("btnFloorToggle");
+      btnFloor.addEventListener("click", () => {
+        state.showFloor = !state.showFloor;
+        btnFloor.textContent = state.showFloor ? "FLOOR Z=0: ON" : "FLOOR Z=0: OFF";
+        btnFloor.classList.toggle("active", state.showFloor);
+      });
+
+      const btnGhost = document.getElementById("btnGhostFrame");
+      btnGhost.addEventListener("click", () => {
+        state.showGhostFrame = !state.showGhostFrame;
+        btnGhost.textContent = state.showGhostFrame ? "80×80 REF: ON" : "80×80 REF: OFF";
+        btnGhost.classList.toggle("active", state.showGhostFrame);
+      });
+
+      document.querySelectorAll("[data-step]").forEach((sb) => {
+        sb.addEventListener("click", () => {
+          document.querySelectorAll("[data-step]").forEach(x => x.classList.remove("active"));
+          sb.classList.add("active");
+          const st = Number(sb.getAttribute("data-step"));
+          if (st === 1) {
+            state.vis = { plate: true, caster: false, foot: false };
+            setExplode(0);
+          } else if (st === 2) {
+            state.vis = { plate: true, caster: true, foot: false };
+            setExplode(0);
+          } else if (st === 3) {
+            state.vis = { plate: true, caster: true, foot: true };
+            setExplode(0);
+          } else if (st === 4) {
+            state.vis = { plate: true, caster: true, foot: true };
+            setExplode(65);
+          }
+          syncVisButtons();
+        });
+      });
+
+      const rngJack = document.getElementById("rngJack");
+      const rngSwivel = document.getElementById("rngSwivel");
+      const rngExplode = document.getElementById("rngExplode");
+
+      function setJack(val) {
+        state.jackExtensionMm = val;
+        rngJack.value = String(val);
+        updateReadouts();
+      }
+      function setExplode(val) {
+        state.explodePct = val;
+        rngExplode.value = String(val);
+        document.getElementById("lblExplode").textContent =
+          val === 0 ? "0% (ประกอบสนิท)" : `${val}% (แยก ${Math.round(val * 0.55)} mm)`;
+      }
+
+      rngJack.addEventListener("input", () => setJack(Number(rngJack.value)));
+      document.getElementById("btnModeRoll").addEventListener("click", () => setJack(98.0));
+      document.getElementById("btnModeTouch").addEventListener("click", () => setJack(106.0));
+      document.getElementById("btnModeLock").addEventListener("click", () => setJack(115.0));
+
+      rngSwivel.addEventListener("input", () => {
+        state.swivelDeg = Number(rngSwivel.value);
+        document.getElementById("lblSwivel").textContent = `${state.swivelDeg}°`;
+        updateReadouts();
+      });
+
+      rngExplode.addEventListener("input", () => setExplode(Number(rngExplode.value)));
+
+      function syncVisButtons() {
+        document.querySelectorAll("[data-vis]").forEach((vb) => {
+          const key = vb.getAttribute("data-vis");
+          const on = state.vis[key];
+          vb.textContent = on ? "SHOW" : "HIDDEN";
+          vb.classList.toggle("off", !on);
+        });
+      }
+
+      document.querySelectorAll(".part-item").forEach((card) => {
+        card.addEventListener("click", (e) => {
+          if (e.target.hasAttribute("data-vis")) return;
+          const p = card.getAttribute("data-part");
+          state.selectedPart = p;
+          document.querySelectorAll(".part-item").forEach(c => c.classList.toggle("selected", c === card));
+          document.getElementById("specDetailBox").innerText = PART_SPECS[p];
+        });
+      });
+
+      document.querySelectorAll("[data-vis]").forEach((vb) => {
+        vb.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const key = vb.getAttribute("data-vis");
+          state.vis[key] = !state.vis[key];
+          syncVisButtons();
+        });
+      });
+
+      document.getElementById("specDetailBox").innerText = PART_SPECS.plate;
+
+      function computeAssemblyKinematics() {
+        const H_caster = 106.0;
+        const zPlateBot = Math.max(H_caster, state.jackExtensionMm);
+        const zPlateTop = zPlateBot + 15.0;
+        const wheelClearance = zPlateBot - H_caster;
+        const footClearance = zPlateBot - state.jackExtensionMm;
+        const studProtrusionTop = 168.0 - state.jackExtensionMm - 15.0;
+
+        const swRad = (state.swivelDeg * Math.PI) / 180;
+        const wx = CASTER_CENTER[0] - 24.0 * Math.cos(swRad);
+        const wy = CASTER_CENTER[1] - 24.0 * Math.sin(swRad);
+        const centerDist = Math.hypot(wx - FOOT_CENTER[0], wy - FOOT_CENTER[1]);
+        const swingGap = centerDist - 37.5 - 8.0;
+
+        return { zPlateBot, zPlateTop, wheelClearance, footClearance, studProtrusionTop, swingGap };
+      }
+
+      function updateReadouts() {
+        const k = computeAssemblyKinematics();
+        const turnsFromTouch = (state.jackExtensionMm - 106.0) / 2.0;
+        const turnSign = turnsFromTouch >= 0 ? "+" : "";
+        document.getElementById("lblJack").textContent =
+          `${state.jackExtensionMm.toFixed(1)} mm (${turnSign}${turnsFromTouch.toFixed(2)} รอบ M16)`;
+
+        document.getElementById("hudPlateZ").textContent =
+          `${k.zPlateBot.toFixed(1)} / ${k.zPlateTop.toFixed(1)} mm`;
+        document.getElementById("valZTop").textContent = `${k.zPlateTop.toFixed(1)} mm`;
+        document.getElementById("valStudTop").textContent = `+${k.studProtrusionTop.toFixed(1)} mm`;
+
+        const modeEl = document.getElementById("modeBadge");
+        const liftEl = document.getElementById("valWheelLift");
+        if (k.wheelClearance > 0.05) {
+          modeEl.className = "mode-pill";
+          modeEl.textContent = `STATIONARY MODE · ล้อลอย +${k.wheelClearance.toFixed(1)} mm`;
+          document.getElementById("hudWheelClr").textContent = `+${k.wheelClearance.toFixed(1)} mm (FLOATING)`;
+          document.getElementById("hudFootClr").textContent = `0.0 mm (LOAD ON FOOT)`;
+          liftEl.textContent = `+${k.wheelClearance.toFixed(1)} mm`;
+          liftEl.style.color = "var(--ok)";
+        } else {
+          modeEl.className = "mode-pill rolling";
+          modeEl.textContent = `ROLLING / TRANSPORT MODE · ขาหยั่งลอย +${k.footClearance.toFixed(1)} mm`;
+          document.getElementById("hudWheelClr").textContent = `0.0 mm (ON FLOOR)`;
+          document.getElementById("hudFootClr").textContent = `+${k.footClearance.toFixed(1)} mm (RETRACTED)`;
+          liftEl.textContent = `0.0 mm (ล้อแตะพื้น)`;
+          liftEl.style.color = "var(--brand)";
+        }
+
+        const gapEl = document.getElementById("hudSwingGap");
+        gapEl.textContent = `${k.swingGap.toFixed(1)} mm (NO COLLISION)`;
+        gapEl.style.color = k.swingGap > 8 ? "#38f29c" : "#ffb648";
+      }
+
+      updateReadouts();
+
+      // =========================================================================
+      // 6. 60 FPS RENDER LOOP
+      // =========================================================================
+      const projMat = Mat4.create();
+      const viewMat = Mat4.create();
+      const mId = Mat4.create();
+      const mTmp = Mat4.create();
+
+      function render() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.055, 0.075, 0.105, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+
+        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;
+        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;
+        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;
+
+        Mat4.perspective(projMat, (40 * Math.PI) / 180, w / Math.max(1, h), 5.0, 2500.0);
+        Mat4.lookAt(viewMat, cam.eye, cam.target, [0, 0, 1]);
+
+        gl.useProgram(prog);
+        gl.uniformMatrix4fv(loc.uProj, false, projMat);
+        gl.uniformMatrix4fv(loc.uView, false, viewMat);
+        gl.uniform3fv(loc.uEye, cam.eye);
+
+        const k = computeAssemblyKinematics();
+        const exp = state.explodePct * 0.55;
+
+        if (state.showFloor) {
+          Mat4.identity(mId);
+          draw(meshes.floorPad, mId);
+          draw(meshes.floorGrid, mId);
+        }
+
+        const zPlate = k.zPlateBot + exp * 0.6;
+        if (state.vis.plate) {
+          Mat4.translate(mTmp, mId, 0, 0, zPlate);
+          draw(meshes.plate, mTmp, { highlight: state.selectedPart === "plate" ? 0.55 : 0.0 });
+        }
+
+        if (state.vis.caster) {
+          const zCasterMount = k.zPlateBot - exp * 0.5;
+          const hl = state.selectedPart === "caster" ? 0.55 : 0.0;
+          Mat4.translate(mTmp, mId, CASTER_CENTER[0], CASTER_CENTER[1], zCasterMount);
+          draw(meshes.casterTop, mTmp, { highlight: hl });
+
+          Mat4.rotateZ(mTmp, mTmp, (state.swivelDeg * Math.PI) / 180);
+          draw(meshes.casterSwivel, mTmp, { highlight: hl });
+        }
+
+        if (state.vis.foot) {
+          const zFootBase = Math.max(0, k.footClearance - exp * 0.7);
+          const hl = state.selectedPart === "foot" ? 0.55 : 0.0;
+          Mat4.translate(mTmp, mId, FOOT_CENTER[0], FOOT_CENTER[1], zFootBase);
+          draw(meshes.footStud, mTmp, { highlight: hl });
+
+          Mat4.translate(mTmp, mId, FOOT_CENTER[0], FOOT_CENTER[1], k.zPlateBot - exp * 0.25);
+          draw(meshes.jamNut, mTmp, { highlight: hl });
+        }
+
+        if (exp > 2) {
+          const guides = buildExplodeGuides(zPlate, exp * 1.1);
+          draw(guides, mId);
+          gl.deleteBuffer(guides.buf);
+        }
+
+        if (state.showGhostFrame) {
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.depthMask(false);
+          Mat4.translate(mTmp, mId, 0, 0, zPlate + exp * 0.7);
+          draw(meshes.ghostFrame, mTmp, { alpha: 0.30 });
+          gl.depthMask(true);
+          gl.disable(gl.BLEND);
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

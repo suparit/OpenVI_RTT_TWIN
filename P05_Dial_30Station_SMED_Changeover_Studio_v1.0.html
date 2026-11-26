@@ -1,0 +1,3119 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P05_Dial_30Station_SMED_Changeover_Studio_v1.0 — OpenVI TR1100 Cell Twin</title>
+<style>
+  :root {
+    --bg: #0f141b;
+    --panel: #161d27;
+    --panel-alt: #1c2532;
+    --surface: #222d3d;
+    --border: #2c3a4e;
+    --border-bright: #3d516d;
+    --ink: #e6edf5;
+    --muted: #93a4b8;
+    --brand: #2563eb;
+    --brand-hover: #3b82f6;
+    --amber: #d97706;
+    --amber-bright: #f59e0b;
+    --emerald: #10b981;
+    --cyan: #06b6d4;
+    --danger: #ef4444;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow: hidden;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-rows: 50px 1fr;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Header */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 14px;
+    background: #111720;
+    border-bottom: 1px solid var(--border);
+    z-index: 20;
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .cartridge-tag {
+    background: rgba(37, 99, 235, 0.2);
+    border: 1px solid #3b82f6;
+    color: #93c5fd;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+
+  .app-title {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-subtitle {
+    color: var(--muted);
+    font-size: 11.5px;
+    display: none;
+  }
+
+  @media (min-width: 1180px) {
+    .app-subtitle { display: inline; }
+  }
+
+  .toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .seg-group {
+    display: inline-flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .seg-btn {
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    padding: 4px 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .seg-btn:hover { color: var(--ink); background: rgba(255,255,255,0.05); }
+  .seg-btn.active {
+    background: var(--brand);
+    color: #fff;
+  }
+  .seg-btn.active-amber {
+    background: var(--amber);
+    color: #fff;
+  }
+
+  .telemetry-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #a7f3d0;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* Workspace Grid */
+  .workspace {
+    display: grid;
+    grid-template-columns: 290px 1fr 340px;
+    height: calc(100vh - 50px);
+    min-height: 0;
+  }
+
+  @media (max-width: 1100px) {
+    html, body { overflow: auto; }
+    .app-shell { height: auto; min-height: 100vh; }
+    .workspace {
+      grid-template-columns: 1fr;
+      grid-template-rows: 520px auto auto;
+      height: auto;
+    }
+    .side-left { order: 2; }
+    .viewport-wrap { order: 1; height: 520px; }
+    .side-right { order: 3; }
+  }
+
+  .side-panel {
+    background: var(--panel);
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .side-left { border-right: 1px solid var(--border); }
+  .side-right { border-left: 1px solid var(--border); }
+
+  .card {
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 12px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #cbd5e1;
+    margin: 0;
+  }
+
+  .badge-mini {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* Browser Tree */
+  .tree-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tree-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 7px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+    font-size: 12px;
+  }
+
+  .tree-item:hover {
+    border-color: var(--border);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .tree-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .eye-btn {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border-bright);
+    background: var(--surface);
+    color: #93c5fd;
+    cursor: pointer;
+  }
+
+  .eye-btn.off {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--border);
+    opacity: 0.65;
+  }
+
+  /* Sliders */
+  .param-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 9px;
+  }
+  .param-row:last-child { margin-bottom: 0; }
+
+  .param-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+  }
+
+  .param-val {
+    font-family: var(--mono);
+    color: #93c5fd;
+    font-weight: 600;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--brand);
+    cursor: pointer;
+    margin: 0;
+  }
+
+  /* Datum Table */
+  .datum-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .datum-table td {
+    padding: 3.5px 2px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+  }
+
+  .datum-table td:first-child { color: var(--muted); }
+  .datum-table td:last-child {
+    text-align: right;
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  /* Viewport */
+  .viewport-wrap {
+    position: relative;
+    background: radial-gradient(circle at 50% 42%, #1d2837 0%, #0d1219 100%);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  #glCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  #glCanvas:active { cursor: grabbing; }
+
+  /* Floating Camera / ViewCube Bar */
+  .cam-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .cam-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  .cam-btn {
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-bright);
+    background: rgba(22, 29, 39, 0.88);
+    color: var(--ink);
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: all 0.15s;
+  }
+  .cam-btn:hover {
+    background: var(--surface);
+    border-color: #60a5fa;
+  }
+  .cam-btn.hero-cam {
+    border-color: var(--cyan);
+    color: #a5f3fc;
+    background: rgba(8, 51, 68, 0.85);
+  }
+  .cam-btn.hero-cam:hover {
+    background: rgba(14, 116, 144, 0.9);
+    color: #fff;
+  }
+
+  /* ViewCube Widget */
+  .viewcube-box {
+    pointer-events: auto;
+    background: rgba(22, 29, 39, 0.86);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    display: grid;
+    grid-template-columns: repeat(3, 34px);
+    gap: 3px;
+    backdrop-filter: blur(6px);
+  }
+
+  .vc-face {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 0;
+    text-align: center;
+    background: var(--surface);
+    color: #cbd5e1;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .vc-face:hover {
+    background: var(--brand);
+    color: #fff;
+    border-color: #60a5fa;
+  }
+
+  /* Front Bay HUD Overlay */
+  .bay-hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(17, 23, 32, 0.9);
+    border: 1px solid var(--border-bright);
+    border-left: 3px solid var(--cyan);
+    border-radius: 8px;
+    padding: 9px 12px;
+    max-width: 330px;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+  }
+
+  .bay-hud-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: #67e8f9;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 3px;
+  }
+
+  .bay-hud-station {
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .model-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .pill-a { background: rgba(37,99,235,0.28); color: #93c5fd; border: 1px solid #3b82f6; }
+  .pill-b { background: rgba(217,119,6,0.28); color: #fcd34d; border: 1px solid #f59e0b; }
+  .pill-empty { background: rgba(148,163,184,0.18); color: #cbd5e1; border: 1px solid #64748b; }
+
+  .bay-phase-line {
+    margin-top: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #fde68a;
+  }
+
+  .bay-coord-line {
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+
+  /* Bottom 30-station ring radar */
+  .ring-hud {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(17, 23, 32, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(6px);
+  }
+
+  #ringMapSvg {
+    width: 92px;
+    height: 92px;
+    flex-shrink: 0;
+  }
+
+  .ring-legend {
+    font-size: 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #cbd5e1;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .viewport-hint {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(17, 23, 32, 0.78);
+    border: 1px solid var(--border);
+    padding: 4px 9px;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  /* Right Controls */
+  .btn-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .btn {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-bright);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.14s;
+    text-align: center;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: #2c3b50;
+    border-color: #60a5fa;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-preset-a {
+    background: rgba(37, 99, 235, 0.2);
+    border-color: #3b82f6;
+    color: #bfdbfe;
+  }
+  .btn-preset-a:hover:not(:disabled) { background: rgba(37, 99, 235, 0.38); }
+
+  .btn-preset-b {
+    background: rgba(217, 119, 6, 0.2);
+    border-color: #f59e0b;
+    color: #fde68a;
+  }
+  .btn-preset-b:hover:not(:disabled) { background: rgba(217, 119, 6, 0.38); }
+
+  .btn-primary-smed {
+    width: 100%;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #60a5fa;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+  .btn-primary-smed:hover:not(:disabled) {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  }
+
+  .btn-auto-smed {
+    width: 100%;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, #059669 0%, #047857 100%);
+    border-color: #34d399;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+  .btn-auto-smed:hover:not(:disabled) {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  }
+  .btn-auto-smed.running {
+    background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+    border-color: #f87171;
+  }
+
+  .smed-row-2 {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  /* Progress & Timer */
+  .progress-box {
+    background: #121821;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 10px;
+    margin-top: 6px;
+  }
+
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    margin-bottom: 5px;
+  }
+
+  .progress-track {
+    height: 8px;
+    background: #1f2937;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #06b6d4 0%, #10b981 100%);
+    transition: width 0.15s ease;
+  }
+
+  .timer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .timer-cell {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    padding: 5px 7px;
+  }
+  .timer-cell span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .timer-cell strong {
+    color: #6ee7b7;
+    font-size: 13px;
+  }
+
+  /* Phase Stepper */
+  .phase-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .phase-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.02);
+    color: var(--muted);
+    border: 1px solid transparent;
+  }
+
+  .phase-item.active {
+    background: rgba(6, 182, 212, 0.16);
+    border-color: var(--cyan);
+    color: #ecfeff;
+    font-weight: 600;
+  }
+
+  .spec-compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .spec-compare th, .spec-compare td {
+    padding: 4px 5px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    text-align: left;
+  }
+  .spec-compare th {
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .spec-compare td.num {
+    text-align: right;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- TOP HEADER -->
+  <header class="topbar">
+    <div class="brand-group">
+      <span class="cartridge-tag">P05_DIAL_30ST_TOOLING</span>
+      <span class="app-title">30-Station Dial &amp; Front-Operator SMED Changeover Studio v1.0</span>
+      <span class="app-subtitle">| OpenVI_TR1100_CELL_TWIN (Right-Handed Z-Up, mm)</span>
+    </div>
+
+    <div class="toolbar-controls">
+      <div class="seg-group" role="group" aria-label="Render Mode">
+        <button class="seg-btn active" id="btnModeShadedEdges" type="button">Shaded + Edges</button>
+        <button class="seg-btn" id="btnModeShaded" type="button">Shaded</button>
+        <button class="seg-btn" id="btnModeWire" type="button">Wireframe</button>
+      </div>
+
+      <div class="seg-group" role="group" aria-label="LOD Level">
+        <button class="seg-btn active" id="btnLod0" type="button">LOD-0 (Full B-Rep)</button>
+        <button class="seg-btn" id="btnLod1" type="button">LOD-1 (Cell)</button>
+      </div>
+
+      <button class="seg-btn" id="btnSectionToggle" type="button" style="border:1px solid var(--border); background:var(--panel); padding:5px 10px;">
+        ✂ Section Cut: OFF
+      </button>
+
+      <div class="telemetry-pill" id="gpuTelemetry">60 FPS | 30× Shared VBO</div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="workspace">
+    <!-- LEFT SIDEBAR: BROWSER TREE & DATUM CHAIN -->
+    <aside class="side-panel side-left">
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Browser Tree (B-Rep Layers)</h2>
+          <span class="badge-mini">EYE / OFF</span>
+        </div>
+        <div class="tree-list" id="browserTree">
+          <div class="tree-item">
+            <div class="tree-label"><span class="swatch" style="background:#475569"></span><span>P03 Deck + P04 TR1100A Ref</span></div>
+            <button class="eye-btn" data-layer="refBase" type="button">EYE</button>
+          </div>
+          <div class="tree-item">
+            <div class="tree-label"><span class="swatch" style="background:#94a3b8"></span><span>Main Dial Ring (Ø760–Ø980)</span></div>
+            <button class="eye-btn" data-layer="dialPlate" type="button">EYE</button>
+          </div>
+          <div class="tree-item">
+            <div class="tree-label"><span class="swatch" style="background:#2563eb"></span><span>Sub-Base Plates (Poka-Yoke)</span></div>
+            <button class="eye-btn" data-layer="subBase" type="button">EYE</button>
+          </div>
+          <div class="tree-item">
+            <div class="tree-label"><span class="swatch" style="background:#cbd5e1"></span><span>Fixture Nest + Stadium Pins</span></div>
+            <button class="eye-btn" data-layer="nestBlock" type="button">EYE</button>
+          </div>
+          <div class="tree-item">
+            <div class="tree-label"><span class="swatch" style="background:#f59e0b"></span><span>UUT_DUMMY (3-Tab +X Out)</span></div>
+            <button class="eye-btn" data-layer="uutDummy" type="button">EYE</button>
+          </div>
+          <div class="tree-item">
+            <div class="tree-label"><span class="swatch" style="background:#06b6d4"></span><span>Front Operator Zone (-Y)</span></div>
+            <button class="eye-btn" data-layer="smedGuide" type="button">EYE</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Parametric &amp; Section Controls</h2>
+          <span class="badge-mini">Z-Up mm</span>
+        </div>
+
+        <div class="param-row">
+          <div class="param-top">
+            <label for="sliderDialThick">Main Dial Thickness (Z=930→)</label>
+            <span class="param-val" id="valDialThick">15.0 mm</span>
+          </div>
+          <input type="range" id="sliderDialThick" min="10" max="25" step="0.5" value="15.0">
+        </div>
+
+        <div class="param-row">
+          <div class="param-top">
+            <label for="sliderUutLift">UUT Pick &amp; Place Lift (+Z)</label>
+            <span class="param-val" id="valUutLift">0.0 mm</span>
+          </div>
+          <input type="range" id="sliderUutLift" min="0" max="40" step="0.5" value="0.0">
+        </div>
+
+        <div class="param-row" id="sectionControlGroup" style="opacity:0.5;">
+          <div class="param-top">
+            <label for="sliderSectionPos">Section Plane X (Cut @ -100)</label>
+            <span class="param-val" id="valSectionPos">-100.0 mm</span>
+          </div>
+          <input type="range" id="sliderSectionPos" min="-620" max="420" step="1" value="-100" disabled>
+          <div class="seg-group" style="margin-top:4px; width:100%;">
+            <button class="seg-btn active" id="btnSecAxisX" type="button" style="flex:1;">Cut X (Front Bay)</button>
+            <button class="seg-btn" id="btnSecAxisY" type="button" style="flex:1;">Cut Y (-510 Bay)</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">exportsDatum() Live Chain</h2>
+          <span class="badge-mini" id="datumActiveModelBadge">MODEL A</span>
+        </div>
+        <table class="datum-table" id="datumTable">
+          <tbody>
+            <tr><td>Dial Center (X, Y)</td><td>-100.0, -60.0 mm</td></tr>
+            <tr><td>Front Bay (θ=-90°)</td><td>-100.0, -510.0 mm</td></tr>
+            <tr><td>zRotaryOutputTop</td><td id="dtRotaryTop">930.00 mm</td></tr>
+            <tr><td>zDialTopFace</td><td id="dtDialTop">945.00 mm</td></tr>
+            <tr><td>zSubBaseTopFace</td><td id="dtSubBaseTop">960.00 mm</td></tr>
+            <tr><td>zNestTopFace</td><td id="dtNestTop">975.00 mm</td></tr>
+            <tr><td>zLocatingPinTip</td><td id="dtPinTip">979.00 mm</td></tr>
+            <tr><td>zUutTopRoof</td><td id="dtUutRoof">999.30 mm</td></tr>
+            <tr><td>Pin Pitch (Tangential)</td><td id="dtPinPitch">54.00 mm</td></tr>
+            <tr><td>R_outer_ground (+X)</td><td id="dtOuterRad">479.05 mm</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </aside>
+
+    <!-- CENTER 3D VIEWPORT -->
+    <section class="viewport-wrap">
+      <canvas id="glCanvas"></canvas>
+
+      <!-- Active Changeover Bay HUD -->
+      <div class="bay-hud">
+        <div class="bay-hud-title">ACTIVE CHANGEOVER STATION BAY (FRONT -Y)</div>
+        <div class="bay-hud-station">
+          <span id="hudFrontStationId">STATION #01</span>
+          <span class="model-pill pill-a" id="hudFrontModelPill">ORDER MODEL A</span>
+        </div>
+        <div class="bay-phase-line" id="hudPhaseText">READY — Parked at Front Operator Bay</div>
+        <div class="bay-coord-line" id="hudDialAngleText">World Bay: (-100.0, -510.0) mm | Dial Angle: 0.0°</div>
+      </div>
+
+      <!-- Camera Presets & ViewCube -->
+      <div class="cam-overlay">
+        <div class="cam-bar">
+          <button class="cam-btn hero-cam" id="camFrontEye" type="button">👁 Front Operator Eye-Level (-Y)</button>
+          <button class="cam-btn" id="camIso" type="button">🧊 Cell Isometric</button>
+          <button class="cam-btn" id="camTop" type="button">⬇ Top Z-Up</button>
+          <button class="cam-btn" id="camPolarity" type="button">⚡ +X 3-Tab Zoom</button>
+        </div>
+
+        <div class="viewcube-box" aria-label="ViewCube Quick Views">
+          <button class="vc-face" data-vc="NW" type="button">NW</button>
+          <button class="vc-face" data-vc="BACK" type="button">+Y</button>
+          <button class="vc-face" data-vc="NE" type="button">NE</button>
+          <button class="vc-face" data-vc="LEFT" type="button">-X</button>
+          <button class="vc-face" data-vc="TOP" type="button">+Z</button>
+          <button class="vc-face" data-vc="RIGHT" type="button">+X</button>
+          <button class="vc-face" data-vc="SW" type="button">SW</button>
+          <button class="vc-face" data-vc="FRONT" type="button">-Y</button>
+          <button class="vc-face" data-vc="SE" type="button">SE</button>
+        </div>
+      </div>
+
+      <!-- 30-Station Ring Mini Radar -->
+      <div class="ring-hud">
+        <svg id="ringMapSvg" viewBox="-56 -56 112 112" aria-label="30-Station Ring Status Map"></svg>
+        <div class="ring-legend">
+          <div style="font-weight:700; color:#e2e8f0; margin-bottom:2px;">30-Station Ring Status</div>
+          <div class="legend-row"><span class="dot" style="background:#3b82f6"></span><span>Model A: <strong id="countModelA">30</strong></span></div>
+          <div class="legend-row"><span class="dot" style="background:#f59e0b"></span><span>Model B: <strong id="countModelB">0</strong></span></div>
+          <div class="legend-row"><span class="dot" style="background:#64748b"></span><span>Empty Seat: <strong id="countEmpty">0</strong></span></div>
+          <div style="font-family:var(--mono); font-size:10px; color:#67e8f9;">▼ Front Operator (-90°)</div>
+        </div>
+      </div>
+
+      <div class="viewport-hint">Left-Drag: Orbit | Right/Shift-Drag: Pan | Scroll: Zoom</div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: FRONT-STATION 1-BY-1 SMED SIMULATOR -->
+    <aside class="side-panel side-right">
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Instant Dial Presets (×30)</h2>
+          <span class="badge-mini">Quick Reset</span>
+        </div>
+        <div class="btn-grid-3">
+          <button class="btn btn-preset-a" id="btnAllA" type="button">All Model A<br><small>(×30 Blue)</small></button>
+          <button class="btn btn-preset-b" id="btnAllB" type="button">All Model B<br><small>(×30 Amber)</small></button>
+          <button class="btn" id="btnAllEmpty" type="button">Empty Dial<br><small>(×30 Bare)</small></button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Front Operator SMED Simulator</h2>
+          <span class="badge-mini" style="color:#67e8f9; border-color:#0891b2;">1-by-1 @ -Y</span>
+        </div>
+
+        <div style="margin-bottom:9px;">
+          <div style="font-size:11.5px; color:var(--muted); margin-bottom:5px;">
+            ออเดอร์ปลายทางที่ช่างนำเข้าเปลี่ยนด้านหน้า (Target Kit):
+          </div>
+          <div class="seg-group" style="width:100%; display:grid; grid-template-columns:1fr 1fr 0.85fr;">
+            <button class="seg-btn active-amber" id="btnTargetB" type="button">Order Model B</button>
+            <button class="seg-btn" id="btnTargetA" type="button">Order Model A</button>
+            <button class="seg-btn" id="btnTargetEmpty" type="button">ถอดออก (Empty)</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary-smed" id="btnStep1Station" type="button">
+          ▶ เปลี่ยนตัวตรงหน้า 1 สถานี + JOG 12° (Step 1)
+        </button>
+
+        <button class="btn btn-auto-smed" id="btnAuto30" type="button">
+          ⏩ เดินเครื่องจำลองเปลี่ยนครบ 30 ตัวอัตโนมัติ (Auto 1→30)
+        </button>
+
+        <div class="smed-row-2">
+          <button class="btn" id="btnManualJog" type="button">↻ JOG หมุนจาน -12.0° CW (1.18s)</button>
+          <div class="seg-group" role="group" aria-label="Simulation Speed">
+            <button class="seg-btn active" data-speed="1" type="button">1x</button>
+            <button class="seg-btn" data-speed="3" type="button">3x</button>
+            <button class="seg-btn" data-speed="10" type="button">10x</button>
+          </div>
+        </div>
+
+        <!-- Progress & SMED Stopwatch -->
+        <div class="progress-box">
+          <div class="progress-top">
+            <span id="smedProgressLabel">0 / 30 Stations Changed</span>
+            <span id="smedPercentLabel" style="color:#34d399; font-weight:700;">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="smedProgressBar"></div>
+          </div>
+          <div class="timer-grid">
+            <div class="timer-cell">
+              <span>SMED Elapsed Time</span>
+              <strong id="smedTimerVal">00:00.0 s</strong>
+            </div>
+            <div class="timer-cell">
+              <span>TR1100A Index Law</span>
+              <strong style="color:#93c5fd;">1.18s Cycloid</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-Phase Kinematic Sequence Indicator -->
+        <div class="phase-steps" id="phaseStepsList">
+          <div class="phase-item" data-phase="1">
+            <span>Phase 1: Unclamp &amp; Lift (+65Z, -140Y)</span>
+            <span>1.10s</span>
+          </div>
+          <div class="phase-item" data-phase="2">
+            <span>Phase 2: Poka-Yoke Empty Seat Reveal</span>
+            <span>0.45s</span>
+          </div>
+          <div class="phase-item" data-phase="3">
+            <span>Phase 3: Seat New Kit (0.000 mm Pin)</span>
+            <span>1.15s</span>
+          </div>
+          <div class="phase-item" data-phase="4">
+            <span>Phase 4: JOG -12.0° CW Next Station</span>
+            <span>1.18s</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Dual-Order Kit B-Rep Spec</h2>
+          <span class="badge-mini">UUT_DUMMY</span>
+        </div>
+        <table class="spec-compare">
+          <thead>
+            <tr>
+              <th>Feature (mm)</th>
+              <th style="text-align:right; color:#93c5fd;">Model A</th>
+              <th style="text-align:right; color:#fcd34d;">Model B</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sub-Base Poka-Yoke</td>
+              <td class="num">Blue 15.0t</td>
+              <td class="num">Amber 15.0t</td>
+            </tr>
+            <tr>
+              <td>Nest Footprint (X×Y×Z)</td>
+              <td class="num">35×65×15</td>
+              <td class="num">40×72×18</td>
+            </tr>
+            <tr>
+              <td>Stadium Pin Pitch</td>
+              <td class="num">54.000</td>
+              <td class="num">60.000</td>
+            </tr>
+            <tr>
+              <td>Center Tap / C'Bore</td>
+              <td class="num">M3 / Ø12</td>
+              <td class="num">M3 / Ø12</td>
+            </tr>
+            <tr>
+              <td>UUT Can (X×Y×H)</td>
+              <td class="num">32.5×43.5×24.3</td>
+              <td class="num">36.0×48.0×31.5</td>
+            </tr>
+            <tr>
+              <td>Polarity (+X / -X)</td>
+              <td class="num">3-Tab / 2-Tab</td>
+              <td class="num">3-Tab / 2-Tab</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<script>
+/* ============================================================================
+   1. OPENVI REGISTRY BOOTSTRAP
+   ============================================================================ */
+window.OpenVIRegistry = window.OpenVIRegistry || {
+  parts: {},
+  registerPart(id, spec) {
+    this.parts[id] = spec;
+  },
+  getPart(id) {
+    return this.parts[id];
+  }
+};
+
+/* <<<BEGIN_OPENVI_PART_CARTRIDGE: P05_DIAL_30ST_TOOLING>>> */
+(function registerP05Cartridge() {
+  "use strict";
+
+  const DEG2RAD = Math.PI / 180.0;
+
+  /* --- Self-contained 4x4 Column-Major Matrix Math (mm, Right-Handed Z-Up) --- */
+  function m4Identity() {
+    return new Float32Array([
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ]);
+  }
+
+  function m4Mul(a, b) {
+    const out = new Float32Array(16);
+    for (let c = 0; c < 4; c++) {
+      const b0 = b[c * 4], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+      out[c * 4]     = a[0] * b0 + a[4] * b1 + a[8]  * b2 + a[12] * b3;
+      out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9]  * b2 + a[13] * b3;
+      out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+      out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+    }
+    return out;
+  }
+
+  function m4Translate(tx, ty, tz) {
+    const m = m4Identity();
+    m[12] = tx; m[13] = ty; m[14] = tz;
+    return m;
+  }
+
+  function m4RotZ(rad) {
+    const c = Math.cos(rad), s = Math.sin(rad);
+    return new Float32Array([
+       c,  s, 0, 0,
+      -s,  c, 0, 0,
+       0,  0, 1, 0,
+       0,  0, 0, 1
+    ]);
+  }
+
+  function m4RotY(rad) {
+    const c = Math.cos(rad), s = Math.sin(rad);
+    return new Float32Array([
+       c, 0, -s, 0,
+       0, 1,  0, 0,
+       s, 0,  c, 0,
+       0, 0,  0, 1
+    ]);
+  }
+
+  /* --- Mesh Collector Builder --- */
+  function createCollector() {
+    return {
+      pos: [],
+      nrm: [],
+      idx: [],
+      edg: [],
+      vCount: 0,
+      addTri(p0, p1, p2, n0, n1, n2) {
+        let nx = n0 ? n0[0] : 0, ny = n0 ? n0[1] : 0, nz = n0 ? n0[2] : 1;
+        if (!n0) {
+          const ux = p1[0] - p0[0], uy = p1[1] - p0[1], uz = p1[2] - p0[2];
+          const vx = p2[0] - p0[0], vy = p2[1] - p0[1], vz = p2[2] - p0[2];
+          nx = uy * vz - uz * vy;
+          ny = uz * vx - ux * vz;
+          nz = ux * vy - uy * vx;
+          const len = Math.hypot(nx, ny, nz) || 1;
+          nx /= len; ny /= len; nz /= len;
+        }
+        const base = this.vCount;
+        this.pos.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+        if (n0 && n1 && n2) {
+          this.nrm.push(n0[0], n0[1], n0[2], n1[0], n1[1], n1[2], n2[0], n2[1], n2[2]);
+        } else {
+          this.nrm.push(nx, ny, nz, nx, ny, nz, nx, ny, nz);
+        }
+        this.idx.push(base, base + 1, base + 2);
+        this.vCount += 3;
+      },
+      addQuad(p0, p1, p2, p3, n0, n1, n2, n3) {
+        this.addTri(p0, p1, p2, n0, n1, n2);
+        this.addTri(p0, p2, p3, n0, n2, n3);
+      },
+      addEdge(a, b) {
+        this.edg.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+      },
+      addLoopEdges(pts3d, closed = true) {
+        const n = pts3d.length;
+        for (let i = 0; i < n - 1; i++) this.addEdge(pts3d[i], pts3d[i + 1]);
+        if (closed && n > 2) this.addEdge(pts3d[n - 1], pts3d[0]);
+      },
+      toBuffers(kernel) {
+        const raw = {
+          positions: new Float32Array(this.pos),
+          normals: new Float32Array(this.nrm),
+          indices: new Uint16Array(this.idx),
+          edges: new Float32Array(this.edg),
+          triCount: this.idx.length / 3
+        };
+        return kernel && kernel.createMesh ? kernel.createMesh(raw) : raw;
+      }
+    };
+  }
+
+  /* --- 2D Polygon & Bowyer-Watson Delaunay Triangulation (PERFORATED_PLATE) --- */
+  function subdivideLoop2D(loop, maxSegLen) {
+    const out = [];
+    const n = loop.length;
+    for (let i = 0; i < n; i++) {
+      const a = loop[i];
+      const b = loop[(i + 1) % n];
+      const dist = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const steps = Math.max(1, Math.ceil(dist / maxSegLen));
+      for (let s = 0; s < steps; s++) {
+        const t = s / steps;
+        out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      }
+    }
+    return out;
+  }
+
+  function pointInPoly2D(px, py, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i][0], yi = poly[i][1];
+      const xj = poly[j][0], yj = poly[j][1];
+      const intersect = ((yi > py) !== (yj > py)) &&
+        (px < (xj - xi) * (py - yi) / ((yj - yi) || 1e-12) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function circumcircle(p0, p1, p2) {
+    const ax = p0[0], ay = p0[1];
+    const bx = p1[0], by = p1[1];
+    const cx = p2[0], cy = p2[1];
+    const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    if (Math.abs(d) < 1e-11) return null;
+    const a2 = ax * ax + ay * ay;
+    const b2 = bx * bx + by * by;
+    const c2 = cx * cx + cy * cy;
+    const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d;
+    const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+    const dx = ux - ax, dy = uy - ay;
+    return { x: ux, y: uy, r2: dx * dx + dy * dy };
+  }
+
+  function bowyerWatson2D(outerLoop, holeLoops, steinerPts) {
+    const pts = [];
+    for (let i = 0; i < outerLoop.length; i++) pts.push(outerLoop[i]);
+    for (let h = 0; h < holeLoops.length; h++) {
+      const hl = holeLoops[h];
+      for (let i = 0; i < hl.length; i++) pts.push(hl[i]);
+    }
+    if (steinerPts) {
+      for (let i = 0; i < steinerPts.length; i++) pts.push(steinerPts[i]);
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      if (pts[i][0] < minX) minX = pts[i][0];
+      if (pts[i][1] < minY) minY = pts[i][1];
+      if (pts[i][0] > maxX) maxX = pts[i][0];
+      if (pts[i][1] > maxY) maxY = pts[i][1];
+    }
+    const span = Math.max(maxX - minX, maxY - minY) || 100;
+    const midX = (minX + maxX) * 0.5;
+    const midY = (minY + maxY) * 0.5;
+
+    const st0 = [midX - 20 * span, midY - 20 * span];
+    const st1 = [midX + 20 * span, midY - 20 * span];
+    const st2 = [midX, midY + 25 * span];
+    const i0 = pts.length, i1 = pts.length + 1, i2 = pts.length + 2;
+    pts.push(st0, st1, st2);
+
+    let tris = [{ a: i0, b: i1, c: i2, cc: circumcircle(st0, st1, st2) }];
+
+    for (let pIdx = 0; pIdx < i0; pIdx++) {
+      const p = pts[pIdx];
+      const bad = [];
+      const good = [];
+      for (let t = 0; t < tris.length; t++) {
+        const tr = tris[t];
+        if (!tr.cc) continue;
+        const dx = p[0] - tr.cc.x, dy = p[1] - tr.cc.y;
+        if (dx * dx + dy * dy <= tr.cc.r2 + 1e-7) bad.push(tr);
+        else good.push(tr);
+      }
+
+      const edgeMap = new Map();
+      const addPolyEdge = (u, v) => {
+        const k1 = u < v ? u + "_" + v : v + "_" + u;
+        if (edgeMap.has(k1)) edgeMap.delete(k1);
+        else edgeMap.set(k1, [u, v]);
+      };
+
+      for (let b = 0; b < bad.length; b++) {
+        addPolyEdge(bad[b].a, bad[b].b);
+        addPolyEdge(bad[b].b, bad[b].c);
+        addPolyEdge(bad[b].c, bad[b].a);
+      }
+
+      tris = good;
+      edgeMap.forEach(([u, v]) => {
+        const pa = pts[u], pb = pts[v], pc = p;
+        const cross = (pb[0] - pa[0]) * (pc[1] - pa[1]) - (pb[1] - pa[1]) * (pc[0] - pa[0]);
+        if (Math.abs(cross) > 1e-9) {
+          const a = cross > 0 ? u : v;
+          const b = cross > 0 ? v : u;
+          const cc = circumcircle(pts[a], pts[b], pc);
+          if (cc) tris.push({ a, b, c: pIdx, cc });
+        }
+      });
+    }
+
+    const result = [];
+    for (let t = 0; t < tris.length; t++) {
+      const tr = tris[t];
+      if (tr.a >= i0 || tr.b >= i0 || tr.c >= i0) continue;
+      const pa = pts[tr.a], pb = pts[tr.b], pc = pts[tr.c];
+      const cx = (pa[0] + pb[0] + pc[0]) / 3;
+      const cy = (pa[1] + pb[1] + pc[1]) / 3;
+      if (!pointInPoly2D(cx, cy, outerLoop)) continue;
+      let inHole = false;
+      for (let h = 0; h < holeLoops.length; h++) {
+        if (pointInPoly2D(cx, cy, holeLoops[h])) {
+          inHole = true;
+          break;
+        }
+      }
+      if (!inHole) result.push([pa, pb, pc]);
+    }
+    return result;
+  }
+
+  /* --- Primitive & B-Rep Shape Generators --- */
+  function makeCircle2D(cx, cy, r, segs) {
+    const pts = [];
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs) * Math.PI * 2;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+
+  function makeStadium2D(cx, cy, widthX, lenY, arcSegs) {
+    // Stadium along Y (width along X = 2*rx, total length along Y = lenY >= widthX)
+    const rx = widthX * 0.5;
+    const halfStraight = Math.max(0, lenY * 0.5 - rx);
+    const pts = [];
+    for (let i = 0; i <= arcSegs; i++) {
+      const a = (i / arcSegs) * Math.PI; // 0 to PI (+Y cap)
+      pts.push([cx + rx * Math.cos(a), cy + halfStraight + rx * Math.sin(a)]);
+    }
+    for (let i = 0; i <= arcSegs; i++) {
+      const a = Math.PI + (i / arcSegs) * Math.PI; // PI to 2PI (-Y cap)
+      pts.push([cx + rx * Math.cos(a), cy - halfStraight + rx * Math.sin(a)]);
+    }
+    return pts;
+  }
+
+  function makeStadiumX2D(cx, cy, lenX, widthY, arcSegs) {
+    // Stadium along X (for Faston slot Ø1.8 x 4.0 mm)
+    const ry = widthY * 0.5;
+    const halfStraight = Math.max(0, lenX * 0.5 - ry);
+    const pts = [];
+    for (let i = 0; i <= arcSegs; i++) {
+      const a = -Math.PI * 0.5 + (i / arcSegs) * Math.PI;
+      pts.push([cx + halfStraight + ry * Math.cos(a), cy + ry * Math.sin(a)]);
+    }
+    for (let i = 0; i <= arcSegs; i++) {
+      const a = Math.PI * 0.5 + (i / arcSegs) * Math.PI;
+      pts.push([cx - halfStraight + ry * Math.cos(a), cy + ry * Math.sin(a)]);
+    }
+    return pts;
+  }
+
+  function makeRoundedRect2D(cx, cy, wx, wy, r, cornerSegs) {
+    const hx = wx * 0.5 - r;
+    const hy = wy * 0.5 - r;
+    const corners = [
+      [cx + hx, cy + hy, 0],
+      [cx - hx, cy + hy, Math.PI * 0.5],
+      [cx - hx, cy - hy, Math.PI],
+      [cx + hx, cy - hy, Math.PI * 1.5]
+    ];
+    const pts = [];
+    for (let c = 0; c < 4; c++) {
+      const [ox, oy, a0] = corners[c];
+      for (let i = 0; i <= cornerSegs; i++) {
+        const a = a0 + (i / cornerSegs) * (Math.PI * 0.5);
+        pts.push([ox + r * Math.cos(a), oy + r * Math.sin(a)]);
+      }
+    }
+    return pts;
+  }
+
+  function addExtrudedWall(col, loop2d, z0, z1, inwardNormal, smooth, drawTopEdge, drawBotEdge) {
+    const n = loop2d.length;
+    const sign = inwardNormal ? -1 : 1;
+    // Compute vertex radial/averaged normals if smooth
+    const vNorms = [];
+    if (smooth) {
+      let cx = 0, cy = 0;
+      for (let i = 0; i < n; i++) { cx += loop2d[i][0]; cy += loop2d[i][1]; }
+      cx /= n; cy /= n;
+      for (let i = 0; i < n; i++) {
+        let dx = (loop2d[i][0] - cx) * sign;
+        let dy = (loop2d[i][1] - cy) * sign;
+        const l = Math.hypot(dx, dy) || 1;
+        vNorms.push([dx / l, dy / l, 0]);
+      }
+    }
+
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const a = loop2d[i], b = loop2d[j];
+      const p0 = [a[0], a[1], z0];
+      const p1 = [b[0], b[1], z0];
+      const p2 = [b[0], b[1], z1];
+      const p3 = [a[0], a[1], z1];
+
+      if (inwardNormal) {
+        if (smooth) col.addQuad(p1, p0, p3, p2, vNorms[j], vNorms[i], vNorms[i], vNorms[j]);
+        else col.addQuad(p1, p0, p3, p2);
+      } else {
+        if (smooth) col.addQuad(p0, p1, p2, p3, vNorms[i], vNorms[j], vNorms[j], vNorms[i]);
+        else col.addQuad(p0, p1, p2, p3);
+      }
+    }
+
+    if (drawBotEdge) col.addLoopEdges(loop2d.map(p => [p[0], p[1], z0]), true);
+    if (drawTopEdge) col.addLoopEdges(loop2d.map(p => [p[0], p[1], z1]), true);
+  }
+
+  function addPlanarPerforatedFace(col, outerLoop, holeLoops, z, upNormal, maxSeg = 5.0, steinerPts = null) {
+    const denseOuter = subdivideLoop2D(outerLoop, maxSeg);
+    const tris = bowyerWatson2D(denseOuter, holeLoops, steinerPts);
+    const nz = upNormal ? 1 : -1;
+    const nrm = [0, 0, nz];
+    for (let i = 0; i < tris.length; i++) {
+      const [a, b, c] = tris[i];
+      if (upNormal) {
+        col.addTri([a[0], a[1], z], [b[0], b[1], z], [c[0], c[1], z], nrm, nrm, nrm);
+      } else {
+        col.addTri([a[0], a[1], z], [c[0], c[1], z], [b[0], b[1], z], nrm, nrm, nrm);
+      }
+    }
+  }
+
+  function addCylinderZ(col, cx, cy, z0, z1, r0, r1, segs, capBot, capTop) {
+    const bot = [], top = [];
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs) * Math.PI * 2;
+      const c = Math.cos(a), s = Math.sin(a);
+      bot.push([cx + r0 * c, cy + r0 * s, z0, c, s]);
+      top.push([cx + r1 * c, cy + r1 * s, z1, c, s]);
+    }
+    const dz = z1 - z0, dr = r0 - r1;
+    const nl = Math.hypot(dz, dr) || 1;
+    const nr = dz / nl, nz = dr / nl;
+    for (let i = 0; i < segs; i++) {
+      const j = (i + 1) % segs;
+      const b0 = bot[i], b1 = bot[j], t1 = top[j], t0 = top[i];
+      col.addQuad(
+        [b0[0], b0[1], b0[2]], [b1[0], b1[1], b1[2]], [t1[0], t1[1], t1[2]], [t0[0], t0[1], t0[2]],
+        [b0[3] * nr, b0[4] * nr, nz], [b1[3] * nr, b1[4] * nr, nz],
+        [t1[3] * nr, t1[4] * nr, nz], [t0[3] * nr, t0[4] * nr, nz]
+      );
+    }
+    col.addLoopEdges(bot.map(p => [p[0], p[1], p[2]]), true);
+    col.addLoopEdges(top.map(p => [p[0], p[1], p[2]]), true);
+    if (capBot && r0 > 0) {
+      for (let i = 0; i < segs; i++) {
+        const j = (i + 1) % segs;
+        col.addTri([cx, cy, z0], [bot[j][0], bot[j][1], z0], [bot[i][0], bot[i][1], z0], [0,0,-1],[0,0,-1],[0,0,-1]);
+      }
+    }
+    if (capTop && r1 > 0) {
+      for (let i = 0; i < segs; i++) {
+        const j = (i + 1) % segs;
+        col.addTri([cx, cy, z1], [top[i][0], top[i][1], z1], [top[j][0], top[j][1], z1], [0,0,1],[0,0,1],[0,0,1]);
+      }
+    }
+  }
+
+  function addCylinderX(col, x0, x1, cy, cz, r, segs, capStart, capEnd) {
+    const sRing = [], eRing = [];
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs) * Math.PI * 2;
+      const c = Math.cos(a), s = Math.sin(a);
+      sRing.push([x0, cy + r * c, cz + r * s, c, s]);
+      eRing.push([x1, cy + r * c, cz + r * s, c, s]);
+    }
+    for (let i = 0; i < segs; i++) {
+      const j = (i + 1) % segs;
+      const a0 = sRing[i], a1 = sRing[j], b1 = eRing[j], b0 = eRing[i];
+      col.addQuad(
+        [a0[0], a0[1], a0[2]], [b0[0], b0[1], b0[2]], [b1[0], b1[1], b1[2]], [a1[0], a1[1], a1[2]],
+        [0, a0[3], a0[4]], [0, b0[3], b0[4]], [0, b1[3], b1[4]], [0, a1[3], a1[4]]
+      );
+    }
+    col.addLoopEdges(sRing.map(p => [p[0], p[1], p[2]]), true);
+    col.addLoopEdges(eRing.map(p => [p[0], p[1], p[2]]), true);
+    if (capStart) {
+      for (let i = 0; i < segs; i++) {
+        const j = (i + 1) % segs;
+        col.addTri([x0, cy, cz], [x0, sRing[j][1], sRing[j][2]], [x0, sRing[i][1], sRing[i][2]], [-1,0,0],[-1,0,0],[-1,0,0]);
+      }
+    }
+    if (capEnd) {
+      for (let i = 0; i < segs; i++) {
+        const j = (i + 1) % segs;
+        col.addTri([x1, cy, cz], [x1, eRing[i][1], eRing[i][2]], [x1, eRing[j][1], eRing[j][2]], [1,0,0],[1,0,0],[1,0,0]);
+      }
+    }
+  }
+
+  function addBox(col, x0, x1, y0, y1, z0, z1, edges = true) {
+    const p = [
+      [x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+      [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]
+    ];
+    col.addQuad(p[4], p[5], p[6], p[7]); // +Z
+    col.addQuad(p[1], p[0], p[3], p[2]); // -Z
+    col.addQuad(p[1], p[2], p[6], p[5]); // +X
+    col.addQuad(p[3], p[0], p[4], p[7]); // -X
+    col.addQuad(p[2], p[3], p[7], p[6]); // +Y
+    col.addQuad(p[0], p[1], p[5], p[4]); // -Y
+    if (edges) {
+      col.addLoopEdges([p[0], p[1], p[2], p[3]], true);
+      col.addLoopEdges([p[4], p[5], p[6], p[7]], true);
+      for (let i = 0; i < 4; i++) col.addEdge(p[i], p[i + 4]);
+    }
+  }
+
+  /* --- 1. Main Dial Ring Plate (Annular Ø760..Ø980 mm, 30× Poka-Yoke Seats @ R450) --- */
+  function buildMainDialRingMesh(kernel, lod) {
+    // Built with unit thickness Z in [0, 1] so zScale = dialThicknessMm works live without rebuilding VBO!
+    const col = createCollector();
+    const rIn = 380.0;   // Ø760.0 mm (clears Ø750 stationary island)
+    const rOut = 490.0;  // Ø980.0 mm
+    const holeSegs = lod === "lod0" ? 12 : 8;
+    const arcSteps = lod === "lod0" ? 6 : 3;
+    const dTheta = 12.0 * DEG2RAD;
+    const halfTh = dTheta * 0.5;
+
+    // Build ONE 12° sector centered around angle 0 (+X), then rotate-clone 30 times!
+    const sectorOuter = [];
+    for (let i = 0; i <= arcSteps; i++) {
+      const a = -halfTh + (i / arcSteps) * dTheta;
+      sectorOuter.push([rOut * Math.cos(a), rOut * Math.sin(a)]);
+    }
+    for (let i = arcSteps; i >= 0; i--) {
+      const a = -halfTh + (i / arcSteps) * dTheta;
+      sectorOuter.push([rIn * Math.cos(a), rIn * Math.sin(a)]);
+    }
+
+    // Poka-Yoke Quick-Change Holes in local sector around R_pitch = 450.0 mm:
+    // 1) Central Quick-Lock Bush Ø10.0 mm at (450, 0)
+    // 2) Dowel Pin Bush #1 Ø6.0 H7 at (440, -15) -> local (-10, -15)
+    // 3) Dowel Pin Bush #2 Ø6.0 H7 at (460, +15) -> local (+10, +15)
+    // 4) Asymmetric Poka-Yoke Key Hole Ø5.0 mm at (434, +18) -> prevents 180° flip!
+    const hCenter = makeCircle2D(450.0, 0.0, 5.0, holeSegs);
+    const hDowel1 = makeCircle2D(440.0, -15.0, 3.0, holeSegs);
+    const hDowel2 = makeCircle2D(460.0, +15.0, 3.0, holeSegs);
+    const hPokaKey = makeCircle2D(434.0, +18.0, 2.5, holeSegs);
+    const sectorHoles = [hCenter, hDowel1, hDowel2, hPokaKey];
+
+    const denseSector = subdivideLoop2D(sectorOuter, lod === "lod0" ? 14.0 : 24.0);
+    const sectorTris = bowyerWatson2D(denseSector, sectorHoles, [
+      [410, -20], [410, 0], [410, 20], [476, -22], [476, 0], [476, 22]
+    ]);
+
+    for (let st = 0; st < 30; st++) {
+      const ang = (-90.0 + st * 12.0) * DEG2RAD;
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      const rot2 = (p) => [p[0] * ca - p[1] * sa, p[0] * sa + p[1] * ca];
+
+      for (let t = 0; t < sectorTris.length; t++) {
+        const [p0, p1, p2] = sectorTris[t];
+        const q0 = rot2(p0), q1 = rot2(p1), q2 = rot2(p2);
+        col.addTri([q0[0], q0[1], 1], [q1[0], q1[1], 1], [q2[0], q2[1], 1], [0,0,1],[0,0,1],[0,0,1]);
+        col.addTri([q0[0], q0[1], 0], [q2[0], q2[1], 0], [q1[0], q1[1], 0], [0,0,-1],[0,0,-1],[0,0,-1]);
+      }
+
+      // Inner through-hole cylindrical walls for all 4 Poka-Yoke holes at this station
+      for (let h = 0; h < sectorHoles.length; h++) {
+        const rLoop = sectorHoles[h].map(rot2);
+        addExtrudedWall(col, rLoop, 0.0, 1.0, true, true, true, false);
+      }
+
+      // Subtle scribed station seat outline on dial top face (Z = 1.002)
+      const seatBox = [
+        rot2([428, -37]), rot2([472, -37]), rot2([472, 37]), rot2([428, 37])
+      ].map(p => [p[0], p[1], 1.002]);
+      col.addLoopEdges(seatBox, true);
+    }
+
+    // Outer Ø980 & Inner Ø760 smooth cylindrical rims
+    const rimSegs = lod === "lod0" ? 120 : 60;
+    const outerRim = makeCircle2D(0, 0, rOut, rimSegs);
+    const innerRim = makeCircle2D(0, 0, rIn, rimSegs);
+    addExtrudedWall(col, outerRim, 0.0, 1.0, false, true, true, true);
+    addExtrudedWall(col, innerRim, 0.0, 1.0, true, true, true, true);
+
+    // PCD Ø865.5 mm (R = 432.75 mm) 12× M8/Ø8H7 mounting bolt heads recessed on dial
+    if (lod === "lod0") {
+      for (let b = 0; b < 12; b++) {
+        const ba = (b / 12) * Math.PI * 2 + 6 * DEG2RAD;
+        const bx = 432.75 * Math.cos(ba), by = 432.75 * Math.sin(ba);
+        addCylinderZ(col, bx, by, 1.0, 1.08, 5.5, 5.5, 10, false, true);
+      }
+    }
+
+    return col.toBuffers(kernel);
+  }
+
+  /* --- 2. Quick-Change Sub-Base Adapter Plate (Model A Blue / Model B Amber) --- */
+  function buildSubBaseMesh(kernel, variant, lod) {
+    const col = createCollector();
+    const isB = variant === "B";
+    const wx = isB ? 48.0 : 44.0;
+    const wy = isB ? 80.0 : 74.0;
+    const h = 15.0; // Z_local in [0, 15.0]
+    const segs = lod === "lod0" ? 4 : 2;
+
+    const outer = makeRoundedRect2D(0, 0, wx, wy, 4.0, segs);
+    const centerLockHole = makeCircle2D(0, 0, 5.0, lod === "lod0" ? 12 : 8);
+
+    addPlanarPerforatedFace(col, outer, [centerLockHole], h, true, 8.0);
+    addPlanarPerforatedFace(col, outer, [centerLockHole], 0.0, false, 8.0);
+    addExtrudedWall(col, outer, 0.0, h, false, false, true, true);
+    addExtrudedWall(col, centerLockHole, 0.0, h, true, true, true, true);
+
+    // Quick-Change Front Pull Handle / Cam-Lock Tab on +X (Outer Radial Side facing operator at -Y!)
+    addBox(col, wx * 0.5, wx * 0.5 + 6.5, -10.0, 10.0, 3.5, 11.5, true);
+
+    // Bottom Poka-Yoke Dowel Pins protruding downward (-6.0 mm below Z=0) so visible during lift!
+    const pinSegs = lod === "lod0" ? 12 : 8;
+    addCylinderZ(col, -10.0, -15.0, -5.0, 0.0, 3.0, 3.0, pinSegs, false, false);
+    addCylinderZ(col, -10.0, -15.0, -6.2, -5.0, 2.0, 3.0, pinSegs, true, false);
+    addCylinderZ(col, +10.0, +15.0, -5.0, 0.0, 3.0, 3.0, pinSegs, false, false);
+    addCylinderZ(col, +10.0, +15.0, -6.2, -5.0, 2.0, 3.0, pinSegs, true, false);
+    // Asymmetric 3rd Poka-Yoke Key Pin at (-16, +18)
+    addCylinderZ(col, -16.0, +18.0, -4.5, 0.0, 2.45, 2.45, pinSegs, true, false);
+
+    return col.toBuffers(kernel);
+  }
+
+  /* --- 3. Fixture Nest Block (#42) + 2× Slotted Stadium Locating Pins (#44) --- */
+  function buildFixtureNestMesh(kernel, variant, lod) {
+    const nestCol = createCollector();
+    const pinCol = createCollector();
+    const isB = variant === "B";
+
+    // DG-2026-106 Exact Specs for Model A: 35.0 x 65.0 x 15.0 mm, Pitch 54.0 mm (±27.0)
+    // Variant Model B: 40.0 x 72.0 x 18.0 mm, Pitch 60.0 mm (±30.0)
+    const wx = isB ? 40.0 : 35.0;
+    const wy = isB ? 72.0 : 65.0;
+    const hz = isB ? 18.0 : 15.0;
+    const pinY = isB ? 30.0 : 27.0;
+    const reliefZ = 2.5; // Side clamp reliefs R7.5 mm from Z=0..2.5 mm
+    const cbDepth = 6.5; // Ø12.0 counterbore Z=0..6.5 mm, M3x0.5 (Ø2.459) Z=6.5..hz
+
+    const cSegs = lod === "lod0" ? 16 : 10;
+    const sSegs = lod === "lod0" ? 8 : 5;
+
+    // Upper Slab [reliefZ .. hz]: Full rectangular footprint wx × wy
+    const hx = wx * 0.5, hy = wy * 0.5;
+    const topOuter = [[-hx, -hy], [hx, -hy], [hx, hy], [-hx, hy]];
+    const m3Hole = makeCircle2D(0, 0, 1.2295, cSegs); // TAP_M3x0.5 minor Ø2.459 mm
+    const pocket1 = makeStadium2D(0, +pinY, 5.0, 6.0, sSegs);
+    const pocket2 = makeStadium2D(0, -pinY, 5.0, 6.0, sSegs);
+
+    addPlanarPerforatedFace(nestCol, topOuter, [m3Hole, pocket1, pocket2], hz, true, 7.0);
+    addExtrudedWall(nestCol, topOuter, reliefZ, hz, false, false, true, true);
+
+    // M3x0.5 thread bore wall (Z = cbDepth -> hz) + Ø12.0 mm Counterbore wall (Z = 0 -> cbDepth)
+    const cbHole = makeCircle2D(0, 0, 6.0, cSegs); // Ø12.0 mm
+    addExtrudedWall(nestCol, m3Hole, cbDepth, hz, true, true, true, true);
+    addExtrudedWall(nestCol, cbHole, 0.0, cbDepth, true, true, true, true);
+    // Annular counterbore step ceiling at Z = cbDepth facing -Z
+    addPlanarPerforatedFace(nestCol, cbHole, [m3Hole], cbDepth, false, 4.0);
+
+    // Lower Slab [0 .. reliefZ] with 2× semicircular Side Clamp Reliefs R = 7.50 mm at X = ±hx, Y = 0
+    const rClamp = 7.5;
+    const botOuter = [];
+    botOuter.push([-hx, -hy], [hx, -hy]);
+    // Right side (+hx) concave semicircular relief from Y = -7.5 to +7.5
+    for (let i = 0; i <= sSegs * 2; i++) {
+      const a = -Math.PI * 0.5 - (i / (sSegs * 2)) * Math.PI; // -90° to -270° (indents inward -X)
+      botOuter.push([hx + rClamp * Math.cos(a), rClamp * Math.sin(a)]);
+    }
+    botOuter.push([hx, hy], [-hx, hy]);
+    // Left side (-hx) concave semicircular relief from Y = +7.5 to -7.5
+    for (let i = 0; i <= sSegs * 2; i++) {
+      const a = Math.PI * 0.5 - (i / (sSegs * 2)) * Math.PI; // +90° to -90° (indents inward +X)
+      botOuter.push([-hx + rClamp * Math.cos(a), rClamp * Math.sin(a)]);
+    }
+
+    const dowelB1 = makeCircle2D(-10.0, -15.0, 3.0, cSegs); // Ø6.0 bottom dowel
+    const dowelB2 = makeCircle2D(+10.0, +15.0, 3.0, cSegs);
+    addPlanarPerforatedFace(nestCol, botOuter, [cbHole, dowelB1, dowelB2], 0.0, false, 6.5);
+    addExtrudedWall(nestCol, botOuter, 0.0, reliefZ, false, false, true, true);
+    // Overhang ceiling of the two R7.5 side clamp reliefs at Z = reliefZ
+    addPlanarPerforatedFace(nestCol, topOuter, [cbHole, dowelB1, dowelB2], reliefZ, false, 7.5);
+    addExtrudedWall(nestCol, dowelB1, 0.0, 8.0, true, true, false, true);
+    addExtrudedWall(nestCol, dowelB2, 0.0, 8.0, true, true, false, true);
+
+    // Solid #44: 2× Slotted Stadium Locating Pins (5.0 × 6.0 mm body -> 3.0 × 4.0 mm 45° chamfer tip at hz + 4.0)
+    const buildPinAt = (py) => {
+      const pBody = makeStadium2D(0, py, 5.0, 6.0, sSegs);
+      const pTip = makeStadium2D(0, py, 3.0, 4.0, sSegs);
+      const zShoulder = hz + 3.0;
+      const zTip = hz + 4.0;
+      addExtrudedWall(pinCol, pBody, 7.0, zShoulder, false, true, true, false);
+      // Conical/chamfered stadium transition zShoulder -> zTip
+      for (let i = 0; i < pBody.length; i++) {
+        const j = (i + 1) % pBody.length;
+        pinCol.addQuad(
+          [pBody[i][0], pBody[i][1], zShoulder],
+          [pBody[j][0], pBody[j][1], zShoulder],
+          [pTip[j][0], pTip[j][1], zTip],
+          [pTip[i][0], pTip[i][1], zTip]
+        );
+      }
+      pinCol.addLoopEdges(pTip.map(p => [p[0], p[1], zTip]), true);
+      addPlanarPerforatedFace(pinCol, pTip, [], zTip, true, 3.0);
+    };
+    buildPinAt(+pinY);
+    buildPinAt(-pinY);
+
+    return {
+      nest: nestCol.toBuffers(kernel),
+      pins: pinCol.toBuffers(kernel)
+    };
+  }
+
+  /* --- 4. UUT_DUMMY (#43): Perforated Diamond Flange + Shielded Can + 5 Perforated Faston Tabs --- */
+  function buildUutDummyMesh(kernel, variant, lod) {
+    const bodyCol = createCollector();
+    const tabCol = createCollector();
+    const bushCol = createCollector();
+    const isB = variant === "B";
+
+    // Local origin Z = 0 at Nest Top Face!
+    // Model A (DG-2026-106 exact): Flange 32.5 x 64.0 x 0.7, Pitch ±27.0, Can 32.5 x 43.5 x 24.3,
+    // 3x Outer Faston (+X) at Y=±10.5 Z=9.3 (24.3 above nest bot) tip +27.85 & Center Ground Y=0 Z=15.3 (30.3 above nest bot) tip +29.05
+    // 2x Inner Faston (-X) at Y=±10.5 Z=9.3 tip -27.85
+    const canWx = isB ? 36.0 : 32.5;
+    const canWy = isB ? 48.0 : 43.5;
+    const canH  = isB ? 31.5 : 24.3;
+    const pinY  = isB ? 30.0 : 27.0;
+    const earR  = 5.0; // True Tip-to-Tip = 2*(27+5) = 64.000 mm (Model A) / 70.000 mm (Model B)
+    const flangeT = 0.70;
+    const arcSegs = lod === "lod0" ? 8 : 5;
+
+    // 1) Diamond Flange with R5.0 rounded tips at Y = ±pinY & 2× 5.30×6.30 mm Stadium Slots
+    const flangeOuter = [];
+    // +Y ear arc (-35° to +215°)
+    for (let i = 0; i <= arcSegs; i++) {
+      const a = (-25 + (i / arcSegs) * 230) * DEG2RAD;
+      flangeOuter.push([earR * Math.cos(a), +pinY + earR * Math.sin(a)]);
+    }
+    flangeOuter.push([-canWx * 0.5, 6.0], [-canWx * 0.5, -6.0]);
+    for (let i = 0; i <= arcSegs; i++) {
+      const a = (155 + (i / arcSegs) * 230) * DEG2RAD;
+      flangeOuter.push([earR * Math.cos(a), -pinY + earR * Math.sin(a)]);
+    }
+    flangeOuter.push([+canWx * 0.5, -6.0], [+canWx * 0.5, 6.0]);
+
+    const slot1 = makeStadium2D(0, +pinY, 5.30, 6.30, arcSegs);
+    const slot2 = makeStadium2D(0, -pinY, 5.30, 6.30, arcSegs);
+    addPlanarPerforatedFace(bodyCol, flangeOuter, [slot1, slot2], flangeT, true, 6.0);
+    addPlanarPerforatedFace(bodyCol, flangeOuter, [slot1, slot2], 0.0, false, 6.0);
+    addExtrudedWall(bodyCol, flangeOuter, 0.0, flangeT, false, false, true, true);
+    addExtrudedWall(bodyCol, slot1, 0.0, flangeT, true, true, true, false);
+    addExtrudedWall(bodyCol, slot2, 0.0, flangeT, true, true, true, false);
+
+    // 2) Rounded Shielded Can (R4.5 vertical corners + R3.0 roof bevel)
+    const canLoop = makeRoundedRect2D(0, 0, canWx, canWy, 4.5, lod === "lod0" ? 4 : 2);
+    const roofLoop = makeRoundedRect2D(0, 0, canWx - 4.0, canWy - 4.0, 3.0, lod === "lod0" ? 4 : 2);
+    const zRoofBevel = canH - 2.2;
+    addExtrudedWall(bodyCol, canLoop, flangeT, zRoofBevel, false, true, true, false);
+    for (let i = 0; i < canLoop.length; i++) {
+      const j = (i + 1) % canLoop.length;
+      bodyCol.addQuad(
+        [canLoop[i][0], canLoop[i][1], zRoofBevel],
+        [canLoop[j][0], canLoop[j][1], zRoofBevel],
+        [roofLoop[j][0], roofLoop[j][1], canH],
+        [roofLoop[i][0], roofLoop[i][1], canH]
+      );
+    }
+    bodyCol.addLoopEdges(roofLoop.map(p => [p[0], p[1], canH]), true);
+    addPlanarPerforatedFace(bodyCol, roofLoop, [], canH, true, 8.0);
+
+    // 3) 4× Stepped Insulator Bushings (Ø13.0×2.0 + Ø10.7×1.5) at Y = ±10.50, Z_above_nest = 9.30 (24.30 rel nest bot)
+    const zTabStd = isB ? 12.5 : 9.30; // For Model A: 15.0 + 9.30 = 24.30 mm exact!
+    const zTabGnd = isB ? 20.5 : 15.30; // For Model A: 15.0 + 15.30 = 30.30 mm exact!
+    const hxCan = canWx * 0.5;
+    const bSegs = lod === "lod0" ? 14 : 8;
+
+    for (const sy of [-10.50, +10.50]) {
+      // +X Outer stepped bushings
+      addCylinderX(bushCol, hxCan, hxCan + 2.0, sy, zTabStd, 6.50, bSegs, false, true);
+      addCylinderX(bushCol, hxCan + 2.0, hxCan + 3.5, sy, zTabStd, 5.35, bSegs, false, true);
+      // -X Inner stepped bushings
+      addCylinderX(bushCol, -hxCan - 2.0, -hxCan, sy, zTabStd, 6.50, bSegs, true, false);
+      addCylinderX(bushCol, -hxCan - 3.5, -hxCan - 2.0, sy, zTabStd, 5.35, bSegs, true, false);
+    }
+
+    // 4) 5× Perforated Faston Blades (6.30 × 0.80 mm with Ø1.80 × 4.00 mm slot via Bowyer-Watson!)
+    const addFastonTab = (dirSign, yCenter, zCenter, xTipAbs, isGroundStep) => {
+      const xRoot = dirSign * (hxCan + (isGroundStep ? 0.0 : 3.5));
+      const xTip = dirSign * xTipAbs;
+      const xMin = Math.min(xRoot, xTip);
+      const xMax = Math.max(xRoot, xTip);
+      const halfW = 3.15; // 6.30 mm width
+      const halfT = 0.40; // 0.80 mm thick
+      const bevel = 1.0;
+
+      let tabOuter;
+      if (dirSign > 0) {
+        tabOuter = [
+          [xMin, yCenter - halfW],
+          [xMax - bevel, yCenter - halfW],
+          [xMax, yCenter - halfW + bevel],
+          [xMax, yCenter + halfW - bevel],
+          [xMax - bevel, yCenter + halfW],
+          [xMin, yCenter + halfW]
+        ];
+      } else {
+        tabOuter = [
+          [xMax, yCenter - halfW],
+          [xMin + bevel, yCenter - halfW],
+          [xMin, yCenter - halfW + bevel],
+          [xMin, yCenter + halfW - bevel],
+          [xMin + bevel, yCenter + halfW],
+          [xMax, yCenter + halfW]
+        ];
+      }
+
+      const holeCx = dirSign > 0 ? (xMax - 3.6) : (xMin + 3.6);
+      const slotHole = lod === "lod0"
+        ? makeStadiumX2D(holeCx, yCenter, 4.00, 1.80, 6)
+        : [];
+      const holes = slotHole.length ? [slotHole] : [];
+
+      addPlanarPerforatedFace(tabCol, tabOuter, holes, zCenter + halfT, true, 3.0);
+      addPlanarPerforatedFace(tabCol, tabOuter, holes, zCenter - halfT, false, 3.0);
+      addExtrudedWall(tabCol, tabOuter, zCenter - halfT, zCenter + halfT, false, false, true, false);
+      if (slotHole.length) {
+        addExtrudedWall(tabCol, slotHole, zCenter - halfT, zCenter + halfT, true, true, true, false);
+      }
+      if (isGroundStep) {
+        // Ground bracket riser on +X center
+        addBox(tabCol, hxCan - 1.0, hxCan + 2.5, -3.15, +3.15, zCenter - 3.5, zCenter + halfT, true);
+      }
+    };
+
+    const outerTipStd = isB ? 29.85 : 27.85; // Model A: R = 450 + 27.85 = 477.85 mm!
+    const outerTipGnd = isB ? 31.05 : 29.05; // Model A: R = 450 + 29.05 = 479.05 mm!
+    const innerTipStd = isB ? 29.85 : 27.85; // Model A: R = 450 - 27.85 = 422.15 mm!
+
+    // +X Radially Outward: 3 Tabs (2× Line/Neutral + 1× Center Raised Ground)
+    addFastonTab(+1, -10.50, zTabStd, outerTipStd, false);
+    addFastonTab(+1, +10.50, zTabStd, outerTipStd, false);
+    addFastonTab(+1,   0.00, zTabGnd, outerTipGnd, true);
+
+    // -X Radially Inward: 2 Tabs
+    addFastonTab(-1, -10.50, zTabStd, innerTipStd, false);
+    addFastonTab(-1, +10.50, zTabStd, innerTipStd, false);
+
+    return {
+      body: bodyCol.toBuffers(kernel),
+      bushings: bushCol.toBuffers(kernel),
+      tabs: tabCol.toBuffers(kernel)
+    };
+  }
+
+  /* --- 5. Context Reference Meshes (P03 Deck + P04 WEISS TR1100A Ring + Front Operator Zone) --- */
+  function buildContextRefMeshes(kernel) {
+    // P03 Steel Deck 2000×1480×15 mm (X in [-1000,+1000], Y in [-700,+780], Z in [845,860])
+    const deckCol = createCollector();
+    addBox(deckCol, -1000, 1000, -700, 780, 845, 860, true);
+    // P1, P2, P3 Stationary Center Island Pedestal Pads visible inside Ø750 open center on Z=860
+    addCylinderZ(deckCol, -100, -60, 860, 866, 95, 95, 24, false, true);
+    for (let k = 0; k < 3; k++) {
+      const a = (k * 120 - 90) * DEG2RAD;
+      addBox(deckCol, -100 + 210 * Math.cos(a) - 38, -100 + 210 * Math.cos(a) + 38,
+                      -60 + 210 * Math.sin(a) - 38,  -60 + 210 * Math.sin(a) + 38, 860, 868, true);
+    }
+
+    // P04 WEISS TR1100A Stationary Housing (Z = 860..922, Ø750 inner open center) + DP2 Rear Gearbox (+Y)
+    const trStatCol = createCollector();
+    const sOut = makeCircle2D(-100, -60, 482.0, 64);
+    const sIn  = makeCircle2D(-100, -60, 375.0, 64); // Ø750.0 mm Open Center!
+    addExtrudedWall(trStatCol, sOut, 860, 922, false, true, true, true);
+    addExtrudedWall(trStatCol, sIn,  860, 926, true, true, true, true);
+    addPlanarPerforatedFace(trStatCol, sOut, [sIn], 922, true, 45.0);
+    // Rear Gearbox DP2 dropped into +Y side (Rz = 180° orientation per DG-2026-107)
+    addBox(trStatCol, -210, 10, 395, 610, 790, 915, true);
+    addCylinderZ(trStatCol, -165, 535, 915, 1045, 58, 58, 20, false, true);
+
+    // P04 WEISS TR1100A Rotary Output Ring #480 (Local around 0,0, Z = 922..930, Ø847.5..Ø949.5)
+    const trRotCol = createCollector();
+    const rOut = makeCircle2D(0, 0, 474.75, 72); // Ø949.5 mm
+    const rIn  = makeCircle2D(0, 0, 423.75, 72); // Ø847.5 mm
+    addExtrudedWall(trRotCol, rOut, 922, 930, false, true, true, true);
+    addExtrudedWall(trRotCol, rIn,  922, 930, true, true, true, true);
+    addPlanarPerforatedFace(trRotCol, rOut, [rIn], 930, true, 38.0);
+
+    // Front Operator Service Zone Highlight Bay @ (-100, -510) + Ergonomic Reach Frame from Y=-700
+    const zoneCol = createCollector();
+    const bx0 = -152, bx1 = -48, by0 = -562, by1 = -458, bz = 946;
+    // Highlight corners around Front Active Bay (-100, -510)
+    const bLoop = [[bx0, by0, bz], [bx1, by0, bz], [bx1, by1, bz], [bx0, by1, bz]];
+    zoneCol.addLoopEdges(bLoop, true);
+    const bLoopHi = [[bx0, by0, bz + 75], [bx1, by0, bz + 75], [bx1, by1, bz + 75], [bx0, by1, bz + 75]];
+    zoneCol.addLoopEdges(bLoopHi, true);
+    for (let i = 0; i < 4; i++) zoneCol.addEdge(bLoop[i], bLoopHi[i]);
+    // Ergonomic reach corridor from front table edge Y = -700 to bay center Y = -510 (190 mm reach)
+    zoneCol.addEdge([-100, -700, 861], [-100, -510, 861]);
+    zoneCol.addEdge([-160, -700, 861], [-40, -700, 861]);
+    // Operator standing marker ring in front of table (X=-100, Y=-830, Z=860) + SMED staging tray
+    addBox(zoneCol, -195, -5, -692, -618, 860, 872, true);
+
+    return {
+      deck: deckCol.toBuffers(kernel),
+      trStat: trStatCol.toBuffers(kernel),
+      trRot: trRotCol.toBuffers(kernel),
+      smedZone: zoneCol.toBuffers(kernel)
+    };
+  }
+
+  /* ==========================================================================
+     REGISTER STANDARD CARTRIDGE: P05_DIAL_30ST_TOOLING
+     ========================================================================== */
+  window.OpenVIRegistry.registerPart("P05_DIAL_30ST_TOOLING", {
+    version: "1.0.0",
+    layer: "L04_TOOLING",
+    sourceStep: "Dial Plate + 30x Dual-Model Changeover Fixture & UUT_DUMMY",
+
+    exportsDatum(state = {}) {
+      const zRotaryOutputTopMm = state.zRotaryOutputTopMm ?? 930.0;
+      const dialThicknessMm = state.dialThicknessMm ?? 15.0;
+      const uutLiftMm = state.uutLiftMm ?? 0.0;
+      const model = state.activeOrderModel === "B" ? "B" : "A";
+      const rPitchMm = state.fixturePitchRadiusMm ?? 450.0;
+
+      const zDialBotMm = zRotaryOutputTopMm;
+      const zDialTopMm = zDialBotMm + dialThicknessMm;
+      const zSubBaseTopMm = zDialTopMm + 15.0;
+      const nestHeightMm = model === "B" ? 18.0 : 15.0;
+      const uutCanHeightMm = model === "B" ? 31.5 : 24.3;
+      const pinPitchMm = model === "B" ? 60.0 : 54.0;
+      const outerGndLocalX = model === "B" ? 31.05 : 29.05;
+      const innerTabLocalX = model === "B" ? 29.85 : 27.85;
+
+      const zNestTopMm = zSubBaseTopMm + nestHeightMm;
+      const zPinTipMm = zNestTopMm + 4.0;
+      const zUutBaseMm = zNestTopMm + uutLiftMm;
+      const zUutTopRoofMm = zUutBaseMm + uutCanHeightMm;
+
+      return {
+        activeOrderModel: model,
+        dialCenterXYMm: [-100.0, -60.0],
+        frontOperatorZoneXYMm: [-100.0, -510.0],
+        zRotaryOutputTopMm,
+        zDialBotMm,
+        zDialTopMm,
+        zSubBaseTopMm,
+        zNestBotMm: zSubBaseTopMm,
+        zNestTopMm,
+        zPinTipMm,
+        zUutBaseMm,
+        zUutTopRoofMm,
+        locatingPinPitchMm: pinPitchMm,
+        fixtureFootprintXYMm: model === "B" ? [40.0, 72.0] : [35.0, 65.0],
+        fixturePitchRadiusMm: rPitchMm,
+        rOuterGroundTipMm: rPitchMm + outerGndLocalX,
+        rInnerFastonTipMm: rPitchMm - innerTabLocalX,
+        stationCount: 30,
+        indexStepDeg: -12.0,
+        indexTimeSec: 1.18
+      };
+    },
+
+    buildMeshes(kernel, lod = "lod0") {
+      const nestA = buildFixtureNestMesh(kernel, "A", lod);
+      const nestB = buildFixtureNestMesh(kernel, "B", lod);
+      const uutA  = buildUutDummyMesh(kernel, "A", lod);
+      const uutB  = buildUutDummyMesh(kernel, "B", lod);
+      const ctx   = buildContextRefMeshes(kernel);
+
+      return {
+        lod,
+        dialRingUnitZ: buildMainDialRingMesh(kernel, lod),
+        kitA: {
+          subBase: buildSubBaseMesh(kernel, "A", lod),
+          nest: nestA.nest,
+          pins: nestA.pins,
+          uutBody: uutA.body,
+          uutBush: uutA.bushings,
+          uutTabs: uutA.tabs,
+          nestHeight: 15.0
+        },
+        kitB: {
+          subBase: buildSubBaseMesh(kernel, "B", lod),
+          nest: nestB.nest,
+          pins: nestB.pins,
+          uutBody: uutB.body,
+          uutBush: uutB.bushings,
+          uutTabs: uutB.tabs,
+          nestHeight: 18.0
+        },
+        context: ctx
+      };
+    },
+
+    drawInstance(kernel, meshes, worldMat, animState = {}) {
+      const baseWorld = worldMat || m4Identity();
+      const vis = animState.visibility || {};
+      const cx = -100.0, cy = -60.0;
+      const zDialBot = animState.zRotaryOutputTopMm ?? 930.0;
+      const dialThick = animState.dialThicknessMm ?? 15.0;
+      const zDialTop = zDialBot + dialThick;
+      const dialAngleRad = (animState.dialAngleDeg ?? 0.0) * DEG2RAD;
+      const rPitch = animState.fixturePitchRadiusMm ?? 450.0;
+      const uutLift = animState.uutLiftMm ?? 0.0;
+      const stations = animState.stations || new Array(30).fill("A");
+      const activeTransfer = animState.activeTransfer || null;
+
+      // 1. Optional Context Reference (P03 Deck + P04 TR1100A)
+      if (vis.refBase !== false && meshes.context) {
+        kernel.drawMesh(meshes.context.deck, baseWorld, [0.26, 0.30, 0.36], { spec: 0.25 });
+        kernel.drawMesh(meshes.context.trStat, baseWorld, [0.18, 0.22, 0.27], { spec: 0.3 });
+        const mRot480 = m4Mul(baseWorld, m4Mul(m4Translate(cx, cy, 0), m4RotZ(dialAngleRad)));
+        kernel.drawMesh(meshes.context.trRot, mRot480, [0.55, 0.60, 0.66], { spec: 0.55 });
+      }
+
+      // 2. Main Dial Ring Plate (scaled in Z by dialThicknessMm around zDialBot)
+      const mDialCenter = m4Mul(baseWorld, m4Mul(m4Translate(cx, cy, zDialBot), m4RotZ(dialAngleRad)));
+      if (vis.dialPlate !== false) {
+        const mScaleZ = m4Identity();
+        mScaleZ[10] = dialThick;
+        const mDial = m4Mul(mDialCenter, mScaleZ);
+        kernel.drawMesh(meshes.dialRingUnitZ, mDial, [0.72, 0.77, 0.83], { spec: 0.5 });
+      }
+
+      // Helper to render one complete Kit (A or B) at a given 4x4 matrix (origin at Sub-Base bottom Z = zDialTop)
+      const drawKit = (kitModel, matSeat) => {
+        const isB = kitModel === "B";
+        const kit = isB ? meshes.kitB : meshes.kitA;
+        if (!kit) return;
+
+        // Poka-Yoke Anodized Color Coding: Model A = Deep Blue, Model B = Gold/Amber
+        const subBaseColor = isB ? [0.85, 0.55, 0.10] : [0.14, 0.36, 0.72];
+        const nestColor    = isB ? [0.26, 0.29, 0.35] : [0.78, 0.82, 0.87];
+        const pinColor     = [0.36, 0.40, 0.46];
+        const canColor     = isB ? [0.72, 0.58, 0.44] : [0.84, 0.87, 0.90];
+        const bushColor    = [0.92, 0.90, 0.84];
+        const tabColor     = [0.88, 0.72, 0.26];
+
+        if (vis.subBase !== false) {
+          kernel.drawMesh(kit.subBase, matSeat, subBaseColor, { spec: 0.45 });
+        }
+        const mNest = m4Mul(matSeat, m4Translate(0, 0, 15.0));
+        if (vis.nestBlock !== false) {
+          kernel.drawMesh(kit.nest, mNest, nestColor, { spec: 0.45 });
+          kernel.drawMesh(kit.pins, mNest, pinColor, { spec: 0.65 });
+        }
+        if (vis.uutDummy !== false) {
+          const mUut = m4Mul(mNest, m4Translate(0, 0, kit.nestHeight + uutLift));
+          kernel.drawMesh(kit.uutBody, mUut, canColor, { spec: 0.6 });
+          kernel.drawMesh(kit.uutBush, mUut, bushColor, { spec: 0.2 });
+          kernel.drawMesh(kit.uutTabs, mUut, tabColor, { spec: 0.75 });
+        }
+      };
+
+      // 3. Draw 30 Stations via Shared VBO GPU Instancing!
+      // Station i=0 (#01) starts at -90°; θ_i = -90° + i*12° + dialAngleDeg
+      // Local +X points Radially Outward!
+      for (let i = 0; i < 30; i++) {
+        if (activeTransfer && activeTransfer.stationIdx === i && activeTransfer.hideSeated) {
+          continue;
+        }
+        const stModel = stations[i];
+        if (stModel !== "A" && stModel !== "B") continue;
+
+        const thetaLocalRad = (-90.0 + i * 12.0) * DEG2RAD;
+        const mStationOnDial = m4Mul(
+          mDialCenter,
+          m4Mul(m4RotZ(thetaLocalRad), m4Translate(rPitch, 0, dialThick))
+        );
+        drawKit(stModel, mStationOnDial);
+      }
+
+      // 4. Draw Active Moving Fixture during Front-Operator SMED Changeover (Phase 1 Lift/Pull or Phase 3 Push/Seat)
+      if (activeTransfer && activeTransfer.movingModel) {
+        // Front Bay World Coordinates: X = -100.0, Y = -510.0, θ_world = -90.0° (+X_local -> -Y_world)
+        // offsetWorldY is <= 0 (e.g. 0 -> -140 mm forward toward operator), offsetWorldZ >= 0 (0 -> +65 mm lift)
+        const wx = cx;
+        const wy = cy - rPitch + (activeTransfer.offsetWorldY || 0.0);
+        const wz = zDialTop + (activeTransfer.offsetWorldZ || 0.0);
+        const mMoving = m4Mul(
+          baseWorld,
+          m4Mul(m4Translate(wx, wy, wz), m4RotZ(-90.0 * DEG2RAD))
+        );
+        drawKit(activeTransfer.movingModel, mMoving);
+      }
+
+      // 5. Front Operator SMED Bay Guide Frame (-Y)
+      if (vis.smedGuide !== false && meshes.context) {
+        kernel.drawMesh(meshes.context.smedZone, baseWorld, [0.12, 0.42, 0.52], {
+          spec: 0.2,
+          edgeColor: [0.05, 0.88, 0.98]
+        });
+      }
+    }
+  });
+})();
+/* <<<END_OPENVI_PART_CARTRIDGE: P05_DIAL_30ST_TOOLING>>> */
+
+/* ============================================================================
+   2. NATIVE WEBGL 1.0 KERNEL (SHADED + B-REP EDGES + SECTION ANALYSIS)
+   ============================================================================ */
+(function startStudioApp() {
+  "use strict";
+
+  const canvas = document.getElementById("glCanvas");
+  const gl = canvas.getContext("webgl", { antialias: true, alpha: false, stencil: false });
+  if (!gl) {
+    canvas.parentElement.innerHTML =
+      '<div style="padding:32px;color:#fca5a5;">WebGL is unavailable in this browser environment.</div>';
+    return;
+  }
+
+  const VS_SOLID = `
+    attribute vec3 aPos;
+    attribute vec3 aNrm;
+    uniform mat4 uProj;
+    uniform mat4 uView;
+    uniform mat4 uModel;
+    varying vec3 vWorldPos;
+    varying vec3 vWorldNrm;
+    void main() {
+      vec4 wp = uModel * vec4(aPos, 1.0);
+      vWorldPos = wp.xyz;
+      // Extract upper-left 3x3 normal transform (handles uniform XY & Z scale cleanly)
+      mat3 nm = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz);
+      vWorldNrm = normalize(nm * aNrm);
+      gl_Position = uProj * uView * wp;
+    }
+  `;
+
+  const FS_SOLID = `
+    precision highp float;
+    varying vec3 vWorldPos;
+    varying vec3 vWorldNrm;
+    uniform vec3 uColor;
+    uniform vec3 uEyePos;
+    uniform float uSpec;
+    uniform int uSectionEnabled;
+    uniform vec4 uSectionPlane;
+
+    void main() {
+      if (uSectionEnabled == 1) {
+        float dist = dot(vWorldPos, uSectionPlane.xyz) + uSectionPlane.w;
+        if (dist > 0.0) discard;
+      }
+
+      vec3 N = normalize(vWorldNrm);
+      if (!gl_FrontFacing) {
+        if (uSectionEnabled == 1) {
+          float stripe = mod(floor((vWorldPos.x + vWorldPos.y + vWorldPos.z) * 0.65), 2.0);
+          vec3 cutCol = mix(vec3(0.92, 0.36, 0.18), vec3(0.68, 0.22, 0.10), stripe);
+          gl_FragColor = vec4(cutCol, 1.0);
+          return;
+        }
+        N = -N;
+      }
+
+      vec3 L1 = normalize(vec3(-0.42, -0.68, 0.78));
+      vec3 L2 = normalize(vec3(0.65, 0.45, 0.42));
+      vec3 V  = normalize(uEyePos - vWorldPos);
+      vec3 H  = normalize(L1 + V);
+
+      float diff1 = max(dot(N, L1), 0.0);
+      float diff2 = max(dot(N, L2), 0.0) * 0.35;
+      float hemi  = 0.30 + 0.14 * (N.z * 0.5 + 0.5);
+      float spec  = pow(max(dot(N, H), 0.0), 34.0) * uSpec;
+
+      vec3 col = uColor * (hemi + diff1 * 0.68 + diff2) + vec3(spec * 0.55);
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  const VS_LINE = `
+    attribute vec3 aPos;
+    uniform mat4 uProj;
+    uniform mat4 uView;
+    uniform mat4 uModel;
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 wp = uModel * vec4(aPos, 1.0);
+      vWorldPos = wp.xyz;
+      gl_Position = uProj * uView * wp;
+    }
+  `;
+
+  const FS_LINE = `
+    precision highp float;
+    varying vec3 vWorldPos;
+    uniform vec3 uEdgeColor;
+    uniform int uSectionEnabled;
+    uniform vec4 uSectionPlane;
+    void main() {
+      if (uSectionEnabled == 1) {
+        float dist = dot(vWorldPos, uSectionPlane.xyz) + uSectionPlane.w;
+        if (dist > 0.0) discard;
+      }
+      gl_FragColor = vec4(uEdgeColor, 1.0);
+    }
+  `;
+
+  function compileProgram(vsSrc, fsSrc) {
+    const compile = (type, src) => {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(sh));
+      }
+      return sh;
+    };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsSrc));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsSrc));
+    gl.linkProgram(prog);
+    return prog;
+  }
+
+  const progSolid = compileProgram(VS_SOLID, FS_SOLID);
+  const progLine  = compileProgram(VS_LINE, FS_LINE);
+
+  const solidLoc = {
+    aPos: gl.getAttribLocation(progSolid, "aPos"),
+    aNrm: gl.getAttribLocation(progSolid, "aNrm"),
+    uProj: gl.getUniformLocation(progSolid, "uProj"),
+    uView: gl.getUniformLocation(progSolid, "uView"),
+    uModel: gl.getUniformLocation(progSolid, "uModel"),
+    uColor: gl.getUniformLocation(progSolid, "uColor"),
+    uEyePos: gl.getUniformLocation(progSolid, "uEyePos"),
+    uSpec: gl.getUniformLocation(progSolid, "uSpec"),
+    uSectionEnabled: gl.getUniformLocation(progSolid, "uSectionEnabled"),
+    uSectionPlane: gl.getUniformLocation(progSolid, "uSectionPlane")
+  };
+
+  const lineLoc = {
+    aPos: gl.getAttribLocation(progLine, "aPos"),
+    uProj: gl.getUniformLocation(progLine, "uProj"),
+    uView: gl.getUniformLocation(progLine, "uView"),
+    uModel: gl.getUniformLocation(progLine, "uModel"),
+    uEdgeColor: gl.getUniformLocation(progLine, "uEdgeColor"),
+    uSectionEnabled: gl.getUniformLocation(progLine, "uSectionEnabled"),
+    uSectionPlane: gl.getUniformLocation(progLine, "uSectionPlane")
+  };
+
+  /* --- Floor Reference Grid (Z = 0 & Z = 860 subtle datum grid) --- */
+  function createFloorGridBuffer() {
+    const lines = [];
+    for (let x = -1200; x <= 1000; x += 200) {
+      lines.push(x, -1100, 0, x, 900, 0);
+    }
+    for (let y = -1100; y <= 900; y += 200) {
+      lines.push(-1200, y, 0, 1000, y, 0);
+    }
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
+    return { vbo, count: lines.length / 3 };
+  }
+  const floorGrid = createFloorGridBuffer();
+
+  /* --- Kernel Object Passed to Cartridge --- */
+  const renderStats = { tris: 0, draws: 0 };
+  let renderMode = "shaded_edges"; // "shaded_edges" | "shaded" | "wire"
+  let projMat = new Float32Array(16);
+  let viewMat = new Float32Array(16);
+  let eyePos  = [0, 0, 0];
+  let sectionEnabled = false;
+  let sectionAxis = "X";
+  let sectionPos = -100.0;
+
+  function getSectionPlaneVec4() {
+    // Discard where dot(pos, n) + d > 0 => for X > sectionPos: n=(1,0,0), d=-sectionPos
+    if (sectionAxis === "X") return [1, 0, 0, -sectionPos];
+    return [0, -1, 0, sectionPos]; // Cut front -Y side < sectionPos to reveal station cross-section
+  }
+
+  const kernel = {
+    createMesh(raw) {
+      const posBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, raw.positions, gl.STATIC_DRAW);
+
+      const nrmBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, nrmBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, raw.normals, gl.STATIC_DRAW);
+
+      const idxBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, raw.indices, gl.STATIC_DRAW);
+
+      let edgBuf = null;
+      let edgCount = 0;
+      if (raw.edges && raw.edges.length > 0) {
+        edgBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, edgBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, raw.edges, gl.STATIC_DRAW);
+        edgCount = raw.edges.length / 3;
+      }
+
+      return {
+        posBuf,
+        nrmBuf,
+        idxBuf,
+        idxCount: raw.indices.length,
+        triCount: raw.triCount,
+        edgBuf,
+        edgCount
+      };
+    },
+
+    drawMesh(mesh, modelMat, color, opts = {}) {
+      if (!mesh) return;
+      const secVec = getSectionPlaneVec4();
+
+      // Solid Pass (with gl.polygonOffset(1.15, 1.15) to eliminate z-fighting with B-Rep edges!)
+      if (renderMode !== "wire" && mesh.idxCount > 0) {
+        gl.useProgram(progSolid);
+        gl.enable(gl.POLYGON_OFFSET_FILL);
+        gl.polygonOffset(1.15, 1.15);
+
+        gl.uniformMatrix4fv(solidLoc.uProj, false, projMat);
+        gl.uniformMatrix4fv(solidLoc.uView, false, viewMat);
+        gl.uniformMatrix4fv(solidLoc.uModel, false, modelMat);
+        gl.uniform3fv(solidLoc.uColor, color);
+        gl.uniform3fv(solidLoc.uEyePos, eyePos);
+        gl.uniform1f(solidLoc.uSpec, opts.spec ?? 0.4);
+        gl.uniform1i(solidLoc.uSectionEnabled, sectionEnabled ? 1 : 0);
+        gl.uniform4fv(solidLoc.uSectionPlane, secVec);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.posBuf);
+        gl.enableVertexAttribArray(solidLoc.aPos);
+        gl.vertexAttribPointer(solidLoc.aPos, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.nrmBuf);
+        gl.enableVertexAttribArray(solidLoc.aNrm);
+        gl.vertexAttribPointer(solidLoc.aNrm, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idxBuf);
+        gl.drawElements(gl.TRIANGLES, mesh.idxCount, gl.UNSIGNED_SHORT, 0);
+
+        gl.disable(gl.POLYGON_OFFSET_FILL);
+        renderStats.tris += mesh.triCount;
+        renderStats.draws += 1;
+      }
+
+      // Visible B-Rep Edge Pass
+      if ((renderMode === "shaded_edges" || renderMode === "wire") && mesh.edgBuf && mesh.edgCount > 0) {
+        gl.useProgram(progLine);
+        gl.uniformMatrix4fv(lineLoc.uProj, false, projMat);
+        gl.uniformMatrix4fv(lineLoc.uView, false, viewMat);
+        gl.uniformMatrix4fv(lineLoc.uModel, false, modelMat);
+        const ec = opts.edgeColor || (renderMode === "wire" ? color : [0.09, 0.13, 0.18]);
+        gl.uniform3fv(lineLoc.uEdgeColor, ec);
+        gl.uniform1i(lineLoc.uSectionEnabled, sectionEnabled ? 1 : 0);
+        gl.uniform4fv(lineLoc.uSectionPlane, secVec);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.edgBuf);
+        gl.disableVertexAttribArray(solidLoc.aNrm);
+        gl.enableVertexAttribArray(lineLoc.aPos);
+        gl.vertexAttribPointer(lineLoc.aPos, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, mesh.edgCount);
+        renderStats.draws += 1;
+      }
+    }
+  };
+
+  /* --- Instantiate P05 Cartridge Meshes (LOD-0 & LOD-1 cached) --- */
+  const p05Part = window.OpenVIRegistry.getPart("P05_DIAL_30ST_TOOLING");
+  const meshCache = {
+    lod0: p05Part.buildMeshes(kernel, "lod0"),
+    lod1: null
+  };
+  let currentLod = "lod0";
+
+  function getActiveMeshes() {
+    if (!meshCache[currentLod]) {
+      meshCache[currentLod] = p05Part.buildMeshes(kernel, currentLod);
+    }
+    return meshCache[currentLod];
+  }
+
+  /* ==========================================================================
+     3. CAMERA ORBIT / PAN / ZOOM (RIGHT-HANDED Z-UP)
+     ========================================================================== */
+  const cam = {
+    target: [-100.0, -240.0, 945.0],
+    yawDeg: -32.0,     // 0° looks from -Y toward +Y (Front Operator!)
+    pitchDeg: 28.0,
+    dist: 1320.0,
+    goal: null
+  };
+
+  function setCameraPreset(preset) {
+    if (preset === "FRONT_EYE") {
+      // Front Operator Eye-Level View (-Y looking directly at active pin-seating bay -100, -510, 955!)
+      cam.goal = { target: [-100.0, -510.0, 960.0], yawDeg: 8.0, pitchDeg: 18.0, dist: 310.0 };
+    } else if (preset === "ISO") {
+      cam.goal = { target: [-100.0, -140.0, 935.0], yawDeg: -34.0, pitchDeg: 30.0, dist: 1420.0 };
+    } else if (preset === "TOP") {
+      cam.goal = { target: [-100.0, -60.0, 945.0], yawDeg: 0.0, pitchDeg: 88.5, dist: 1480.0 };
+    } else if (preset === "POLARITY") {
+      // Zoomed onto +X Radially Outward 3-Tab Faston & Raised Ground Tab at Front Bay
+      cam.goal = { target: [-100.0, -522.0, 976.0], yawDeg: -26.0, pitchDeg: 16.0, dist: 165.0 };
+    }
+  }
+
+  function setViewCube(face) {
+    const t = [-100.0, -120.0, 945.0];
+    const d = 1350.0;
+    const map = {
+      FRONT: { target: [-100, -510, 955], yawDeg: 0, pitchDeg: 12, dist: 460 },
+      BACK:  { target: t, yawDeg: 180, pitchDeg: 15, dist: d },
+      LEFT:  { target: t, yawDeg: -90, pitchDeg: 15, dist: d },
+      RIGHT: { target: t, yawDeg: 90, pitchDeg: 15, dist: d },
+      TOP:   { target: [-100, -60, 945], yawDeg: 0, pitchDeg: 88.5, dist: 1450 },
+      SW:    { target: t, yawDeg: -42, pitchDeg: 28, dist: d },
+      SE:    { target: t, yawDeg: 42, pitchDeg: 28, dist: d },
+      NW:    { target: t, yawDeg: -138, pitchDeg: 28, dist: d },
+      NE:    { target: t, yawDeg: 138, pitchDeg: 28, dist: d }
+    };
+    if (map[face]) cam.goal = map[face];
+  }
+
+  function makePerspective(fovyRad, aspect, near, far) {
+    const f = 1.0 / Math.tan(fovyRad * 0.5);
+    const nf = 1.0 / (near - far);
+    return new Float32Array([
+      f / aspect, 0, 0, 0,
+      0, f, 0, 0,
+      0, 0, (far + near) * nf, -1,
+      0, 0, (2 * far * near) * nf, 0
+    ]);
+  }
+
+  function makeLookAtZUp(eye, center, up) {
+    let fx = center[0] - eye[0], fy = center[1] - eye[1], fz = center[2] - eye[2];
+    const fl = Math.hypot(fx, fy, fz) || 1;
+    fx /= fl; fy /= fl; fz /= fl;
+
+    let sx = fy * up[2] - fz * up[1];
+    let sy = fz * up[0] - fx * up[2];
+    let sz = fx * up[1] - fy * up[0];
+    const sl = Math.hypot(sx, sy, sz) || 1;
+    sx /= sl; sy /= sl; sz /= sl;
+
+    const ux = sy * fz - sz * fy;
+    const uy = sz * fx - sx * fz;
+    const uz = sx * fy - sy * fx;
+
+    return new Float32Array([
+      sx, ux, -fx, 0,
+      sy, uy, -fy, 0,
+      sz, uz, -fz, 0,
+      -(sx * eye[0] + sy * eye[1] + sz * eye[2]),
+      -(ux * eye[0] + uy * eye[1] + uz * eye[2]),
+      (fx * eye[0] + fy * eye[1] + fz * eye[2]),
+      1
+    ]);
+  }
+
+  // Pointer Orbit / Pan / Wheel Zoom
+  let pointerDown = false;
+  let pointerMode = "orbit";
+  let lastPX = 0, lastPY = 0;
+
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  canvas.addEventListener("pointerdown", e => {
+    pointerDown = true;
+    cam.goal = null;
+    pointerMode = (e.button === 2 || e.button === 1 || e.shiftKey) ? "pan" : "orbit";
+    lastPX = e.clientX;
+    lastPY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener("pointermove", e => {
+    if (!pointerDown) return;
+    const dx = e.clientX - lastPX;
+    const dy = e.clientY - lastPY;
+    lastPX = e.clientX;
+    lastPY = e.clientY;
+
+    if (pointerMode === "orbit") {
+      cam.yawDeg -= dx * 0.38;
+      cam.pitchDeg = Math.max(-25.0, Math.min(89.0, cam.pitchDeg + dy * 0.35));
+    } else {
+      const scale = cam.dist * 0.0012;
+      const yr = cam.yawDeg * Math.PI / 180;
+      const rx = Math.cos(yr), ry = Math.sin(yr);
+      cam.target[0] -= rx * dx * scale;
+      cam.target[1] -= ry * dx * scale;
+      cam.target[2] += dy * scale;
+    }
+  });
+
+  canvas.addEventListener("pointerup", () => { pointerDown = false; });
+  canvas.addEventListener("wheel", e => {
+    e.preventDefault();
+    cam.goal = null;
+    const factor = Math.exp(e.deltaY * 0.0011);
+    cam.dist = Math.max(95.0, Math.min(4200.0, cam.dist * factor));
+  }, { passive: false });
+
+  /* ==========================================================================
+     4. SIMULATION STATE & 4-PHASE SMED KINEMATIC ENGINE
+     ========================================================================== */
+  const sim = {
+    stations: new Array(30).fill("A"), // "A" | "B" | "EMPTY"
+    targetOrder: "B",                  // "B" | "A" | "EMPTY"
+    frontIdx: 0,                       // Station currently at θ = -90° (-100, -510)
+    dialAngleDeg: 0.0,
+    dialThicknessMm: 15.0,
+    uutLiftMm: 0.0,
+    speedMult: 1.0,
+    visibility: {
+      refBase: true,
+      dialPlate: true,
+      subBase: true,
+      nestBlock: true,
+      uutDummy: true,
+      smedGuide: true
+    },
+
+    // SMED Sequence State Machine
+    mode: "IDLE",           // "IDLE" | "STEP_1" | "AUTO_30" | "MANUAL_JOG"
+    phase: 0,               // 0=Idle, 1=Unclamp/Lift, 2=EmptySeatReveal, 3=BringIn/Seat, 4=CycloidJog
+    phaseElapsed: 0.0,
+    startAngleDeg: 0.0,
+    completedCount: 0,
+    smedElapsedSec: 0.0,
+    activeTransfer: null
+  };
+
+  // Standard SMED phase durations (real-world ergonomic + WEISS TR1100A 1.18s cycloid)
+  const PHASE_DUR = {
+    1: 1.10, // Phase 1: Unclamp & Lift +65mm Z, retract -140mm Y
+    2: 0.45, // Phase 2: Bare Poka-Yoke Seat Reveal
+    3: 1.15, // Phase 3: Bring in from -140mm Y & seat down onto dowel pins 0.000mm
+    4: 1.18  // Phase 4: WEISS TR1100A Cycloidal Index -12.0° CW
+  };
+
+  // Exact Cycloidal Cam Law from DG-2026-107: s(t) = t - sin(2*pi*t)/(2*pi)
+  function cycloidS(u) {
+    const t = Math.max(0.0, Math.min(1.0, u));
+    return t - Math.sin(2.0 * Math.PI * t) / (2.0 * Math.PI);
+  }
+
+  function smoothStep(u) {
+    const t = Math.max(0.0, Math.min(1.0, u));
+    return t * t * (3.0 - 2.0 * t);
+  }
+
+  /* --- Build 30-Station SVG Radar Ring --- */
+  const ringSvg = document.getElementById("ringMapSvg");
+  const stationDots = [];
+  (function initRingSvg() {
+    // Outer ring guide + Front marker triangle at bottom (+Y in SVG = -Y in World)
+    const bgCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    bgCircle.setAttribute("cx", "0");
+    bgCircle.setAttribute("cy", "0");
+    bgCircle.setAttribute("r", "42");
+    bgCircle.setAttribute("fill", "none");
+    bgCircle.setAttribute("stroke", "#334155");
+    bgCircle.setAttribute("stroke-width", "1.5");
+    ringSvg.appendChild(bgCircle);
+
+    const bayRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    bayRing.setAttribute("cx", "0");
+    bayRing.setAttribute("cy", "42");
+    bayRing.setAttribute("r", "6.2");
+    bayRing.setAttribute("fill", "none");
+    bayRing.setAttribute("stroke", "#06b6d4");
+    bayRing.setAttribute("stroke-width", "1.6");
+    ringSvg.appendChild(bayRing);
+
+    for (let i = 0; i < 30; i++) {
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("r", "3.1");
+      ringSvg.appendChild(c);
+      stationDots.push(c);
+    }
+  })();
+
+  function updateRingSvgAndCounts() {
+    let cA = 0, cB = 0, cE = 0;
+    for (let i = 0; i < 30; i++) {
+      const st = sim.stations[i];
+      if (st === "A") cA++;
+      else if (st === "B") cB++;
+      else cE++;
+
+      // World angle θ = -90° + i*12° + dialAngleDeg. In SVG screen coords (Y down): x = R*cos(θ), y = -R*sin(θ)
+      const th = (-90.0 + i * 12.0 + sim.dialAngleDeg) * Math.PI / 180.0;
+      const sx = 42.0 * Math.cos(th);
+      const sy = -42.0 * Math.sin(th);
+      const dot = stationDots[i];
+      dot.setAttribute("cx", sx.toFixed(2));
+      dot.setAttribute("cy", sy.toFixed(2));
+      if (st === "A") {
+        dot.setAttribute("fill", "#3b82f6");
+        dot.setAttribute("stroke", "#93c5fd");
+      } else if (st === "B") {
+        dot.setAttribute("fill", "#f59e0b");
+        dot.setAttribute("stroke", "#fde68a");
+      } else {
+        dot.setAttribute("fill", "#1e293b");
+        dot.setAttribute("stroke", "#64748b");
+      }
+      dot.setAttribute("stroke-width", i === sim.frontIdx ? "1.4" : "0.6");
+    }
+    document.getElementById("countModelA").textContent = cA;
+    document.getElementById("countModelB").textContent = cB;
+    document.getElementById("countEmpty").textContent = cE;
+  }
+
+  function updateDatumTableUI() {
+    const frontModel = sim.stations[sim.frontIdx];
+    const activeModelForDatum = (frontModel === "A" || frontModel === "B")
+      ? frontModel
+      : (sim.targetOrder === "B" ? "B" : "A");
+
+    const d = p05Part.exportsDatum({
+      zRotaryOutputTopMm: 930.0,
+      dialThicknessMm: sim.dialThicknessMm,
+      uutLiftMm: sim.uutLiftMm,
+      activeOrderModel: activeModelForDatum,
+      fixturePitchRadiusMm: 450.0
+    });
+
+    const badge = document.getElementById("datumActiveModelBadge");
+    badge.textContent = "MODEL " + d.activeOrderModel;
+    badge.style.color = d.activeOrderModel === "B" ? "#fcd34d" : "#93c5fd";
+
+    document.getElementById("dtRotaryTop").textContent = d.zRotaryOutputTopMm.toFixed(2) + " mm";
+    document.getElementById("dtDialTop").textContent = d.zDialTopMm.toFixed(2) + " mm";
+    document.getElementById("dtSubBaseTop").textContent = d.zSubBaseTopMm.toFixed(2) + " mm";
+    document.getElementById("dtNestTop").textContent = d.zNestTopMm.toFixed(2) + " mm";
+    document.getElementById("dtPinTip").textContent = d.zPinTipMm.toFixed(2) + " mm";
+    document.getElementById("dtUutRoof").textContent = d.zUutTopRoofMm.toFixed(2) + " mm";
+    document.getElementById("dtPinPitch").textContent = d.locatingPinPitchMm.toFixed(2) + " mm";
+    document.getElementById("dtOuterRad").textContent = d.rOuterGroundTipMm.toFixed(2) + " mm";
+  }
+
+  function updateFrontHudUI() {
+    const stNum = String(sim.frontIdx + 1).padStart(2, "0");
+    document.getElementById("hudFrontStationId").textContent = "STATION #" + stNum;
+
+    const pill = document.getElementById("hudFrontModelPill");
+    const cur = sim.stations[sim.frontIdx];
+    if (cur === "A") {
+      pill.textContent = "ORDER MODEL A";
+      pill.className = "model-pill pill-a";
+    } else if (cur === "B") {
+      pill.textContent = "ORDER MODEL B";
+      pill.className = "model-pill pill-b";
+    } else {
+      pill.textContent = "EMPTY SEAT";
+      pill.className = "model-pill pill-empty";
+    }
+
+    const phaseTextEl = document.getElementById("hudPhaseText");
+    const phaseMap = {
+      0: "READY — Parked at Front Operator Bay (-Y)",
+      1: "PHASE 1: Unclamp & Lift Old Kit (+65Z, -140Y)",
+      2: "PHASE 2: Poka-Yoke Empty Seat & Dowels Revealed",
+      3: "PHASE 3: Bring In & Seat New Kit (0.000 mm Mating)",
+      4: "PHASE 4: WEISS TR1100A Cycloidal JOG -12.0° CW"
+    };
+    phaseTextEl.textContent = phaseMap[sim.phase] || phaseMap[0];
+
+    const normAng = ((sim.dialAngleDeg % 360) + 360) % 360;
+    const dispAng = normAng > 0 ? -(360 - normAng) : 0;
+    document.getElementById("hudDialAngleText").textContent =
+      `World Bay: (-100.0, -510.0) mm | Dial Angle: ${dispAng.toFixed(1)}°`;
+
+    // Highlight active phase step on right panel
+    document.querySelectorAll("#phaseStepsList .phase-item").forEach(el => {
+      const p = Number(el.getAttribute("data-phase"));
+      el.classList.toggle("active", p === sim.phase);
+    });
+
+    // Progress & Timer
+    const pct = Math.round((sim.completedCount / 30) * 100);
+    document.getElementById("smedProgressLabel").textContent = `${sim.completedCount} / 30 Stations Changed`;
+    document.getElementById("smedPercentLabel").textContent = `${pct}%`;
+    document.getElementById("smedProgressBar").style.width = `${pct}%`;
+
+    const mins = Math.floor(sim.smedElapsedSec / 60);
+    const secs = (sim.smedElapsedSec % 60).toFixed(1).padStart(4, "0");
+    document.getElementById("smedTimerVal").textContent = `${String(mins).padStart(2, "0")}:${secs} s`;
+
+    const autoBtn = document.getElementById("btnAuto30");
+    if (sim.mode === "AUTO_30") {
+      autoBtn.textContent = "⏸ หยุดพักการเดินเครื่องอัตโนมัติ (Pause Auto SMED)";
+      autoBtn.classList.add("running");
+    } else {
+      autoBtn.textContent = "⏩ เดินเครื่องจำลองเปลี่ยนครบ 30 ตัวอัตโนมัติ (Auto 1→30)";
+      autoBtn.classList.remove("running");
+    }
+
+    const busySingle = sim.mode === "STEP_1" || sim.mode === "MANUAL_JOG";
+    document.getElementById("btnStep1Station").disabled = busySingle || sim.mode === "AUTO_30";
+    document.getElementById("btnManualJog").disabled = busySingle || sim.mode === "AUTO_30";
+  }
+
+  function beginStationChangePhase() {
+    const oldModel = sim.stations[sim.frontIdx];
+    sim.phaseElapsed = 0.0;
+    sim.startAngleDeg = sim.dialAngleDeg;
+
+    if (oldModel === "A" || oldModel === "B") {
+      sim.phase = 1;
+      sim.activeTransfer = {
+        stationIdx: sim.frontIdx,
+        hideSeated: true,
+        movingModel: oldModel,
+        offsetWorldY: 0.0,
+        offsetWorldZ: 0.0
+      };
+    } else {
+      // Already empty seat -> start at Phase 2 reveal before seating target
+      sim.phase = 2;
+      sim.activeTransfer = {
+        stationIdx: sim.frontIdx,
+        hideSeated: true,
+        movingModel: null,
+        offsetWorldY: 0.0,
+        offsetWorldZ: 0.0
+      };
+    }
+    updateFrontHudUI();
+  }
+
+  function advanceKinematicSim(dtReal) {
+    if (sim.mode === "IDLE") return;
+
+    const dt = dtReal * sim.speedMult;
+    sim.phaseElapsed += dt;
+    sim.smedElapsedSec += dt;
+
+    if (sim.mode === "MANUAL_JOG") {
+      const u = sim.phaseElapsed / PHASE_DUR[4];
+      if (u >= 1.0) {
+        sim.dialAngleDeg = sim.startAngleDeg - 12.0;
+        sim.frontIdx = (sim.frontIdx + 1) % 30;
+        sim.phase = 0;
+        sim.mode = "IDLE";
+      } else {
+        sim.dialAngleDeg = sim.startAngleDeg - 12.0 * cycloidS(u);
+      }
+      updateRingSvgAndCounts();
+      updateDatumTableUI();
+      updateFrontHudUI();
+      return;
+    }
+
+    // 4-Phase Per-Station SMED Sequence
+    if (sim.phase === 1) {
+      const dur = PHASE_DUR[1];
+      const u = Math.min(1.0, sim.phaseElapsed / dur);
+      // First 45%: vertical unclamp & lift +65.0 mm (+Z) clearing locating dowels
+      // Remaining 55%: retract forward -140.0 mm (-Y) out of dial
+      if (u < 0.45) {
+        const k = smoothStep(u / 0.45);
+        sim.activeTransfer.offsetWorldZ = 65.0 * k;
+        sim.activeTransfer.offsetWorldY = 0.0;
+      } else {
+        const k = smoothStep((u - 0.45) / 0.55);
+        sim.activeTransfer.offsetWorldZ = 65.0;
+        sim.activeTransfer.offsetWorldY = -140.0 * k;
+      }
+
+      if (sim.phaseElapsed >= dur) {
+        sim.stations[sim.frontIdx] = "EMPTY";
+        sim.phase = 2;
+        sim.phaseElapsed = 0.0;
+        sim.activeTransfer = {
+          stationIdx: sim.frontIdx,
+          hideSeated: true,
+          movingModel: null,
+          offsetWorldY: 0.0,
+          offsetWorldZ: 0.0
+        };
+      }
+    } else if (sim.phase === 2) {
+      // Phase 2: Poka-Yoke Empty Seat Reveal
+      if (sim.phaseElapsed >= PHASE_DUR[2]) {
+        if (sim.targetOrder === "A" || sim.targetOrder === "B") {
+          sim.phase = 3;
+          sim.phaseElapsed = 0.0;
+          sim.activeTransfer = {
+            stationIdx: sim.frontIdx,
+            hideSeated: true,
+            movingModel: sim.targetOrder,
+            offsetWorldY: -140.0,
+            offsetWorldZ: 65.0
+          };
+        } else {
+          // Target is EMPTY (unload mode) -> jump cleanly to Phase 4 JOG
+          sim.stations[sim.frontIdx] = "EMPTY";
+          sim.activeTransfer = null;
+          sim.phase = 4;
+          sim.phaseElapsed = 0.0;
+          sim.startAngleDeg = sim.dialAngleDeg;
+        }
+      }
+    } else if (sim.phase === 3) {
+      // Phase 3: Bring in New Order Kit from -Y (-140 -> 0) and seat down (+65 -> 0.000 mm)
+      const dur = PHASE_DUR[3];
+      const u = Math.min(1.0, sim.phaseElapsed / dur);
+      if (u < 0.52) {
+        const k = smoothStep(u / 0.52);
+        sim.activeTransfer.offsetWorldY = -140.0 * (1.0 - k);
+        sim.activeTransfer.offsetWorldZ = 65.0;
+      } else {
+        const k = smoothStep((u - 0.52) / 0.48);
+        sim.activeTransfer.offsetWorldY = 0.0;
+        sim.activeTransfer.offsetWorldZ = 65.0 * (1.0 - k);
+      }
+
+      if (sim.phaseElapsed >= dur) {
+        sim.stations[sim.frontIdx] = sim.targetOrder;
+        sim.activeTransfer = null;
+        sim.phase = 4;
+        sim.phaseElapsed = 0.0;
+        sim.startAngleDeg = sim.dialAngleDeg;
+      }
+    } else if (sim.phase === 4) {
+      // Phase 4: JOG Index -12.0° CW via WEISS TR1100A Cycloidal Law (1.18 s)
+      const dur = PHASE_DUR[4];
+      const u = Math.min(1.0, sim.phaseElapsed / dur);
+      sim.dialAngleDeg = sim.startAngleDeg - 12.0 * cycloidS(u);
+
+      if (sim.phaseElapsed >= dur) {
+        sim.dialAngleDeg = sim.startAngleDeg - 12.0;
+        sim.frontIdx = (sim.frontIdx + 1) % 30;
+        sim.completedCount = Math.min(30, sim.completedCount + 1);
+
+        if (sim.mode === "AUTO_30" && sim.completedCount < 30) {
+          beginStationChangePhase();
+        } else {
+          sim.phase = 0;
+          sim.mode = "IDLE";
+          sim.activeTransfer = null;
+        }
+      }
+    }
+
+    updateRingSvgAndCounts();
+    updateDatumTableUI();
+    updateFrontHudUI();
+  }
+
+  /* ==========================================================================
+     5. UI EVENT WIRING
+     ========================================================================== */
+  function setTargetOrderUI(target) {
+    sim.targetOrder = target;
+    const bB = document.getElementById("btnTargetB");
+    const bA = document.getElementById("btnTargetA");
+    const bE = document.getElementById("btnTargetEmpty");
+    bB.className = "seg-btn" + (target === "B" ? " active-amber" : "");
+    bA.className = "seg-btn" + (target === "A" ? " active" : "");
+    bE.className = "seg-btn" + (target === "EMPTY" ? " active" : "");
+    updateDatumTableUI();
+  }
+
+  function applyInstantPreset(fillState, nextSmartTarget) {
+    sim.mode = "IDLE";
+    sim.phase = 0;
+    sim.activeTransfer = null;
+    sim.stations.fill(fillState);
+    sim.frontIdx = 0;
+    sim.dialAngleDeg = 0.0;
+    sim.completedCount = 0;
+    sim.smedElapsedSec = 0.0;
+    setTargetOrderUI(nextSmartTarget);
+    updateRingSvgAndCounts();
+    updateDatumTableUI();
+    updateFrontHudUI();
+  }
+
+  document.getElementById("btnAllA").addEventListener("click", () => applyInstantPreset("A", "B"));
+  document.getElementById("btnAllB").addEventListener("click", () => applyInstantPreset("B", "A"));
+  document.getElementById("btnAllEmpty").addEventListener("click", () => applyInstantPreset("EMPTY", "A"));
+
+  document.getElementById("btnTargetB").addEventListener("click", () => setTargetOrderUI("B"));
+  document.getElementById("btnTargetA").addEventListener("click", () => setTargetOrderUI("A"));
+  document.getElementById("btnTargetEmpty").addEventListener("click", () => setTargetOrderUI("EMPTY"));
+
+  document.getElementById("btnStep1Station").addEventListener("click", () => {
+    if (sim.mode !== "IDLE") return;
+    if (sim.completedCount >= 30) {
+      sim.completedCount = 0;
+      sim.smedElapsedSec = 0.0;
+    }
+    sim.mode = "STEP_1";
+    beginStationChangePhase();
+  });
+
+  document.getElementById("btnAuto30").addEventListener("click", () => {
+    if (sim.mode === "AUTO_30") {
+      // Pause cleanly
+      sim.mode = "IDLE";
+      sim.phase = 0;
+      sim.activeTransfer = null;
+      updateFrontHudUI();
+      return;
+    }
+    if (sim.completedCount >= 30) {
+      sim.completedCount = 0;
+      sim.smedElapsedSec = 0.0;
+    }
+    sim.mode = "AUTO_30";
+    beginStationChangePhase();
+  });
+
+  document.getElementById("btnManualJog").addEventListener("click", () => {
+    if (sim.mode !== "IDLE") return;
+    sim.mode = "MANUAL_JOG";
+    sim.phase = 4;
+    sim.phaseElapsed = 0.0;
+    sim.startAngleDeg = sim.dialAngleDeg;
+    updateFrontHudUI();
+  });
+
+  document.querySelectorAll("[data-speed]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      sim.speedMult = Number(btn.getAttribute("data-speed"));
+      document.querySelectorAll("[data-speed]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
+  // Render Modes
+  const setRenderModeUI = (m) => {
+    renderMode = m;
+    document.getElementById("btnModeShadedEdges").classList.toggle("active", m === "shaded_edges");
+    document.getElementById("btnModeShaded").classList.toggle("active", m === "shaded");
+    document.getElementById("btnModeWire").classList.toggle("active", m === "wire");
+  };
+  document.getElementById("btnModeShadedEdges").addEventListener("click", () => setRenderModeUI("shaded_edges"));
+  document.getElementById("btnModeShaded").addEventListener("click", () => setRenderModeUI("shaded"));
+  document.getElementById("btnModeWire").addEventListener("click", () => setRenderModeUI("wire"));
+
+  // LOD Toggle
+  document.getElementById("btnLod0").addEventListener("click", () => {
+    currentLod = "lod0";
+    document.getElementById("btnLod0").classList.add("active");
+    document.getElementById("btnLod1").classList.remove("active");
+  });
+  document.getElementById("btnLod1").addEventListener("click", () => {
+    currentLod = "lod1";
+    document.getElementById("btnLod1").classList.add("active");
+    document.getElementById("btnLod0").classList.remove("active");
+  });
+
+  // Section Analysis Controls
+  const secBtn = document.getElementById("btnSectionToggle");
+  const secSlider = document.getElementById("sliderSectionPos");
+  const secGroup = document.getElementById("sectionControlGroup");
+
+  function syncSectionSliderRange() {
+    if (sectionAxis === "X") {
+      secSlider.min = "-620"; secSlider.max = "420"; secSlider.value = String(sectionPos);
+      document.querySelector('label[for="sliderSectionPos"]').textContent = "Section Plane X (Cut @ -100)";
+    } else {
+      secSlider.min = "-600"; secSlider.max = "440"; secSlider.value = String(sectionPos);
+      document.querySelector('label[for="sliderSectionPos"]').textContent = "Section Plane Y (Cut @ -510)";
+    }
+    document.getElementById("valSectionPos").textContent = sectionPos.toFixed(1) + " mm";
+  }
+
+  secBtn.addEventListener("click", () => {
+    sectionEnabled = !sectionEnabled;
+    secBtn.textContent = sectionEnabled ? "✂ Section Cut: ON" : "✂ Section Cut: OFF";
+    secBtn.classList.toggle("active-amber", sectionEnabled);
+    secSlider.disabled = !sectionEnabled;
+    secGroup.style.opacity = sectionEnabled ? "1" : "0.5";
+  });
+
+  secSlider.addEventListener("input", () => {
+    sectionPos = Number(secSlider.value);
+    document.getElementById("valSectionPos").textContent = sectionPos.toFixed(1) + " mm";
+  });
+
+  document.getElementById("btnSecAxisX").addEventListener("click", () => {
+    sectionAxis = "X";
+    sectionPos = -100.0; // Passes straight through Front Operator Bay center X = -100.0 mm!
+    document.getElementById("btnSecAxisX").classList.add("active");
+    document.getElementById("btnSecAxisY").classList.remove("active");
+    syncSectionSliderRange();
+  });
+
+  document.getElementById("btnSecAxisY").addEventListener("click", () => {
+    sectionAxis = "Y";
+    sectionPos = -510.0; // Passes straight through Front Operator Bay center Y = -510.0 mm!
+    document.getElementById("btnSecAxisY").classList.add("active");
+    document.getElementById("btnSecAxisX").classList.remove("active");
+    syncSectionSliderRange();
+  });
+
+  // Parametric Sliders
+  document.getElementById("sliderDialThick").addEventListener("input", e => {
+    sim.dialThicknessMm = Number(e.target.value);
+    document.getElementById("valDialThick").textContent = sim.dialThicknessMm.toFixed(1) + " mm";
+    updateDatumTableUI();
+  });
+
+  document.getElementById("sliderUutLift").addEventListener("input", e => {
+    sim.uutLiftMm = Number(e.target.value);
+    document.getElementById("valUutLift").textContent = sim.uutLiftMm.toFixed(1) + " mm";
+    updateDatumTableUI();
+  });
+
+  // Browser Tree EYE/OFF
+  document.querySelectorAll("#browserTree .eye-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const layer = btn.getAttribute("data-layer");
+      sim.visibility[layer] = !sim.visibility[layer];
+      btn.textContent = sim.visibility[layer] ? "EYE" : "OFF";
+      btn.classList.toggle("off", !sim.visibility[layer]);
+    });
+  });
+
+  // Camera Presets & ViewCube
+  document.getElementById("camFrontEye").addEventListener("click", () => setCameraPreset("FRONT_EYE"));
+  document.getElementById("camIso").addEventListener("click", () => setCameraPreset("ISO"));
+  document.getElementById("camTop").addEventListener("click", () => setCameraPreset("TOP"));
+  document.getElementById("camPolarity").addEventListener("click", () => setCameraPreset("POLARITY"));
+
+  document.querySelectorAll(".vc-face").forEach(btn => {
+    btn.addEventListener("click", () => setViewCube(btn.getAttribute("data-vc")));
+  });
+
+  /* ==========================================================================
+     6. MAIN RENDER LOOP (60 FPS SHARED VBO GPU INSTANCING)
+     ========================================================================== */
+  let lastTime = performance.now();
+  let fpsAccum = 0, fpsFrames = 0;
+
+  updateRingSvgAndCounts();
+  updateDatumTableUI();
+  updateFrontHudUI();
+
+  function renderFrame(now) {
+    const dt = Math.min(0.08, Math.max(0.0001, (now - lastTime) * 0.001));
+    lastTime = now;
+
+    // Smooth camera preset interpolation
+    if (cam.goal) {
+      const k = Math.min(1.0, dt * 8.5);
+      cam.target[0] += (cam.goal.target[0] - cam.target[0]) * k;
+      cam.target[1] += (cam.goal.target[1] - cam.target[1]) * k;
+      cam.target[2] += (cam.goal.target[2] - cam.target[2]) * k;
+      cam.yawDeg    += (cam.goal.yawDeg - cam.yawDeg) * k;
+      cam.pitchDeg  += (cam.goal.pitchDeg - cam.pitchDeg) * k;
+      cam.dist      += (cam.goal.dist - cam.dist) * k;
+      if (Math.abs(cam.goal.dist - cam.dist) < 0.4 && Math.abs(cam.goal.yawDeg - cam.yawDeg) < 0.15) {
+        cam.goal = null;
+      }
+    }
+
+    advanceKinematicSim(dt);
+
+    // Resize canvas cleanly
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(2, Math.floor(canvas.clientWidth * dpr));
+    const h = Math.max(2, Math.floor(canvas.clientHeight * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+
+    gl.viewport(0, 0, w, h);
+    gl.clearColor(0.065, 0.09, 0.125, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+
+    // Compute Z-Up eye position (yaw=0 -> looking from -Y toward +Y!)
+    const yr = cam.yawDeg * Math.PI / 180.0;
+    const pr = cam.pitchDeg * Math.PI / 180.0;
+    const horiz = cam.dist * Math.cos(pr);
+    eyePos = [
+      cam.target[0] + horiz * Math.sin(yr),
+      cam.target[1] - horiz * Math.cos(yr),
+      cam.target[2] + cam.dist * Math.sin(pr)
+    ];
+
+    projMat = makePerspective(40.0 * Math.PI / 180.0, w / h, 8.0, 9500.0);
+    viewMat = makeLookAtZUp(eyePos, cam.target, [0, 0, 1]);
+
+    // Draw subtle factory floor grid at Z = 0.0 mm
+    gl.useProgram(progLine);
+    gl.uniformMatrix4fv(lineLoc.uProj, false, projMat);
+    gl.uniformMatrix4fv(lineLoc.uView, false, viewMat);
+    gl.uniformMatrix4fv(lineLoc.uModel, false, new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]));
+    gl.uniform3fv(lineLoc.uEdgeColor, [0.13, 0.18, 0.24]);
+    gl.uniform1i(lineLoc.uSectionEnabled, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, floorGrid.vbo);
+    gl.enableVertexAttribArray(lineLoc.aPos);
+    gl.vertexAttribPointer(lineLoc.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.LINES, 0, floorGrid.count);
+
+    // Draw P05 Cartridge (30-Station Shared VBO Instancing)
+    renderStats.tris = 0;
+    renderStats.draws = 0;
+    p05Part.drawInstance(kernel, getActiveMeshes(), null, {
+      zRotaryOutputTopMm: 930.0,
+      dialThicknessMm: sim.dialThicknessMm,
+      fixturePitchRadiusMm: 450.0,
+      uutLiftMm: sim.uutLiftMm,
+      dialAngleDeg: sim.dialAngleDeg,
+      stations: sim.stations,
+      activeTransfer: sim.activeTransfer,
+      visibility: sim.visibility
+    });
+
+    // Update GPU Telemetry Pill
+    fpsAccum += dt;
+    fpsFrames++;
+    if (fpsAccum >= 0.4) {
+      const fps = Math.round(fpsFrames / fpsAccum);
+      document.getElementById("gpuTelemetry").textContent =
+        `${fps} FPS | ${(renderStats.tris / 1000).toFixed(1)}k Tris | ${currentLod.toUpperCase()}`;
+      fpsAccum = 0;
+      fpsFrames = 0;
+    }
+
+    requestAnimationFrame(renderFrame);
+  }
+
+  requestAnimationFrame(renderFrame);
+})();
+</script>
+</body>
+</html>

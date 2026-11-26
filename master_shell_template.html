@@ -1,0 +1,1514 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenVI Master Cell Shell — OpenVI_TR1100_CELL_TWIN (master_shell_template.html)</title>
+  <style>
+    :root {
+      --bg-dark: #16191e;
+      --panel-bg: rgba(28, 32, 39, 0.94);
+      --panel-2: #252a33;
+      --panel-3: #303744;
+      --border: #3b4351;
+      --border-hi: #535f73;
+      --ink: #eef2f7;
+      --muted: #98a4b5;
+      --accent: #0696d7;
+      --accent-hi: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #f43f5e;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 12.5px;
+      user-select: none;
+    }
+
+    /* Top Master Application Header */
+    .master-topbar {
+      height: 46px;
+      background: #13161b;
+      border-bottom: 1px solid #2b313b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .master-badge {
+      background: linear-gradient(135deg, #0696d7, #2563eb);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .master-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .upload-lbl {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(6, 150, 215, 0.2);
+      border: 1px solid var(--accent-hi);
+      color: #bae6fd;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .upload-lbl:hover { background: rgba(6, 150, 215, 0.35); color: #fff; }
+    #fileInputHtml { display: none; }
+
+    .gate-pill {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: #cbd5e1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .gate-pill.gate-on {
+      border-color: rgba(34, 197, 94, 0.6);
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+    }
+
+    /* Main CAD Viewport */
+    .workspace {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 46px);
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    /* Empty-State Card (Shown ONLY before cartridges are joined/loaded) */
+    .empty-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(460px, calc(100% - 32px));
+      background: rgba(21, 25, 32, 0.94);
+      border: 1px solid var(--border-hi);
+      border-radius: 10px;
+      padding: 20px 22px;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.6);
+      text-align: center;
+      z-index: 8;
+      backdrop-filter: blur(8px);
+    }
+    .empty-overlay.hidden { display: none; }
+    .empty-title {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .empty-desc {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .cmd-box {
+      background: #0d1015;
+      border: 1px solid #2b3340;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: #7dd3fc;
+      margin-bottom: 14px;
+      text-align: left;
+    }
+    .empty-btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12.5px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--accent-hi);
+    }
+    .empty-btn:hover { background: #0284c7; }
+
+    /* Left Fusion Browser: Mounted Part Cartridges */
+    .browser-panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 286px;
+      max-height: calc(100% - 80px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .p-hdr {
+      padding: 8px 11px;
+      background: #222730;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #d5dde8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart-list {
+      padding: 7px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .cart-empty-msg {
+      padding: 12px 8px;
+      color: var(--muted);
+      font-size: 11.5px;
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 5px;
+    }
+    .cart-node {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: #161a21;
+      border: 1px solid #2d3442;
+      cursor: pointer;
+    }
+    .cart-node:hover { border-color: var(--border-hi); }
+    .cart-node.selected {
+      background: rgba(6, 150, 215, 0.22);
+      border-color: var(--accent-hi);
+    }
+    .cart-id {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .cart-meta {
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .eye-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .eye-btn.off {
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+
+    /* Top-Right ViewCube */
+    .viewcube {
+      position: absolute;
+      top: 12px;
+      right: 344px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+    }
+    .vc-lbl {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .vc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .vc-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vc-btn:hover { border-color: var(--accent-hi); background: #343c4a; }
+    .vc-btn.active { background: var(--accent); border-color: var(--accent-hi); color: #fff; }
+
+    /* Right Panel: Master Datum Chain & Cell Kinematics */
+    .right-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 320px;
+      max-height: calc(100% - 80px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .r-sec {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .r-sec:last-child { border-bottom: none; }
+    .s-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .s-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .s-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+    }
+    .s-val {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-hi);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .datum-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .datum-table td {
+      padding: 4px 4px;
+      border-bottom: 1px solid rgba(59, 67, 81, 0.5);
+    }
+    .datum-table td.val {
+      text-align: right;
+      font-family: var(--mono);
+      font-weight: 700;
+      color: #86efac;
+    }
+
+    /* Bottom Display Dock */
+    .bottom-dock {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 24, 30, 0.95);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      z-index: 12;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .dock-btn {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .dock-btn:hover { background: #2c3340; color: #fff; }
+    .dock-btn.active {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+    .sep { width: 1px; height: 18px; background: var(--border); }
+    .sec-slider-wrap {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: #fda4af;
+    }
+    .sec-slider-wrap.show { display: flex; }
+
+    @media (max-width: 1024px) {
+      .browser-panel { width: 230px; }
+      .right-panel { width: 265px; }
+      .viewcube { right: 285px; }
+    }
+    @media (max-width: 760px) {
+      .browser-panel { display: none; }
+      .viewcube { left: 10px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="master-topbar">
+    <div class="brand-wrap">
+      <span class="master-badge">MASTER CELL SHELL v2.0</span>
+      <span class="master-title">OpenVI_TR1100_CELL_TWIN — Full-Cell Cartridge Assembler</span>
+    </div>
+
+    <div class="top-actions">
+      <label class="upload-lbl" for="fileInputHtml" title="เลือกไฟล์ลูก P01, P02, P03 .html จากเครื่องมาเสียบรวมร่างสดได้ทันที">
+        + เสียบไฟล์ลูก (.html)
+      </label>
+      <input type="file" id="fileInputHtml" accept=".html,.htm,.js" multiple>
+      <button type="button" class="gate-pill" id="btnPhysicsGate" title="Deep Physics Gate (AGENTS.md Rule 4 Circuit Breaker)">
+        MODE 0: GATE OFF
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT PANEL: MOUNTED CARTRIDGES -->
+    <aside class="browser-panel" aria-label="Mounted Part Cartridges">
+      <div class="p-hdr">
+        <span>MOUNTED CARTRIDGES</span>
+        <span id="lblCartCount" style="font-family:var(--mono);color:var(--accent-hi);">0 Mounted</span>
+      </div>
+      <div class="cart-list" id="cartList">
+        <div class="cart-empty-msg">
+          ยังไม่มีตลับพาร์ทถูกฉีดเข้ามา<br>
+          รัน <strong>py join_cell_html.py</strong> หรือกดปุ่ม <strong>+ เสียบไฟล์ลูก (.html)</strong> ด้านบน
+        </div>
+      </div>
+    </aside>
+
+    <!-- EMPTY-STATE GUIDE (Automatically disappears when cartridges are injected/mounted!) -->
+    <div class="empty-overlay" id="emptyOverlay">
+      <h2 class="empty-title">โครงไฟล์แม่พร้อมรวมร่าง (Master Shell Ready)</h2>
+      <p class="empty-desc">
+        ไฟล์แม่นี้ติดตั้งเอนจิน WebGL B-Rep กลาง, ระบบเชื่อมจุดอ้างอิง <strong>Datum Chain (Z = 0 → 850+ mm)</strong> และช่องรับตลับพาร์ทเรียบร้อยแล้ว เลือกวิธีรวมร่างได้ 2 แบบ:
+      </p>
+      <div class="cmd-box">
+        # วิธีที่ 1: คอมไพล์รวมร่างอัตโนมัติด้วย Python<br>
+        py join_cell_html.py --watch
+      </div>
+      <label class="empty-btn" for="fileInputHtml">
+        วิธีที่ 2: เลือกไฟล์ลูก P01 / P02 (.html) มารวมร่างสดตอนนี้
+      </label>
+    </div>
+
+    <!-- TOP-RIGHT VIEWCUBE -->
+    <div class="viewcube" aria-label="ViewCube Camera">
+      <div class="vc-lbl">VIEWCUBE · Z-UP WORLD</div>
+      <div class="vc-grid">
+        <button type="button" class="vc-btn active" data-cam="iso">ISO</button>
+        <button type="button" class="vc-btn" data-cam="front">FRONT</button>
+        <button type="button" class="vc-btn" data-cam="right">RIGHT</button>
+        <button type="button" class="vc-btn" data-cam="top">TOP</button>
+        <button type="button" class="vc-btn" data-cam="under">UNDER</button>
+        <button type="button" class="vc-btn" id="btnFit">FIT</button>
+      </div>
+    </div>
+
+    <!-- MAIN 3D WEBGL VIEWPORT -->
+    <canvas id="glCanvas"></canvas>
+
+    <!-- RIGHT PANEL: MASTER DATUM CHAIN & CELL KINEMATICS -->
+    <aside class="right-panel" aria-label="Datum Chain and Cell Controls">
+      <div class="p-hdr">
+        <span>GLOBAL CELL KINEMATICS</span>
+        <span style="font-family:var(--mono);color:var(--ok);">Z-UP (mm)</span>
+      </div>
+      <div class="r-sec">
+        <div class="s-stack">
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngJack">L01 ขันขาหยั่ง M16 ทั้ง 4 มุม</label>
+              <span class="s-val" id="lblJack">110.0 mm (+4 ล้อลอย)</span>
+            </div>
+            <input type="range" id="rngJack" min="102" max="122" step="0.5" value="110">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngLenX">L02 ความยาวฐานเครื่อง X</label>
+              <span class="s-val" id="lblLenX">1400 mm</span>
+            </div>
+            <input type="range" id="rngLenX" min="1000" max="1800" step="20" value="1400">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngWidY">L02 ความกว้างฐานเครื่อง Y</label>
+              <span class="s-val" id="lblWidY">1080 mm</span>
+            </div>
+            <input type="range" id="rngWidY" min="800" max="1400" step="20" value="1080">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngColH">L02 ความสูงเสาตั้ง (Solid1 267)</label>
+              <span class="s-val" id="lblColH">720 mm</span>
+            </div>
+            <input type="range" id="rngColH" min="500" max="900" step="10" value="720">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngDial">L03 มุมจานหมุน TR1100 (CW Step -12°)</label>
+              <span class="s-val" id="lblDial">St #01 (0.0°)</span>
+            </div>
+            <input type="range" id="rngDial" min="0" max="360" step="12" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="p-hdr">
+        <span>BOTTOM-UP DATUM CHAIN</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);">ZERO MAGIC Z</span>
+      </div>
+      <div class="r-sec">
+        <table class="datum-table">
+          <tbody>
+            <tr><td>Factory Floor Datum</td><td class="val">0.0 mm</td></tr>
+            <tr><td>CJHB75 Wheel Float</td><td class="val" id="dtWheel">+4.0 mm</td></tr>
+            <tr><td>L01 Plate Bot / Top</td><td class="val" id="dtPlate">110.0 / 125.0 mm</td></tr>
+            <tr><td>L02 Frame Top (Deck Bot)</td><td class="val" id="dtFrameTop">845.0 mm</td></tr>
+            <tr><td>L03 Tabletop Deck Top</td><td class="val" id="dtDeckTop">870.0 mm</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+
+    <!-- BOTTOM VIEWPORT DOCK -->
+    <div class="bottom-dock" role="toolbar">
+      <button type="button" class="dock-btn active" data-lod="lod1">LOD-1: Full-Cell (ลื่นพิเศษ)</button>
+      <button type="button" class="dock-btn" data-lod="lod0">LOD-0: ซูมร่อง/เกลียว B-Rep</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn active" data-style="shaded_edges">Shaded + Edges</button>
+      <button type="button" class="dock-btn" data-style="shaded">Shaded</button>
+      <button type="button" class="dock-btn" data-style="wireframe">Wireframe</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn" id="btnSection">✂ Section Cut</button>
+      <div class="sec-slider-wrap" id="secWrap">
+        <span>X-Cut:</span>
+        <input type="range" id="rngSec" min="-900" max="900" step="10" value="0" style="width:95px;">
+      </div>
+      <div class="sep"></div>
+      <span id="perfReadout" style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 4px;">
+        Tris: 0 · 0.4 ms
+      </span>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. GLOBAL OPENVI PART REGISTRY & SHARED B-REP / WEBGL KERNEL
+    // =========================================================================
+    window.OpenVIRegistry = {
+      parts: {},
+      order: [],
+      registerPart(id, spec) {
+        if (!this.parts[id]) this.order.push(id);
+        this.parts[id] = { id, visible: true, ...spec };
+      }
+    };
+
+    (() => {
+      "use strict";
+
+      const Mat4 = {
+        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
+        identity(o) { o.fill(0); o[0]=o[5]=o[10]=o[15]=1; return o; },
+        copy(o, a) { o.set(a); return o; },
+        multiply(o, a, b) {
+          const out = new Float32Array(16);
+          for (let i = 0; i < 4; i++) {
+            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];
+            out[i*4]   = b0*a[0] + b1*a[4] + b2*a[8]  + b3*a[12];
+            out[i*4+1] = b0*a[1] + b1*a[5] + b2*a[9]  + b3*a[13];
+            out[i*4+2] = b0*a[2] + b1*a[6] + b2*a[10] + b3*a[14];
+            out[i*4+3] = b0*a[3] + b1*a[7] + b2*a[11] + b3*a[15];
+          }
+          o.set(out);
+          return o;
+        },
+        perspective(o, fovy, aspect, near, far) {
+          const f = 1 / Math.tan(fovy / 2);
+          o.fill(0); o[0] = f / aspect; o[5] = f;
+          o[10] = (far + near) / (near - far); o[11] = -1;
+          o[14] = (2 * far * near) / (near - far);
+          return o;
+        },
+        lookAt(o, eye, ctr, up) {
+          let zx=eye[0]-ctr[0], zy=eye[1]-ctr[1], zz=eye[2]-ctr[2];
+          let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
+          let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+          l=Math.hypot(xx,xy,xz)||1; xx/=l; xy/=l; xz/=l;
+          const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+          o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;
+          o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;
+          o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;
+          o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+          o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+          o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+          o[15]=1;
+          return o;
+        },
+        translate(o, a, x, y, z) {
+          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;
+          return Mat4.multiply(o, a, t);
+        },
+        rotateX(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[5]=c; r[6]=s; r[9]=-s; r[10]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        rotateY(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[2]=-s; r[8]=s; r[10]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        rotateZ(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        fromBeamEndpoints(out, pStart, pEnd, rollDeg = 0) {
+          const zx = pEnd[0] - pStart[0], zy = pEnd[1] - pStart[1], zz = pEnd[2] - pStart[2];
+          const len = Math.hypot(zx, zy, zz) || 1.0;
+          const dzx = zx / len, dzy = zy / len, dzz = zz / len;
+          const up = Math.abs(dzz) > 0.92 ? [0, 1, 0] : [0, 0, 1];
+          let xx = up[1]*dzz - up[2]*dzy, xy = up[2]*dzx - up[0]*dzz, xz = up[0]*dzy - up[1]*dzx;
+          const xl = Math.hypot(xx, xy, xz) || 1;
+          xx/=xl; xy/=xl; xz/=xl;
+          const yx = dzy*xz - dzz*xy, yy = dzz*xx - dzx*xz, yz = dzx*xy - dzy*xx;
+          const rad = (rollDeg * Math.PI) / 180, cr = Math.cos(rad), sr = Math.sin(rad);
+          out[0]=xx*cr+yx*sr; out[1]=xy*cr+yy*sr; out[2]=xz*cr+yz*sr; out[3]=0;
+          out[4]=-xx*sr+yx*cr; out[5]=-xy*sr+yy*cr; out[6]=-xz*sr+yz*cr; out[7]=0;
+          out[8]=zx; out[9]=zy; out[10]=zz; out[11]=0;
+          out[12]=pStart[0]; out[13]=pStart[1]; out[14]=pStart[2]; out[15]=1;
+          return out;
+        }
+      };
+
+      function pointInPolygon(px, py, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+          if (((yi > py) !== (yj > py)) && (px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-12) + xi)) {
+            inside = !inside;
+          }
+        }
+        return inside;
+      }
+
+      function triangulateConcaveSection(outerLoop, bores, halfW, halfH) {
+        const verts = [];
+        for (let i = 0; i < outerLoop.length; i++) {
+          const p0 = outerLoop[i], p1 = outerLoop[(i + 1) % outerLoop.length];
+          const steps = Math.max(1, Math.ceil(Math.hypot(p1[0]-p0[0], p1[1]-p0[1]) / 2.5));
+          for (let s = 0; s < steps; s++) {
+            const u = s / steps;
+            verts.push([p0[0] + (p1[0]-p0[0])*u, p0[1] + (p1[1]-p0[1])*u]);
+          }
+        }
+        for (const b of bores) {
+          const segs = 18;
+          for (let i = 0; i < segs; i++) {
+            const a = (i / segs) * Math.PI * 2;
+            verts.push([b.x + Math.cos(a)*b.r, b.y + Math.sin(a)*b.r]);
+          }
+        }
+        for (let gx = -halfW + 5; gx <= halfW - 5; gx += 6) {
+          for (let gy = -halfH + 5; gy <= halfH - 5; gy += 6) {
+            if (!pointInPolygon(gx, gy, outerLoop)) continue;
+            if (bores.some(b => Math.hypot(gx - b.x, gy - b.y) < b.r + 2.0)) continue;
+            verts.push([gx, gy]);
+          }
+        }
+        const n0 = verts.length;
+        verts.push([-800, -800], [800, -800], [0, 900]);
+        const mk = (i, j, k) => {
+          const ax=verts[i][0], ay=verts[i][1], bx=verts[j][0], by=verts[j][1], cx=verts[k][0], cy=verts[k][1];
+          const d = 2 * (ax*(by-cy) + bx*(cy-ay) + cx*(ay-by));
+          if (Math.abs(d) < 1e-8) return null;
+          const a2=ax*ax+ay*ay, b2=bx*bx+by*by, c2=cx*cx+cy*cy;
+          const ux = (a2*(by-cy) + b2*(cy-ay) + c2*(ay-by)) / d;
+          const uy = (a2*(cx-bx) + b2*(ax-cx) + c2*(bx-ax)) / d;
+          return { i, j, k, ux, uy, r2: (ax-ux)*(ax-ux) + (ay-uy)*(ay-uy) };
+        };
+        let tris = [mk(n0, n0+1, n0+2)];
+        for (let p = 0; p < n0; p++) {
+          const px = verts[p][0], py = verts[p][1], bad = [], good = [];
+          for (const t of tris) {
+            if ((px-t.ux)*(px-t.ux) + (py-t.uy)*(py-t.uy) <= t.r2 * (1 + 1e-7)) bad.push(t);
+            else good.push(t);
+          }
+          const emap = new Map();
+          const addE = (u, v) => {
+            const key = u < v ? `${u}_${v}` : `${v}_${u}`;
+            if (emap.has(key)) emap.delete(key); else emap.set(key, [u, v]);
+          };
+          for (const t of bad) { addE(t.i,t.j); addE(t.j,t.k); addE(t.k,t.i); }
+          tris = good;
+          for (const [u, v] of emap.values()) { const nt = mk(u, v, p); if (nt) tris.push(nt); }
+        }
+        const out = [];
+        for (const t of tris) {
+          if (t.i >= n0 || t.j >= n0 || t.k >= n0) continue;
+          const A = verts[t.i], B = verts[t.j], C = verts[t.k];
+          const mx = (A[0]+B[0]+C[0])/3, my = (A[1]+B[1]+C[1])/3;
+          if (!pointInPolygon(mx, my, outerLoop)) continue;
+          if (bores.some(b => Math.hypot(mx - b.x, my - b.y) < b.r - 0.05)) continue;
+          const cr = (B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0]);
+          out.push(cr > 0 ? [A, B, C] : [A, C, B]);
+        }
+        return out;
+      }
+
+      class CadMeshBuilder {
+        constructor() { this.verts = []; this.lines = []; }
+        pushTri(p1, p2, p3, n, c) {
+          this.verts.push(
+            p1[0],p1[1],p1[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p2[0],p2[1],p2[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p3[0],p3[1],p3[2], n[0],n[1],n[2], c[0],c[1],c[2]
+          );
+        }
+        pushLine(p1, p2) {
+          this.lines.push(p1[0],p1[1],p1[2], p2[0],p2[1],p2[2]);
+        }
+        addBox(cx, cy, cz, sx, sy, sz, col, edges = true) {
+          const hx=sx/2, hy=sy/2, hz=sz/2;
+          const x0=cx-hx, x1=cx+hx, y0=cy-hy, y1=cy+hy, z0=cz-hz, z1=cz+hz;
+          const faces = [
+            [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[0,0,1]],
+            [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[0,0,-1]],
+            [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1],[1,0,0]],
+            [[x0,y1,z0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[-1,0,0]],
+            [[x0,y1,z0],[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[0,1,0]],
+            [[x0,y0,z1],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[0,-1,0]]
+          ];
+          for (const [a,b,c,d,n] of faces) { this.pushTri(a,b,c,n,col); this.pushTri(a,c,d,n,col); }
+          if (edges) {
+            const c8 = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+            for (const [u,v] of [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]) {
+              this.pushLine(c8[u], c8[v]);
+            }
+          }
+        }
+        addLatheZ(cx, cy, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const r0=prof[s][0], z0=prof[s][1], r1=prof[s+1][0], z1=prof[s+1][1];
+            const dr=r1-r0, dz=z1-z0, l=Math.hypot(dr,dz);
+            if (l < 1e-6) continue;
+            const nr=dz/l, nz=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,cy+r0*s0,z0], p10=[cx+r0*c1,cy+r0*s1,z0];
+              const p11=[cx+r1*c1,cy+r1*s1,z1], p01=[cx+r1*c0,cy+r1*s0,z1];
+              const n=[(c0+c1)*0.5*nr, (s0+s1)*0.5*nr, nz];
+              if (r0>1e-4) this.pushTri(p00,p10,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p01,n,col);
+            }
+          }
+          for (const [r, z] of prof) {
+            if (r > 2.0) {
+              for (let i = 0; i < segs; i++) {
+                const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+                this.pushLine([cx+r*Math.cos(a0),cy+r*Math.sin(a0),z], [cx+r*Math.cos(a1),cy+r*Math.sin(a1),z]);
+              }
+            }
+          }
+        }
+        addLatheY(cx, cz, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const y0=prof[s][0], r0=prof[s][1], y1=prof[s+1][0], r1=prof[s+1][1];
+            const dy=y1-y0, dr=r1-r0, l=Math.hypot(dy,dr);
+            if (l < 1e-6) continue;
+            const nr=dy/l, ny=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,y0,cz+r0*s0], p10=[cx+r0*c1,y0,cz+r0*s1];
+              const p11=[cx+r1*c1,y1,cz+r1*s1], p01=[cx+r1*c0,y1,cz+r1*s0];
+              const n=[(c0+c1)*0.5*nr, ny, (s0+s1)*0.5*nr];
+              if (r0>1e-4) this.pushTri(p00,p01,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p10,n,col);
+            }
+          }
+        }
+      }
+
+      // =========================================================================
+      // 2. WEBGL PIPELINE (WITH SECTION CLIP & POLYGON-OFFSET B-REP EDGES)
+      // =========================================================================
+      const canvas = document.getElementById("glCanvas");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+
+      const vsSolid = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec3 aCol;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vNorm;
+        varying vec3 vWorld;
+        varying vec3 vCol;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorld = wp.xyz;
+          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);
+          vCol = aCol;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsSolid = `
+        precision highp float;
+        varying vec3 vNorm;
+        varying vec3 vWorld;
+        varying vec3 vCol;
+        uniform vec3 uEye;
+        uniform float uSelect;
+        uniform float uClipOn;
+        uniform float uClipX;
+        void main() {
+          if (uClipOn > 0.5 && vWorld.x > uClipX) discard;
+          if (!gl_FrontFacing && uClipOn > 0.5) {
+            float st = mod(vWorld.y + vWorld.z, 6.0);
+            gl_FragColor = vec4(st < 2.5 ? vec3(0.95,0.40,0.32) : vec3(0.70,0.22,0.18), 1.0);
+            return;
+          }
+          vec3 N = normalize(gl_FrontFacing ? vNorm : -vNorm);
+          vec3 V = normalize(uEye - vWorld);
+          vec3 L1 = normalize(vec3(0.50, -0.60, 0.62));
+          vec3 L2 = normalize(vec3(-0.65, 0.50, -0.52));
+          float d1 = max(dot(N, L1), 0.0);
+          float d2 = max(dot(N, L2), 0.0);
+          vec3 hemi = mix(vec3(0.24, 0.26, 0.30), vec3(0.45, 0.48, 0.54), N.z * 0.5 + 0.5);
+          float spec = pow(max(dot(N, normalize(L1 + V)), 0.0), 34.0) * 0.28;
+          vec3 col = vCol * (hemi + 0.60 * d1 + 0.40 * d2) + vec3(spec);
+          col = mix(col, col * 0.55 + vec3(0.25, 0.48, 0.82), uSelect);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `;
+
+      const vsLine = `
+        attribute vec3 aPos;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vWorld;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorld = wp.xyz;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsLine = `
+        precision highp float;
+        varying vec3 vWorld;
+        uniform vec4 uCol;
+        uniform float uClipOn;
+        uniform float uClipX;
+        void main() {
+          if (uClipOn > 0.5 && vWorld.x > uClipX) discard;
+          gl_FragColor = uCol;
+        }
+      `;
+
+      function mkProg(vs, fs) {
+        const p = gl.createProgram();
+        const c = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; };
+        gl.attachShader(p, c(gl.VERTEX_SHADER, vs));
+        gl.attachShader(p, c(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(p);
+        return p;
+      }
+
+      const pSolid = mkProg(vsSolid, fsSolid);
+      const pLine  = mkProg(vsLine, fsLine);
+
+      const uS = {
+        aPos: gl.getAttribLocation(pSolid, "aPos"),
+        aNorm: gl.getAttribLocation(pSolid, "aNorm"),
+        aCol: gl.getAttribLocation(pSolid, "aCol"),
+        uProj: gl.getUniformLocation(pSolid, "uProj"),
+        uView: gl.getUniformLocation(pSolid, "uView"),
+        uModel: gl.getUniformLocation(pSolid, "uModel"),
+        uEye: gl.getUniformLocation(pSolid, "uEye"),
+        uSelect: gl.getUniformLocation(pSolid, "uSelect"),
+        uClipOn: gl.getUniformLocation(pSolid, "uClipOn"),
+        uClipX: gl.getUniformLocation(pSolid, "uClipX")
+      };
+
+      const uL = {
+        aPos: gl.getAttribLocation(pLine, "aPos"),
+        uProj: gl.getUniformLocation(pLine, "uProj"),
+        uView: gl.getUniformLocation(pLine, "uView"),
+        uModel: gl.getUniformLocation(pLine, "uModel"),
+        uCol: gl.getUniformLocation(pLine, "uCol"),
+        uClipOn: gl.getUniformLocation(pLine, "uClipOn"),
+        uClipX: gl.getUniformLocation(pLine, "uClipX")
+      };
+
+      function uploadMesh(mb) {
+        const tArr = new Float32Array(mb.verts);
+        const tBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, tArr, gl.STATIC_DRAW);
+
+        const lArr = new Float32Array(mb.lines);
+        const lBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, lArr, gl.STATIC_DRAW);
+
+        return { tBuf, tCount: tArr.length / 9, tris: tArr.length / 27, lBuf, lCount: lArr.length / 3 };
+      }
+
+      const appState = {
+        lod: "lod1",
+        style: "shaded_edges",
+        sectionOn: false,
+        sectionX: 0,
+        physicsGate: false,
+        jackMm: 110.0,
+        lenX: 1400,
+        widY: 1080,
+        colH: 720,
+        dialDeg: 0,
+        selectedCart: ""
+      };
+
+      const projMat = Mat4.create();
+      const viewMat = Mat4.create();
+      let frameTris = 0;
+
+      function drawMesh(mesh, modelMat, selected = false) {
+        if (!mesh) return;
+        frameTris += mesh.tris;
+        const clipFlag = appState.sectionOn ? 1.0 : 0.0;
+
+        if (appState.style !== "wireframe") {
+          gl.useProgram(pSolid);
+          gl.uniformMatrix4fv(uS.uProj, false, projMat);
+          gl.uniformMatrix4fv(uS.uView, false, viewMat);
+          gl.uniformMatrix4fv(uS.uModel, false, modelMat);
+          gl.uniform3fv(uS.uEye, cam.eye);
+          gl.uniform1f(uS.uSelect, selected ? 1.0 : 0.0);
+          gl.uniform1f(uS.uClipOn, clipFlag);
+          gl.uniform1f(uS.uClipX, appState.sectionX);
+
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.15, 1.15);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.tBuf);
+          gl.enableVertexAttribArray(uS.aPos);
+          gl.vertexAttribPointer(uS.aPos, 3, gl.FLOAT, false, 36, 0);
+          gl.enableVertexAttribArray(uS.aNorm);
+          gl.vertexAttribPointer(uS.aNorm, 3, gl.FLOAT, false, 36, 12);
+          gl.enableVertexAttribArray(uS.aCol);
+          gl.vertexAttribPointer(uS.aCol, 3, gl.FLOAT, false, 36, 24);
+          gl.drawArrays(gl.TRIANGLES, 0, mesh.tCount);
+
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+        }
+
+        if ((appState.style === "shaded_edges" || appState.style === "wireframe" || selected) && mesh.lCount > 0) {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uL.uProj, false, projMat);
+          gl.uniformMatrix4fv(uL.uView, false, viewMat);
+          gl.uniformMatrix4fv(uL.uModel, false, modelMat);
+          gl.uniform1f(uL.uClipOn, clipFlag);
+          gl.uniform1f(uL.uClipX, appState.sectionX);
+          gl.uniform4fv(uL.uCol, selected ? [0.22, 0.78, 1.0, 1.0] : [0.07, 0.08, 0.10, 0.90]);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);
+          if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+          if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+          if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+          gl.enableVertexAttribArray(uL.aPos);
+          gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, mesh.lCount);
+        }
+      }
+
+      // Expose Shared Kernel to all DG-2026-103 v2.0 Part Cartridges!
+      const kernel = {
+        Mat4,
+        CadMeshBuilder,
+        triangulateConcaveSection,
+        uploadMesh,
+        drawMesh
+      };
+      window.OpenVIKernel = kernel;
+
+      // =========================================================================
+      // 3. BUILT-IN ADAPTERS FOR P01 / P02 & GENERIC DG-2026-103 CARTRIDGES
+      // =========================================================================
+      const meshCache = {};
+
+      function buildAdapterMeshesForL01(spec) {
+        const mp = new CadMeshBuilder();
+        const cPlate = [0.26, 0.27, 0.26];
+        const loop160 = [[-75,-80],[75,-80],[80,-75],[80,75],[75,80],[-75,80],[-80,75],[-80,-75]];
+        const holes = (spec.plateHoles || []).map(h => ({ x: h.x, y: h.y, r: h.rBot || 6.0 }));
+        const tris = triangulateConcaveSection(loop160, holes, 80, 80);
+        for (const [a,b,c] of tris) {
+          mp.pushTri([a[0],a[1],15],[b[0],b[1],15],[c[0],c[1],15], [0,0,1], cPlate);
+          mp.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cPlate);
+        }
+        for (let i = 0; i < loop160.length; i++) {
+          const p0=loop160[i], p1=loop160[(i+1)%loop160.length];
+          const dx=p1[0]-p0[0], dy=p1[1]-p0[1], l=Math.hypot(dx,dy)||1;
+          mp.pushTri([p0[0],p0[1],0],[p1[0],p1[1],0],[p1[0],p1[1],15], [dy/l,-dx/l,0], cPlate);
+          mp.pushTri([p0[0],p0[1],0],[p1[0],p1[1],15],[p0[0],p0[1],15], [dy/l,-dx/l,0], cPlate);
+          mp.pushLine([p0[0],p0[1],0],[p1[0],p1[1],0]);
+          mp.pushLine([p0[0],p0[1],15],[p1[0],p1[1],15]);
+        }
+        const cSil = [0.76, 0.78, 0.82];
+        const mc = new CadMeshBuilder();
+        mc.addBox(0, 0, -1.6, 90, 90, 3.2, cSil);
+        mc.addLatheZ(0, 0, [[0,-18],[31,-18],[34,-3.2]], 24, cSil);
+        mc.addBox(12, 21, -44, 34, 3.2, 52, cSil);
+        mc.addBox(12, -21, -44, 34, 3.2, 52, cSil);
+        mc.addLatheY(30, -68.5, [[-18.5,12],[-18.5,31.5],[-14,36],[0,37.5],[14,36],[18.5,31.5],[18.5,12]], 32, [0.08,0.25,0.88]);
+
+        const mfPad = new CadMeshBuilder();
+        mfPad.addLatheZ(0, 0, [[0,0],[25,0],[25,6.7],[12,14],[11.2,20],[0,20]], 24, cSil);
+        const mfStud = new CadMeshBuilder();
+        mfStud.addLatheZ(0, 0, [[0,0],[7,0],[5.5,6],[9.8,7.3],[9.8,12.3],[8.0,12.3],[8.0,160],[0,160]], 18, cSil);
+        mfStud.addLatheZ(0, 0, [[7,82],[13.5,82],[13.5,94.2],[7,94.2]], 6, cSil);
+
+        return {
+          plate: uploadMesh(mp),
+          caster: uploadMesh(mc),
+          footPad: uploadMesh(mfPad),
+          footStud: uploadMesh(mfStud)
+        };
+      }
+
+      function buildAdapterUnitProfile(profSpec, nx, ny, lod0) {
+        const mb = new CadMeshBuilder();
+        const cAlu = [0.75, 0.76, 0.78], cCav = [0.45, 0.47, 0.50], cBore = [0.22, 0.24, 0.28];
+        const sec = profSpec.buildCrossSection2D(nx, ny, lod0);
+        const loop = sec.outer, hx = sec.width*0.5, hy = sec.height*0.5;
+        for (let i = 0; i < loop.length; i++) {
+          const p0=loop[i], p1=loop[(i+1)%loop.length];
+          const dx=p1[0]-p0[0], dy=p1[1]-p0[1], l=Math.hypot(dx,dy);
+          if (l < 1e-5) continue;
+          const mx=(p0[0]+p1[0])*0.5, my=(p0[1]+p1[1])*0.5;
+          const outer = (Math.abs(Math.abs(mx)-hx)<0.6) || (Math.abs(Math.abs(my)-hy)<0.6);
+          mb.pushTri([p0[0],p0[1],0],[p1[0],p1[1],0],[p1[0],p1[1],1], [dy/l,-dx/l,0], outer ? cAlu : cCav);
+          mb.pushTri([p0[0],p0[1],0],[p1[0],p1[1],1],[p0[0],p0[1],1], [dy/l,-dx/l,0], outer ? cAlu : cCav);
+          mb.pushLine([p0[0],p0[1],0],[p1[0],p1[1],0]);
+          mb.pushLine([p0[0],p0[1],1],[p1[0],p1[1],1]);
+          if (outer) mb.pushLine([p0[0],p0[1],0],[p0[0],p0[1],1]);
+        }
+        if (lod0) {
+          const cap = triangulateConcaveSection(loop, sec.bores, hx, hy);
+          for (const [a,b,c] of cap) {
+            mb.pushTri([a[0],a[1],1],[b[0],b[1],1],[c[0],c[1],1], [0,0,1], cAlu);
+            mb.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cAlu);
+          }
+        } else {
+          for (let i = 1; i < loop.length - 1; i++) {
+            const a=loop[0], b=loop[i], c=loop[i+1];
+            mb.pushTri([a[0],a[1],1],[b[0],b[1],1],[c[0],c[1],1], [0,0,1], cAlu);
+            mb.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cAlu);
+          }
+          for (let s = 0; s < nx; s++) {
+            const cx = -hx + 20 + s * 40;
+            mb.addBox(cx, -hy+0.3, 0.5, 10, 0.8, 0.998, cBore, false);
+            mb.addBox(cx,  hy-0.3, 0.5, 10, 0.8, 0.998, cBore, false);
+          }
+          for (let s = 0; s < ny; s++) {
+            const cy = -hy + 20 + s * 40;
+            mb.addBox(-hx+0.3, cy, 0.5, 0.8, 10, 0.998, cBore, false);
+            mb.addBox( hx-0.3, cy, 0.5, 0.8, 10, 0.998, cBore, false);
+          }
+        }
+        return uploadMesh(mb);
+      }
+
+      function rebuildMountedMeshes() {
+        const reg = window.OpenVIRegistry;
+        for (const id of reg.order) {
+          const part = reg.parts[id];
+          if (id === "L01_ADJUSTER_SET" && !meshCache.L01) {
+            meshCache.L01 = buildAdapterMeshesForL01(part);
+          } else if (id === "COMMON_ALU_PROFILES" && !meshCache.ALU) {
+            meshCache.ALU = {
+              lod0: {
+                "40x40": buildAdapterUnitProfile(part, 1, 1, true),
+                "40x80": buildAdapterUnitProfile(part, 1, 2, true),
+                "80x80": buildAdapterUnitProfile(part, 2, 2, true)
+              },
+              lod1: {
+                "40x40": buildAdapterUnitProfile(part, 1, 1, false),
+                "40x80": buildAdapterUnitProfile(part, 1, 2, false),
+                "80x80": buildAdapterUnitProfile(part, 2, 2, false)
+              }
+            };
+          } else if (typeof part.buildMeshes === "function") {
+            const cacheKey = `${id}_${appState.lod}`;
+            if (!meshCache[cacheKey]) {
+              meshCache[cacheKey] = part.buildMeshes(kernel, appState.lod);
+            }
+          }
+        }
+        refreshBrowserListUI();
+      }
+
+      // =========================================================================
+      // 4. STATIC PYTHON INJECTION SLOT (USED BY join_cell_html.py)
+      // =========================================================================
+      (function mountStaticInjectedCartridges() {
+        /* <<<OPENVI_INJECT_ALL_PART_CARTRIDGES_HERE>>> */
+
+        if (typeof buildParametricFrameSpec === "function" && !window.OpenVIRegistry.parts.P02_BASE_FRAME_ASSY) {
+          window.OpenVIRegistry.registerPart("P02_BASE_FRAME_ASSY", {
+            version: "1.0.0",
+            layer: "L02",
+            sourceStep: "P02 Parametric Base Frame",
+            buildParametricFrameSpec
+          });
+        }
+      })();
+
+      // =========================================================================
+      // 5. LIVE CHILD-HTML FILE PICKER LOADER (ZERO-CORS INSTANT BROWSER JOIN!)
+      // =========================================================================
+      const CARTRIDGE_REGEX = /\/\*\s*<<<BEGIN_OPENVI_PART_CARTRIDGE:\s*([A-Za-z0-9_.-]+)>>>\s*\*\/([\s\S]*?)\/\*\s*<<<END_OPENVI_PART_CARTRIDGE:\s*\1>>>\s*\*\//g;
+
+      document.getElementById("fileInputHtml").addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files || []);
+        for (const f of files) {
+          const text = await f.text();
+          let m;
+          CARTRIDGE_REGEX.lastIndex = 0;
+          while ((m = CARTRIDGE_REGEX.exec(text)) !== null) {
+            const codeBody = m[2];
+            const runner = new Function(
+              "window",
+              "OpenVIRegistry",
+              `${codeBody}\n` +
+              `if (typeof buildParametricFrameSpec === "function" && !OpenVIRegistry.parts.P02_BASE_FRAME_ASSY) {\n` +
+              `  OpenVIRegistry.registerPart("P02_BASE_FRAME_ASSY", { version: "1.0.0", layer: "L02", buildParametricFrameSpec });\n` +
+              `}`
+            );
+            runner(window, window.OpenVIRegistry);
+          }
+        }
+        rebuildMountedMeshes();
+        e.target.value = "";
+      });
+
+      function refreshBrowserListUI() {
+        const reg = window.OpenVIRegistry;
+        const count = reg.order.length;
+        document.getElementById("lblCartCount").textContent = `${count} Mounted`;
+        document.getElementById("emptyOverlay").classList.toggle("hidden", count > 0);
+
+        const list = document.getElementById("cartList");
+        if (count === 0) return;
+        list.innerHTML = "";
+
+        for (const id of reg.order) {
+          const p = reg.parts[id];
+          const div = document.createElement("div");
+          div.className = "cart-node" + (appState.selectedCart === id ? " selected" : "");
+          div.innerHTML = `
+            <div>
+              <div class="cart-id">${id}</div>
+              <div class="cart-meta">v${p.version || "1.0"} · ${p.layer || "MODULE"}</div>
+            </div>
+            <button type="button" class="eye-btn ${p.visible ? "" : "off"}">${p.visible ? "EYE" : "OFF"}</button>
+          `;
+          div.addEventListener("click", (ev) => {
+            if (ev.target.tagName === "BUTTON") {
+              p.visible = !p.visible;
+              refreshBrowserListUI();
+              return;
+            }
+            appState.selectedCart = appState.selectedCart === id ? "" : id;
+            refreshBrowserListUI();
+          });
+          list.appendChild(div);
+        }
+      }
+
+      // =========================================================================
+      // 6. FLOOR GRID + 1400x1080 FOOTPRINT OUTLINE + COORDINATE TRIAD
+      // =========================================================================
+      let floorBuf = null, floorCount = 0;
+      {
+        const lines = [];
+        for (let g = -1200; g <= 1200; g += 100) {
+          lines.push(-1200, g, 0, 1200, g, 0);
+          lines.push(g, -1200, 0, g, 1200, 0);
+        }
+        const arr = new Float32Array(lines);
+        floorBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, floorBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+        floorCount = arr.length / 3;
+      }
+
+      const triadMeshes = {};
+      {
+        const mx = new CadMeshBuilder(); mx.addBox(90, 0, 2, 180, 6, 6, [0.92, 0.26, 0.26], false);
+        const my = new CadMeshBuilder(); my.addBox(0, 90, 2, 6, 180, 6, [0.20, 0.80, 0.42], false);
+        const mz = new CadMeshBuilder(); mz.addBox(0, 0, 90, 6, 6, 180, [0.24, 0.62, 0.96], false);
+        triadMeshes.x = uploadMesh(mx);
+        triadMeshes.y = uploadMesh(my);
+        triadMeshes.z = uploadMesh(mz);
+      }
+
+      // =========================================================================
+      // 7. CAMERA, UI CONTROLS & DEEP PHYSICS CIRCUIT BREAKER
+      // =========================================================================
+      const cam = {
+        yaw: -2.25,
+        pitch: 0.42,
+        dist: 2350,
+        target: [0, 0, 380],
+        eye: [0, 0, 0]
+      };
+
+      function setCam(preset) {
+        document.querySelectorAll("[data-cam]").forEach(b => b.classList.toggle("active", b.dataset.cam === preset));
+        if (preset === "iso") { cam.yaw = -2.25; cam.pitch = 0.42; cam.dist = 2350; cam.target = [0,0,380]; }
+        else if (preset === "front") { cam.yaw = -Math.PI*0.5; cam.pitch = 0.05; cam.dist = 2300; cam.target = [0,0,420]; }
+        else if (preset === "right") { cam.yaw = 0; cam.pitch = 0.05; cam.dist = 2100; cam.target = [0,0,420]; }
+        else if (preset === "top") { cam.yaw = -Math.PI*0.5; cam.pitch = 1.48; cam.dist = 2400; cam.target = [0,0,400]; }
+        else if (preset === "under") { cam.yaw = -2.25; cam.pitch = -0.52; cam.dist = 1850; cam.target = [0,0,260]; }
+      }
+      document.querySelectorAll("[data-cam]").forEach(b => b.addEventListener("click", () => setCam(b.dataset.cam)));
+      document.getElementById("btnFit").addEventListener("click", () => setCam("iso"));
+
+      let drag = 0, lx = 0, ly = 0;
+      canvas.addEventListener("contextmenu", e => e.preventDefault());
+      canvas.addEventListener("pointerdown", e => {
+        drag = (e.button === 2 || e.shiftKey) ? 2 : 1;
+        lx = e.clientX; ly = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", e => {
+        if (!drag) return;
+        const dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        if (drag === 1) {
+          cam.yaw -= dx * 0.007;
+          cam.pitch = Math.max(-1.48, Math.min(1.48, cam.pitch + dy * 0.007));
+        } else {
+          const sc = cam.dist * 0.0012;
+          cam.target[0] -= dx * (-Math.sin(cam.yaw)) * sc;
+          cam.target[1] -= dx * Math.cos(cam.yaw) * sc;
+          cam.target[2] += dy * sc;
+        }
+      });
+      canvas.addEventListener("pointerup", () => { drag = 0; });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        cam.dist = Math.max(220, Math.min(5500, cam.dist * (1 + e.deltaY * 0.001)));
+      }, { passive: false });
+
+      function updateDatumUI() {
+        const zPlateBot = Math.max(106.0, appState.jackMm);
+        const zPlateTop = zPlateBot + 15.0;
+        const wheelFloat = zPlateBot - 106.0;
+        const zFrameTop = zPlateTop + appState.colH;
+        const zDeckTop = zFrameTop + 25.0;
+
+        document.getElementById("lblJack").textContent =
+          wheelFloat > 0 ? `${appState.jackMm.toFixed(1)} mm (+${wheelFloat.toFixed(1)} ล้อลอย)` : `${appState.jackMm.toFixed(1)} mm (ล้อแตะพื้น)`;
+        document.getElementById("lblLenX").textContent = `${appState.lenX} mm`;
+        document.getElementById("lblWidY").textContent = `${appState.widY} mm`;
+        document.getElementById("lblColH").textContent = `${appState.colH} mm`;
+
+        const stIdx = (Math.round(appState.dialDeg / 12) % 30) + 1;
+        document.getElementById("lblDial").textContent = `St #${String(stIdx).padStart(2, "0")} (-${appState.dialDeg}°)`;
+
+        document.getElementById("dtWheel").textContent = `+${wheelFloat.toFixed(1)} mm`;
+        document.getElementById("dtPlate").textContent = `${zPlateBot.toFixed(1)} / ${zPlateTop.toFixed(1)} mm`;
+        document.getElementById("dtFrameTop").textContent = `${zFrameTop.toFixed(1)} mm`;
+        document.getElementById("dtDeckTop").textContent = `${zDeckTop.toFixed(1)} mm`;
+
+        return { zPlateBot, zPlateTop, wheelFloat, zFrameTop, zDeckTop };
+      }
+
+      document.getElementById("rngJack").addEventListener("input", e => { appState.jackMm = Number(e.target.value); updateDatumUI(); });
+      document.getElementById("rngLenX").addEventListener("input", e => { appState.lenX = Number(e.target.value); updateDatumUI(); });
+      document.getElementById("rngWidY").addEventListener("input", e => { appState.widY = Number(e.target.value); updateDatumUI(); });
+      document.getElementById("rngColH").addEventListener("input", e => { appState.colH = Number(e.target.value); updateDatumUI(); });
+      document.getElementById("rngDial").addEventListener("input", e => { appState.dialDeg = Number(e.target.value); updateDatumUI(); });
+
+      document.querySelectorAll("[data-lod]").forEach(b => {
+        b.addEventListener("click", () => {
+          appState.lod = b.dataset.lod;
+          document.querySelectorAll("[data-lod]").forEach(x => x.classList.toggle("active", x === b));
+          rebuildMountedMeshes();
+        });
+      });
+      document.querySelectorAll("[data-style]").forEach(b => {
+        b.addEventListener("click", () => {
+          appState.style = b.dataset.style;
+          document.querySelectorAll("[data-style]").forEach(x => x.classList.toggle("active", x === b));
+        });
+      });
+
+      const btnSec = document.getElementById("btnSection");
+      btnSec.addEventListener("click", () => {
+        appState.sectionOn = !appState.sectionOn;
+        btnSec.classList.toggle("active", appState.sectionOn);
+        document.getElementById("secWrap").classList.toggle("show", appState.sectionOn);
+      });
+      document.getElementById("rngSec").addEventListener("input", e => { appState.sectionX = Number(e.target.value); });
+
+      const btnGate = document.getElementById("btnPhysicsGate");
+      let overloadFrames = 0;
+      btnGate.addEventListener("click", () => {
+        appState.physicsGate = !appState.physicsGate;
+        overloadFrames = 0;
+        btnGate.textContent = appState.physicsGate ? "MODE 1: GATE ON" : "MODE 0: GATE OFF";
+        btnGate.classList.toggle("gate-on", appState.physicsGate);
+      });
+
+      rebuildMountedMeshes();
+      updateDatumUI();
+
+      // =========================================================================
+      // 8. 60 FPS MASTER SCENE GRAPH RENDER LOOP
+      // =========================================================================
+      const mId = Mat4.create();
+      const mTmp = Mat4.create();
+      const mSub = Mat4.create();
+      let lastT = performance.now();
+
+      function render(now) {
+        const dtMs = now - lastT;
+        lastT = now;
+
+        if (appState.physicsGate) {
+          if (dtMs > 20.0) {
+            overloadFrames++;
+            if (overloadFrames >= 15) {
+              appState.physicsGate = false;
+              btnGate.textContent = "MODE 0: TRIPPED (>20ms)";
+              btnGate.classList.remove("gate-on");
+            }
+          } else {
+            overloadFrames = 0;
+          }
+        }
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.165, 0.185, 0.218, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+
+        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;
+        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;
+        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;
+
+        Mat4.perspective(projMat, (38 * Math.PI) / 180, w / Math.max(1, h), 12.0, 12000.0);
+        Mat4.lookAt(viewMat, cam.eye, cam.target, [0, 0, 1]);
+
+        gl.useProgram(pLine);
+        gl.uniformMatrix4fv(uL.uProj, false, projMat);
+        gl.uniformMatrix4fv(uL.uView, false, viewMat);
+        Mat4.identity(mId);
+        gl.uniformMatrix4fv(uL.uModel, false, mId);
+        gl.uniform1f(uL.uClipOn, 0.0);
+        gl.uniform4fv(uL.uCol, [0.28, 0.32, 0.38, 0.55]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, floorBuf);
+        if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+        if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+        if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+        gl.enableVertexAttribArray(uL.aPos);
+        gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+        gl.drawArrays(gl.LINES, 0, floorCount);
+
+        frameTris = 0;
+        drawMesh(triadMeshes.x, mId, false);
+        drawMesh(triadMeshes.y, mId, false);
+        drawMesh(triadMeshes.z, mId, false);
+
+        const reg = window.OpenVIRegistry;
+        const datums = updateDatumUI();
+        const hx = appState.lenX * 0.5, hy = appState.widY * 0.5;
+
+        const pL01 = reg.parts.L01_ADJUSTER_SET;
+        if (pL01 && pL01.visible && meshCache.L01) {
+          const sel = appState.selectedCart === "L01_ADJUSTER_SET";
+          const corners = [
+            { x: -hx + 80, y: -hy + 80, rot:  Math.PI * 0.5 },
+            { x:  hx - 80, y: -hy + 80, rot:  Math.PI },
+            { x:  hx - 80, y:  hy - 80, rot: -Math.PI * 0.5 },
+            { x: -hx + 80, y:  hy - 80, rot:  0.0 }
+          ];
+          const footFloat = Math.max(0, datums.zPlateBot - appState.jackMm);
+          for (const c of corners) {
+            Mat4.translate(mTmp, mId, c.x, c.y, datums.zPlateBot);
+            Mat4.rotateZ(mTmp, mTmp, c.rot);
+            drawMesh(meshCache.L01.plate, mTmp, sel);
+
+            Mat4.translate(mSub, mTmp, 35.0, -35.0, 0.0);
+            Mat4.rotateZ(mSub, mSub, 2.2);
+            drawMesh(meshCache.L01.caster, mSub, sel);
+
+            Mat4.translate(mSub, mTmp, -20.0, 20.0, -datums.zPlateBot + footFloat);
+            drawMesh(meshCache.L01.footPad, mSub, sel);
+            Mat4.translate(mSub, mSub, 0, 0, 15.7);
+            drawMesh(meshCache.L01.footStud, mSub, sel);
+          }
+        }
+
+        const pAlu = reg.parts.COMMON_ALU_PROFILES;
+        const pP02 = reg.parts.P02_BASE_FRAME_ASSY;
+        if (pAlu && pAlu.visible && meshCache.ALU) {
+          const bank = meshCache.ALU[appState.lod];
+          if (pP02 && pP02.visible && typeof pP02.buildParametricFrameSpec === "function") {
+            const sel = appState.selectedCart === "P02_BASE_FRAME_ASSY" || appState.selectedCart === "COMMON_ALU_PROFILES";
+            const fSpec = pP02.buildParametricFrameSpec({
+              lenX: appState.lenX,
+              widY: appState.widY,
+              colH: appState.colH,
+              jackMm: appState.jackMm
+            });
+            for (const b of fSpec.beams) {
+              Mat4.fromBeamEndpoints(mTmp, b.p0, b.p1, b.roll);
+              drawMesh(bank[b.prof], mTmp, sel);
+            }
+          }
+        }
+
+        const sharedState = {
+          zFloorMm: 0.0,
+          zPlateBotMm: datums.zPlateBot,
+          zPlateTopMm: datums.zPlateTop,
+          zFrameTopMm: datums.zFrameTop,
+          zDeckTopMm: datums.zDeckTop,
+          dialAngleDeg: -appState.dialDeg,
+          physicsGate: appState.physicsGate,
+          timeSec: now * 0.001
+        };
+
+        for (const id of reg.order) {
+          if (id === "L01_ADJUSTER_SET" || id === "COMMON_ALU_PROFILES" || id === "P02_BASE_FRAME_ASSY") continue;
+          const part = reg.parts[id];
+          if (!part || !part.visible) continue;
+          if (typeof part.exportsDatum === "function") {
+            Object.assign(sharedState, part.exportsDatum(sharedState));
+          }
+          if (typeof part.drawInstance === "function") {
+            const mSet = meshCache[`${id}_${appState.lod}`];
+            Mat4.identity(mTmp);
+            part.drawInstance(kernel, mSet, mTmp, {
+              ...sharedState,
+              selected: appState.selectedCart === id
+            });
+          }
+        }
+
+        document.getElementById("perfReadout").textContent =
+          `Tris: ${frameTris.toLocaleString()} · ${dtMs.toFixed(1)} ms`;
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

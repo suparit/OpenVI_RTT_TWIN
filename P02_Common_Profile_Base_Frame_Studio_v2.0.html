@@ -1,0 +1,1805 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P02_Common_Profile_Base_Frame_Studio_v2.0 — 2000×1480 Series-40 Frame & Cut-List Workbench</title>
+  <style>
+    :root {
+      --bg-dark: #13161b;
+      --panel-bg: rgba(24, 28, 35, 0.94);
+      --panel-2: #212630;
+      --panel-3: #2c3340;
+      --border: #384150;
+      --border-hi: #526075;
+      --ink: #eef2f7;
+      --muted: #96a2b4;
+      --accent: #0696d7;
+      --accent-hi: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #f43f5e;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 12.5px;
+      user-select: none;
+    }
+
+    .topbar {
+      height: 46px;
+      background: #0f1217;
+      border-bottom: 1px solid #282f3b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .part-badge {
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .spec-badge {
+      background: rgba(34, 197, 94, 0.14);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .app-title {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-kpis {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .kpi-chip {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .kpi-chip strong { color: var(--accent-hi); }
+
+    .workspace {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 46px);
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    .left-panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 292px;
+      max-height: calc(100% - 82px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .panel-hdr {
+      padding: 8px 11px;
+      background: #1e232c;
+      border-bottom: 1px solid var(--border);
+      font-size: 10.8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #d6deeb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tree-scroll {
+      padding: 7px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tree-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: #151921;
+      border: 1px solid #29303e;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .tree-row:hover { border-color: var(--border-hi); }
+    .tree-row.selected {
+      background: rgba(6, 150, 215, 0.22);
+      border-color: var(--accent-hi);
+    }
+    .tree-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .node-name {
+      font-size: 11.3px;
+      font-weight: 600;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node-sub {
+      font-family: var(--mono);
+      font-size: 9.8px;
+      color: var(--muted);
+    }
+    .eye-btn {
+      font-family: var(--mono);
+      font-size: 9.8px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .eye-btn:hover { border-color: var(--accent-hi); }
+    .eye-btn.off {
+      opacity: 0.42;
+      text-decoration: line-through;
+    }
+
+    .viewcube {
+      position: absolute;
+      top: 12px;
+      right: 356px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+    }
+    .vc-lbl {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .vc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .vc-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vc-btn:hover { border-color: var(--accent-hi); background: #313949; }
+    .vc-btn.active { background: var(--accent); border-color: var(--accent-hi); color: #fff; }
+
+    .right-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 334px;
+      max-height: calc(100% - 82px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .r-sec {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .r-sec:last-child { border-bottom: none; }
+    .ctrl-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .s-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .s-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.2px;
+    }
+    .s-val {
+      font-family: var(--mono);
+      font-size: 10.8px;
+      font-weight: 700;
+      color: var(--accent-hi);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 0;
+      cursor: pointer;
+    }
+    .preset-row {
+      display: flex;
+      gap: 5px;
+    }
+    .audit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    .audit-btn {
+      font-family: var(--font);
+      font-size: 10.8px;
+      font-weight: 600;
+      padding: 6px 7px;
+      border-radius: 5px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: #e2e8f0;
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.3;
+    }
+    .audit-btn:hover { border-color: var(--accent-hi); background: #2c3442; }
+    .audit-btn.active {
+      background: rgba(6, 150, 215, 0.22);
+      border-color: var(--accent-hi);
+      color: #bae6fd;
+    }
+    .audit-btn.warn-act {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: var(--warn);
+      color: #fde68a;
+    }
+    .audit-note {
+      margin-top: 7px;
+      padding: 7px 8px;
+      border-radius: 5px;
+      background: #11151c;
+      border: 1px solid #2b3444;
+      font-size: 10.9px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+    .audit-note strong { color: #86efac; }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.6px;
+    }
+    .spec-table th {
+      text-align: left;
+      padding: 4px 4px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .spec-table td {
+      padding: 4px 4px;
+      border-bottom: 1px solid rgba(56, 65, 80, 0.45);
+    }
+    .spec-table td.num {
+      text-align: right;
+      font-family: var(--mono);
+      color: #86efac;
+      font-weight: 600;
+    }
+    .cut-scroll {
+      max-height: 158px;
+      overflow-y: auto;
+      border: 1px solid #2b3342;
+      border-radius: 5px;
+      background: #12161e;
+    }
+
+    .bottom-dock {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(17, 21, 27, 0.96);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 12;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.58);
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: calc(100% - 24px);
+    }
+    .dock-btn {
+      font-family: var(--font);
+      font-size: 11.2px;
+      font-weight: 600;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .dock-btn:hover { background: #2b3240; color: #fff; }
+    .dock-btn.active {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+    .sep { width: 1px; height: 18px; background: var(--border); }
+    .sec-controls {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: #fda4af;
+    }
+    .sec-controls.show { display: flex; }
+
+    @media (max-width: 1120px) {
+      .top-kpis { display: none; }
+      .left-panel { width: 242px; }
+      .right-panel { width: 286px; }
+      .viewcube { right: 306px; }
+    }
+    @media (max-width: 780px) {
+      .left-panel { display: none; }
+      .viewcube { left: 10px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-group">
+      <span class="part-badge">CARTRIDGE P02 v2.0</span>
+      <span class="spec-badge">DG-2026-102 + DG-2026-105</span>
+      <span class="app-title">P02_Common_Profile_Base_Frame_Studio_v2.0 — 2000 × 1480 Series-40 Frame</span>
+    </div>
+    <div class="top-kpis">
+      <span class="kpi-chip">Deck Fit: <strong id="kpiSpan">2000 × 1480 mm (+40 Rear)</strong></span>
+      <span class="kpi-chip">Beams: <strong id="kpiBeams">27 pcs</strong></span>
+      <span class="kpi-chip">Alu Mass: <strong id="kpiMass">0.0 kg</strong></span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="left-panel" aria-label="L02 Base Frame Browser">
+      <div class="panel-hdr">
+        <span>L02 FRAME &amp; INTERFACE TREE</span>
+        <span style="font-family:var(--mono);color:var(--accent-hi);">Shared VBO</span>
+      </div>
+      <div class="tree-scroll" id="browserTree"></div>
+    </aside>
+
+    <div class="viewcube" aria-label="Camera ViewCube">
+      <div class="vc-lbl">VIEWCUBE · Z-UP (mm)</div>
+      <div class="vc-grid">
+        <button type="button" class="vc-btn active" data-cam="iso">ISO</button>
+        <button type="button" class="vc-btn" data-cam="top">TOP</button>
+        <button type="button" class="vc-btn" data-cam="under">UNDER</button>
+        <button type="button" class="vc-btn" data-cam="front">FRONT</button>
+        <button type="button" class="vc-btn" data-cam="right">RIGHT</button>
+        <button type="button" class="vc-btn" data-cam="fit">FIT</button>
+      </div>
+    </div>
+
+    <canvas id="glCanvas"></canvas>
+
+    <aside class="right-panel" aria-label="Frame Scaling and Cut-List Inspector">
+      <div class="panel-hdr">
+        <span>PARAMETRIC FRAME SCALING</span>
+        <span id="lblPresetTag" style="font-family:var(--mono);color:var(--ok);">P03 2000×1480</span>
+      </div>
+      <div class="r-sec">
+        <div class="ctrl-stack">
+          <div class="preset-row">
+            <button type="button" class="audit-btn active" id="btnPresetP03" style="flex:1;text-align:center;">
+              สเปกจริง P03 (2000×1480)
+            </button>
+            <button type="button" class="audit-btn" id="btnPresetV1" style="flex:1;text-align:center;">
+              เทียบค่าเดิม v1.0 (1400×1080)
+            </button>
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngLenX">ความกว้างแผ่นโต๊ะ X (lenX)</label>
+              <span class="s-val" id="lblLenX">2000 mm</span>
+            </div>
+            <input type="range" id="rngLenX" min="1400" max="2400" step="20" value="2000">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngWidY">ความลึกแผ่นโต๊ะ Y (widY)</label>
+              <span class="s-val" id="lblWidY">1480 mm</span>
+            </div>
+            <input type="range" id="rngWidY" min="1080" max="1800" step="20" value="1480">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngAsymY">เยื้องศูนย์หลัง +Y (yCenterMm)</label>
+              <span class="s-val" id="lblAsymY">+40.0 mm [-700..+780]</span>
+            </div>
+            <input type="range" id="rngAsymY" min="0" max="80" step="5" value="40">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngColH">ความสูงเสาตั้ง 40×80 (colH)</label>
+              <span class="s-val" id="lblColH">720 mm (Z_top = 845.0)</span>
+            </div>
+            <input type="range" id="rngColH" min="520" max="900" step="10" value="720">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngJack">L01 ขันขาหยั่ง M16 (zPlateBot)</label>
+              <span class="s-val" id="lblJack">110.0 mm (+4.0 ล้อลอย)</span>
+            </div>
+            <input type="range" id="rngJack" min="106" max="122" step="0.5" value="110">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>P02 ↔ P03 INTERFACE QC CHECKS</span>
+        <span style="font-family:var(--mono);font-size:9.8px;color:var(--ok);">0 COLLISIONS</span>
+      </div>
+      <div class="r-sec">
+        <div class="audit-grid">
+          <button type="button" class="audit-btn" data-qc="m12">1. สกรูมุม M12 ตรงรูแกนเสา 40×80</button>
+          <button type="button" class="audit-btn" data-qc="dp2">2. เว้นช่องเกียร์ DP2 โล่ง 100%</button>
+          <button type="button" class="audit-btn" data-qc="grommet">3. ปลอดรูร้อยสาย Ø60 ทั้ง 11 จุด</button>
+          <button type="button" class="audit-btn" data-qc="tslot">4. ส่องหน้าตัด T-Slot แท้ (LOD-0)</button>
+        </div>
+        <div class="audit-note" id="qcNote">
+          <strong>อัปเดตสเปก v2.0 สำเร็จ:</strong> ขยายโครงรับแผ่นโต๊ะ <strong>2,000 × 1,480 mm</strong> (เยื้องหลัง +40 mm) เสาตั้งมุม <strong>40×80</strong> วางที่ <strong>(±977.5, -655 / +735)</strong> ตรงกับรูจม M12 ทั้ง 8 รูของ P03 เป๊ะ!
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>AUTO CUT-LIST BOM (SERIES-40)</span>
+        <span id="lblTotalMeters" style="font-family:var(--mono);font-size:9.8px;color:var(--accent-hi);">0.00 m</span>
+      </div>
+      <div class="r-sec">
+        <div class="cut-scroll">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>Item / Role</th>
+                <th>Profile</th>
+                <th style="text-align:right;">Len (mm)</th>
+                <th style="text-align:right;">Qty</th>
+              </tr>
+            </thead>
+            <tbody id="cutListBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+
+    <div class="bottom-dock" role="toolbar" aria-label="Viewport Display Controls">
+      <button type="button" class="dock-btn active" data-lod="lod0">LOD-0: ร่อง T-Slot &amp; รูแกน M12 แท้</button>
+      <button type="button" class="dock-btn" data-lod="lod1">LOD-1: Full-Cell (ประหยัดเมช 93%)</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn active" data-style="shaded_edges">Shaded + Edges</button>
+      <button type="button" class="dock-btn" data-style="shaded">Shaded</button>
+      <button type="button" class="dock-btn" data-style="wireframe">Wireframe</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn" id="btnSection">✂ Section Cut</button>
+      <div class="sec-controls" id="secControls">
+        <button type="button" class="eye-btn" id="btnSecAxis">X-CUT</button>
+        <input type="range" id="rngSec" min="-1020" max="1020" step="5" value="975" style="width:105px;">
+        <span id="lblSecVal">975 mm</span>
+      </div>
+      <div class="sep"></div>
+      <span id="perfReadout" style="font-family:var(--mono);font-size:10.8px;color:var(--muted);padding:0 4px;">
+        Tris: 0 · 0.0 ms
+      </span>
+    </div>
+  </div>
+
+  <script>
+    window.OpenVIRegistry = window.OpenVIRegistry || {
+      parts: {},
+      order: [],
+      registerPart(id, spec) {
+        if (!this.parts[id]) this.order.push(id);
+        this.parts[id] = { id, visible: true, ...spec };
+      }
+    };
+
+    /* <<<BEGIN_OPENVI_PART_CARTRIDGE: COMMON_ALU_PROFILES>>> */
+    window.OpenVIRegistry.registerPart("COMMON_ALU_PROFILES", {
+      version: "2.0.0",
+      layer: "L02",
+      sourceStep: "Solid1 (267) Series-40 Extrusion Family (40x40, 40x80, 80x80)",
+
+      linearMassKgPerM: {
+        "40x40": 1.78,
+        "40x80": 3.18,
+        "80x80": 5.82
+      },
+
+      buildCrossSection2D(nx = 1, ny = 2, lod0 = true) {
+        const width = nx * 40.0;
+        const height = ny * 40.0;
+        const hx = width * 0.5;
+        const hy = height * 0.5;
+        const ch = 2.0;
+
+        if (!lod0) {
+          return {
+            width,
+            height,
+            outer: [
+              [-hx + ch, -hy], [ hx - ch, -hy],
+              [ hx, -hy + ch], [ hx,  hy - ch],
+              [ hx - ch,  hy], [-hx + ch,  hy],
+              [-hx,  hy - ch], [-hx, -hy + ch]
+            ],
+            bores: []
+          };
+        }
+
+        const mHalf = 5.0, cHalf = 9.0, lip = 4.0, depth = 9.0;
+        const outer = [];
+
+        outer.push([-hx + ch, -hy]);
+        for (let s = 0; s < nx; s++) {
+          const cx = -hx + 20.0 + s * 40.0;
+          outer.push(
+            [cx - mHalf, -hy],
+            [cx - mHalf, -hy + lip],
+            [cx - cHalf, -hy + lip],
+            [cx - cHalf, -hy + depth],
+            [cx + cHalf, -hy + depth],
+            [cx + cHalf, -hy + lip],
+            [cx + mHalf, -hy + lip],
+            [cx + mHalf, -hy]
+          );
+        }
+        outer.push([hx - ch, -hy]);
+
+        outer.push([hx, -hy + ch]);
+        for (let s = 0; s < ny; s++) {
+          const cy = -hy + 20.0 + s * 40.0;
+          outer.push(
+            [hx,         cy - mHalf],
+            [hx - lip,   cy - mHalf],
+            [hx - lip,   cy - cHalf],
+            [hx - depth, cy - cHalf],
+            [hx - depth, cy + cHalf],
+            [hx - lip,   cy + cHalf],
+            [hx - lip,   cy + mHalf],
+            [hx,         cy + mHalf]
+          );
+        }
+        outer.push([hx, hy - ch]);
+
+        outer.push([hx - ch, hy]);
+        for (let s = nx - 1; s >= 0; s--) {
+          const cx = -hx + 20.0 + s * 40.0;
+          outer.push(
+            [cx + mHalf, hy],
+            [cx + mHalf, hy - lip],
+            [cx + cHalf, hy - lip],
+            [cx + cHalf, hy - depth],
+            [cx - cHalf, hy - depth],
+            [cx - cHalf, hy - lip],
+            [cx - mHalf, hy - lip],
+            [cx - mHalf, hy]
+          );
+        }
+        outer.push([-hx + ch, hy]);
+
+        outer.push([-hx, hy - ch]);
+        for (let s = ny - 1; s >= 0; s--) {
+          const cy = -hy + 20.0 + s * 40.0;
+          outer.push(
+            [-hx,         cy + mHalf],
+            [-hx + lip,   cy + mHalf],
+            [-hx + lip,   cy + cHalf],
+            [-hx + depth, cy + cHalf],
+            [-hx + depth, cy - cHalf],
+            [-hx + lip,   cy - cHalf],
+            [-hx + lip,   cy - mHalf],
+            [-hx,         cy - mHalf]
+          );
+        }
+        outer.push([-hx, -hy + ch]);
+
+        const bores = [];
+        for (let ix = 0; ix < nx; ix++) {
+          for (let iy = 0; iy < ny; iy++) {
+            bores.push({
+              x: -hx + 20.0 + ix * 40.0,
+              y: -hy + 20.0 + iy * 40.0,
+              r: 5.1
+            });
+          }
+        }
+
+        return { width, height, outer, bores };
+      }
+    });
+    /* <<<END_OPENVI_PART_CARTRIDGE: COMMON_ALU_PROFILES>>> */
+
+    /* <<<BEGIN_OPENVI_PART_CARTRIDGE: P02_BASE_FRAME_ASSY>>> */
+    function buildParametricFrameSpec(params = {}) {
+      const p03Mounted = Boolean(window.OpenVIRegistry && window.OpenVIRegistry.parts && window.OpenVIRegistry.parts.P03_BASE_TABLE_DECK);
+      const isLegacyDefault = (params.lenX === 1400 && params.widY === 1080 && params.yCenterMm === undefined);
+
+      const lenX = (p03Mounted && isLegacyDefault) ? 2000.0 : (Number(params.lenX) || 2000.0);
+      const widY = (p03Mounted && isLegacyDefault) ? 1480.0 : (Number(params.widY) || 1480.0);
+      const yCenterMm = Number.isFinite(params.yCenterMm)
+        ? params.yCenterMm
+        : ((lenX >= 1900 && widY >= 1400) ? 40.0 : 0.0);
+
+      const colH = Number(params.colH) || 720.0;
+      const jackMm = Number.isFinite(params.jackMm) ? params.jackMm : 110.0;
+
+      const zPlateBot = Math.max(106.0, jackMm);
+      const zPlateTop = zPlateBot + 15.0;
+      const zFrameTop = zPlateTop + colH;
+
+      const hx = lenX * 0.5;
+      const hy = widY * 0.5;
+      const yMinDeck = yCenterMm - hy;
+      const yMaxDeck = yCenterMm + hy;
+
+      const xCol = hx - 22.5;
+      const xInner = xCol - 20.0;
+      const yFront = yMinDeck + 45.0;
+      const yRear  = yMaxDeck - 45.0;
+      const ySpanStart = yFront + 40.0;
+      const ySpanEnd   = yRear  - 40.0;
+
+      const zUpper80 = zFrameTop - 40.0;
+      const zLower80 = zPlateTop + 40.0;
+
+      const sx = lenX / 2000.0;
+      const xCbLeft  = -580.0 * sx;
+      const xCbRight =  340.0 * sx;
+      const xCbScara =  740.0 * sx;
+      const xMidCol  = -120.0 * sx;
+
+      const yRibDp2    = yCenterMm + 155.0 * (widY / 1480.0);
+      const yRibIsland = yCenterMm - 415.0 * (widY / 1480.0);
+
+      const beams = [];
+      const pushBeam = (code, group, role, prof, p0, p1, roll = 0) => {
+        const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+        beams.push({ code, group, role, prof, p0, p1, roll, lengthMm: len });
+      };
+
+      pushBeam("C1", "columns", "Corner Column FL (M12×2)", "40x80", [-xCol, yFront, zPlateTop], [-xCol, yFront, zFrameTop], 0);
+      pushBeam("C2", "columns", "Corner Column FR (M12×2)", "40x80", [ xCol, yFront, zPlateTop], [ xCol, yFront, zFrameTop], 0);
+      pushBeam("C3", "columns", "Corner Column RL (M12×2)", "40x80", [-xCol, yRear,  zPlateTop], [-xCol, yRear,  zFrameTop], 0);
+      pushBeam("C4", "columns", "Corner Column RR (M12×2)", "40x80", [ xCol, yRear,  zPlateTop], [ xCol, yRear,  zFrameTop], 0);
+
+      if (colH > 220) {
+        pushBeam("C5", "columns", "Mid-Span Column Front", "80x80", [xMidCol, yFront, zPlateTop + 80.0], [xMidCol, yFront, zFrameTop - 80.0], 0);
+        pushBeam("C6", "columns", "Mid-Span Column Rear",  "80x80", [xMidCol, yRear,  zPlateTop + 80.0], [xMidCol, yRear,  zFrameTop - 80.0], 0);
+      }
+
+      pushBeam("U_FRONT", "upper", "Upper Front Main Rail", "80x80", [-xInner, yFront, zUpper80], [xInner, yFront, zUpper80], 0);
+      pushBeam("U_REAR",  "upper", "Upper Rear Main Rail",  "80x80", [-xInner, yRear,  zUpper80], [xInner, yRear,  zUpper80], 0);
+      pushBeam("U_LEFT",  "upper", "Upper Left Side Rail",  "40x80", [-xCol, ySpanStart, zUpper80], [-xCol, ySpanEnd, zUpper80], 0);
+      pushBeam("U_RIGHT", "upper", "Upper Right Side Rail", "40x80", [ xCol, ySpanStart, zUpper80], [ xCol, ySpanEnd, zUpper80], 0);
+
+      pushBeam("U_CB_L",     "upper", "TR1100 Left Bearer",     "80x80", [xCbLeft,  ySpanStart, zUpper80], [xCbLeft,  ySpanEnd, zUpper80], 0);
+      pushBeam("U_CB_R",     "upper", "TR1100 Right Bearer",    "80x80", [xCbRight, ySpanStart, zUpper80], [xCbRight, ySpanEnd, zUpper80], 0);
+      pushBeam("U_CB_SCARA", "upper", "+X SCARA P10 Bearer",    "40x80", [xCbScara, ySpanStart, zUpper80], [xCbScara, ySpanEnd, zUpper80], 0);
+
+      const xRib0 = xCbLeft + 40.0;
+      const xRib1 = xCbRight - 40.0;
+      if (xRib1 - xRib0 > 120.0) {
+        pushBeam("U_RIB_DP2", "upper", "DP2 Pocket South Header", "40x80", [xRib0, yRibDp2,    zUpper80], [xRib1, yRibDp2,    zUpper80], 0);
+        pushBeam("U_RIB_ISL", "upper", "TR1100 Island South Rib", "40x80", [xRib0, yRibIsland, zUpper80], [xRib1, yRibIsland, zUpper80], 0);
+      }
+
+      pushBeam("L_FRONT", "lower", "Lower Front Base Rail", "80x80", [-xInner, yFront, zLower80], [xInner, yFront, zLower80], 0);
+      pushBeam("L_REAR",  "lower", "Lower Rear Base Rail",  "80x80", [-xInner, yRear,  zLower80], [xInner, yRear,  zLower80], 0);
+      pushBeam("L_LEFT",  "lower", "Lower Left Tie Rail",   "40x80", [-xCol, ySpanStart, zLower80], [-xCol, ySpanEnd, zLower80], 0);
+      pushBeam("L_RIGHT", "lower", "Lower Right Tie Rail",  "40x80", [ xCol, ySpanStart, zLower80], [ xCol, ySpanEnd, zLower80], 0);
+      pushBeam("L_CB_L",  "lower", "Lower Left Cross-Tie",  "40x80", [xCbLeft,  ySpanStart, zLower80], [xCbLeft,  ySpanEnd, zLower80], 0);
+      pushBeam("L_CB_R",  "lower", "Lower Right Cross-Tie", "40x80", [xCbRight, ySpanStart, zLower80], [xCbRight, ySpanEnd, zLower80], 0);
+
+      const gLeg = Math.min(180.0, Math.max(90.0, (colH - 200.0) * 0.36));
+      const zGusTop = zFrameTop - 80.0;
+      const zGusCol = zGusTop - gLeg;
+
+      pushBeam("G_FL_X", "gussets", "45° Gusset Strut", "40x40", [-xInner, yFront, zGusCol], [-xInner + gLeg, yFront, zGusTop], 0);
+      pushBeam("G_FR_X", "gussets", "45° Gusset Strut", "40x40", [ xInner, yFront, zGusCol], [ xInner - gLeg, yFront, zGusTop], 0);
+      pushBeam("G_RL_X", "gussets", "45° Gusset Strut", "40x40", [-xInner, yRear,  zGusCol], [-xInner + gLeg, yRear,  zGusTop], 0);
+      pushBeam("G_RR_X", "gussets", "45° Gusset Strut", "40x40", [ xInner, yRear,  zGusCol], [ xInner - gLeg, yRear,  zGusTop], 0);
+
+      pushBeam("G_FL_Y", "gussets", "45° Gusset Strut", "40x40", [-xCol, ySpanStart, zGusCol], [-xCol, ySpanStart + gLeg, zGusTop], 0);
+      pushBeam("G_RL_Y", "gussets", "45° Gusset Strut", "40x40", [-xCol, ySpanEnd,   zGusCol], [-xCol, ySpanEnd   - gLeg, zGusTop], 0);
+      pushBeam("G_FR_Y", "gussets", "45° Gusset Strut", "40x40", [ xCol, ySpanStart, zGusCol], [ xCol, ySpanStart + gLeg, zGusTop], 0);
+      pushBeam("G_RR_Y", "gussets", "45° Gusset Strut", "40x40", [ xCol, ySpanEnd,   zGusCol], [ xCol, ySpanEnd   - gLeg, zGusTop], 0);
+
+      const l01Corners = [
+        { id: "L01_FL", x: -(xCol + 20.0) + 80.0, y: (yFront - 40.0) + 80.0, rot:  Math.PI * 0.5 },
+        { id: "L01_FR", x:  (xCol + 20.0) - 80.0, y: (yFront - 40.0) + 80.0, rot:  Math.PI },
+        { id: "L01_RR", x:  (xCol + 20.0) - 80.0, y: (yRear  + 40.0) - 80.0, rot: -Math.PI * 0.5 },
+        { id: "L01_RL", x: -(xCol + 20.0) + 80.0, y: (yRear  + 40.0) - 80.0, rot:  0.0 }
+      ];
+
+      return {
+        lenX,
+        widY,
+        yCenterMm,
+        colH,
+        zPlateBot,
+        zPlateTop,
+        zFrameTop,
+        frameOuterBoundsXY: { xMin: -(xCol + 20.0), xMax: (xCol + 20.0), yMin: yFront - 40.0, yMax: yRear + 40.0 },
+        l01Corners,
+        beams
+      };
+    }
+
+    window.OpenVIRegistry.registerPart("P02_BASE_FRAME_ASSY", {
+      version: "2.0.0",
+      layer: "L02",
+      sourceStep: "Scaled Series-40 Frame for BASE_TABLE.step (2000×1480 mm, +40 Rear Asymmetry)",
+      buildParametricFrameSpec,
+
+      exportsDatum(state = {}) {
+        const spec = buildParametricFrameSpec({
+          lenX: state.lenX || 2000.0,
+          widY: state.widY || 1480.0,
+          yCenterMm: state.yCenterMm,
+          colH: state.colH || 720.0,
+          jackMm: state.zPlateBotMm || 110.0
+        });
+        return {
+          frameSizeXYMm: [spec.lenX, spec.widY],
+          frameCenterYMm: spec.yCenterMm,
+          zPlateBotMm: spec.zPlateBot,
+          zPlateTopMm: spec.zPlateTop,
+          zFrameTopMm: spec.zFrameTop,
+          l01CornerCentersXYMm: spec.l01Corners
+        };
+      }
+    });
+    /* <<<END_OPENVI_PART_CARTRIDGE: P02_BASE_FRAME_ASSY>>> */
+
+    (() => {
+      "use strict";
+
+      const Mat4 = {
+        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
+        identity(o) { o.fill(0); o[0]=o[5]=o[10]=o[15]=1; return o; },
+        multiply(o, a, b) {
+          const out = new Float32Array(16);
+          for (let i = 0; i < 4; i++) {
+            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];
+            out[i*4]   = b0*a[0] + b1*a[4] + b2*a[8]  + b3*a[12];
+            out[i*4+1] = b0*a[1] + b1*a[5] + b2*a[9]  + b3*a[13];
+            out[i*4+2] = b0*a[2] + b1*a[6] + b2*a[10] + b3*a[14];
+            out[i*4+3] = b0*a[3] + b1*a[7] + b2*a[11] + b3*a[15];
+          }
+          o.set(out);
+          return o;
+        },
+        perspective(o, fovy, aspect, near, far) {
+          const f = 1.0 / Math.tan(fovy / 2);
+          o.fill(0); o[0] = f / aspect; o[5] = f;
+          o[10] = (far + near) / (near - far); o[11] = -1;
+          o[14] = (2 * far * near) / (near - far);
+          return o;
+        },
+        lookAt(o, eye, ctr, up) {
+          let zx=eye[0]-ctr[0], zy=eye[1]-ctr[1], zz=eye[2]-ctr[2];
+          let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
+          let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+          l=Math.hypot(xx,xy,xz)||1; xx/=l; xy/=l; xz/=l;
+          const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+          o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;
+          o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;
+          o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;
+          o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+          o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+          o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+          o[15]=1;
+          return o;
+        },
+        translate(o, a, x, y, z) {
+          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;
+          return Mat4.multiply(o, a, t);
+        },
+        rotateZ(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        fromBeamEndpoints(out, pStart, pEnd, rollDeg = 0) {
+          const zx = pEnd[0] - pStart[0], zy = pEnd[1] - pStart[1], zz = pEnd[2] - pStart[2];
+          const len = Math.hypot(zx, zy, zz) || 1.0;
+          const dzx = zx / len, dzy = zy / len, dzz = zz / len;
+          const up = Math.abs(dzz) > 0.92 ? [0, 1, 0] : [0, 0, 1];
+          let xx = up[1]*dzz - up[2]*dzy, xy = up[2]*dzx - up[0]*dzz, xz = up[0]*dzy - up[1]*dzx;
+          const xl = Math.hypot(xx, xy, xz) || 1.0;
+          xx/=xl; xy/=xl; xz/=xl;
+          const yx = dzy*xz - dzz*xy, yy = dzz*xx - dzx*xz, yz = dzx*xy - dzy*xx;
+          const rad = (rollDeg * Math.PI) / 180.0, cr = Math.cos(rad), sr = Math.sin(rad);
+          out[0]=xx*cr+yx*sr; out[1]=xy*cr+yy*sr; out[2]=xz*cr+yz*sr; out[3]=0;
+          out[4]=-xx*sr+yx*cr; out[5]=-xy*sr+yy*cr; out[6]=-xz*sr+yz*cr; out[7]=0;
+          out[8]=zx; out[9]=zy; out[10]=zz; out[11]=0;
+          out[12]=pStart[0]; out[13]=pStart[1]; out[14]=pStart[2]; out[15]=1;
+          return out;
+        }
+      };
+
+      function pointInPolygon(px, py, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+          if (((yi > py) !== (yj > py)) && (px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-12) + xi)) {
+            inside = !inside;
+          }
+        }
+        return inside;
+      }
+
+      function triangulateSection(outerLoop, bores, halfW, halfH) {
+        const verts = [];
+        const holeTag = [];
+        for (let i = 0; i < outerLoop.length; i++) {
+          const p0 = outerLoop[i], p1 = outerLoop[(i + 1) % outerLoop.length];
+          const steps = Math.max(1, Math.ceil(Math.hypot(p1[0]-p0[0], p1[1]-p0[1]) / 3.0));
+          for (let s = 0; s < steps; s++) {
+            const u = s / steps;
+            verts.push([p0[0] + (p1[0]-p0[0])*u, p0[1] + (p1[1]-p0[1])*u]);
+            holeTag.push(-1);
+          }
+        }
+        for (let bIdx = 0; bIdx < bores.length; bIdx++) {
+          const b = bores[bIdx];
+          const segs = 16;
+          for (let i = 0; i < segs; i++) {
+            const a = (i / segs) * Math.PI * 2;
+            verts.push([b.x + Math.cos(a)*b.r, b.y + Math.sin(a)*b.r]);
+            holeTag.push(bIdx + 1);
+          }
+        }
+        for (let gx = -halfW + 4.5; gx <= halfW - 4.5; gx += 5.5) {
+          for (let gy = -halfH + 4.5; gy <= halfH - 4.5; gy += 5.5) {
+            if (!pointInPolygon(gx, gy, outerLoop)) continue;
+            if (bores.some(b => Math.hypot(gx - b.x, gy - b.y) < b.r + 1.8)) continue;
+            verts.push([gx, gy]);
+            holeTag.push(-1);
+          }
+        }
+        const n0 = verts.length;
+        verts.push([-600, -600], [600, -600], [0, 700]);
+        const mk = (i, j, k) => {
+          const ax=verts[i][0], ay=verts[i][1], bx=verts[j][0], by=verts[j][1], cx=verts[k][0], cy=verts[k][1];
+          const d = 2 * (ax*(by-cy) + bx*(cy-ay) + cx*(ay-by));
+          if (Math.abs(d) < 1e-8) return null;
+          const a2=ax*ax+ay*ay, b2=bx*bx+by*by, c2=cx*cx+cy*cy;
+          const ux = (a2*(by-cy) + b2*(cy-ay) + c2*(ay-by)) / d;
+          const uy = (a2*(cx-bx) + b2*(ax-cx) + c2*(bx-ax)) / d;
+          return { i, j, k, ux, uy, r2: (ax-ux)*(ax-ux) + (ay-uy)*(ay-uy) };
+        };
+        let tris = [mk(n0, n0+1, n0+2)];
+        for (let p = 0; p < n0; p++) {
+          const px = verts[p][0], py = verts[p][1], bad = [], good = [];
+          for (const t of tris) {
+            if ((px-t.ux)*(px-t.ux) + (py-t.uy)*(py-t.uy) <= t.r2 * (1 + 1e-7)) bad.push(t);
+            else good.push(t);
+          }
+          const emap = new Map();
+          for (const t of bad) {
+            for (const [u, v] of [[t.i,t.j],[t.j,t.k],[t.k,t.i]]) {
+              const key = u < v ? u * 4096 + v : v * 4096 + u;
+              if (emap.has(key)) emap.delete(key); else emap.set(key, [u, v]);
+            }
+          }
+          tris = good;
+          for (const [u, v] of emap.values()) { const nt = mk(u, v, p); if (nt) tris.push(nt); }
+        }
+        const out = [];
+        for (const t of tris) {
+          if (t.i >= n0 || t.j >= n0 || t.k >= n0) continue;
+          if (holeTag[t.i] > 0 && holeTag[t.i] === holeTag[t.j] && holeTag[t.j] === holeTag[t.k]) continue;
+          const A = verts[t.i], B = verts[t.j], C = verts[t.k];
+          const mx = (A[0]+B[0]+C[0])/3, my = (A[1]+B[1]+C[1])/3;
+          if (!pointInPolygon(mx, my, outerLoop)) continue;
+          if (bores.some(b => Math.hypot(mx - b.x, my - b.y) < b.r * 0.92)) continue;
+          const cr = (B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0]);
+          out.push(cr > 0 ? [A, B, C] : [A, C, B]);
+        }
+        return out;
+      }
+
+      class CadMeshBuilder {
+        constructor() { this.verts = []; this.lines = []; }
+        pushTri(p1, p2, p3, n, c) {
+          this.verts.push(
+            p1[0],p1[1],p1[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p2[0],p2[1],p2[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p3[0],p3[1],p3[2], n[0],n[1],n[2], c[0],c[1],c[2]
+          );
+        }
+        pushLine(p1, p2) {
+          this.lines.push(p1[0],p1[1],p1[2], p2[0],p2[1],p2[2]);
+        }
+        addBox(cx, cy, cz, sx, sy, sz, col, edges = true) {
+          const hx=sx/2, hy=sy/2, hz=sz/2;
+          const x0=cx-hx, x1=cx+hx, y0=cy-hy, y1=cy+hy, z0=cz-hz, z1=cz+hz;
+          const faces = [
+            [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[0,0,1]],
+            [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[0,0,-1]],
+            [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1],[1,0,0]],
+            [[x0,y1,z0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[-1,0,0]],
+            [[x0,y1,z0],[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[0,1,0]],
+            [[x0,y0,z1],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[0,-1,0]]
+          ];
+          for (const [a,b,c,d,n] of faces) { this.pushTri(a,b,c,n,col); this.pushTri(a,c,d,n,col); }
+          if (edges) {
+            const c8 = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+            for (const [u,v] of [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]) {
+              this.pushLine(c8[u], c8[v]);
+            }
+          }
+        }
+        addLatheZ(cx, cy, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const r0=prof[s][0], z0=prof[s][1], r1=prof[s+1][0], z1=prof[s+1][1];
+            const dr=r1-r0, dz=z1-z0, l=Math.hypot(dr,dz);
+            if (l < 1e-6) continue;
+            const nr=dz/l, nz=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,cy+r0*s0,z0], p10=[cx+r0*c1,cy+r0*s1,z0];
+              const p11=[cx+r1*c1,cy+r1*s1,z1], p01=[cx+r1*c0,cy+r1*s0,z1];
+              const n=[(c0+c1)*0.5*nr, (s0+s1)*0.5*nr, nz];
+              if (r0>1e-4) this.pushTri(p00,p10,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p01,n,col);
+            }
+          }
+          for (const [r, z] of prof) {
+            if (r > 2.0) {
+              for (let i = 0; i < segs; i++) {
+                const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+                this.pushLine([cx+r*Math.cos(a0),cy+r*Math.sin(a0),z], [cx+r*Math.cos(a1),cy+r*Math.sin(a1),z]);
+              }
+            }
+          }
+        }
+        addLatheY(cx, cz, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const y0=prof[s][0], r0=prof[s][1], y1=prof[s+1][0], r1=prof[s+1][1];
+            const dy=y1-y0, dr=r1-r0, l=Math.hypot(dy,dr);
+            if (l < 1e-6) continue;
+            const nr=dy/l, ny=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,y0,cz+r0*s0], p10=[cx+r0*c1,y0,cz+r0*s1];
+              const p11=[cx+r1*c1,y1,cz+r1*s1], p01=[cx+r1*c0,y1,cz+r1*s0];
+              const n=[(c0+c1)*0.5*nr, ny, (s0+s1)*0.5*nr];
+              if (r0>1e-4) this.pushTri(p00,p01,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p10,n,col);
+            }
+          }
+        }
+      }
+
+      const canvas = document.getElementById("glCanvas");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+
+      const vsSolid = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec3 aCol;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vNorm;
+        varying vec3 vWorld;
+        varying vec3 vCol;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorld = wp.xyz;
+          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);
+          vCol = aCol;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsSolid = `
+        precision highp float;
+        varying vec3 vNorm;
+        varying vec3 vWorld;
+        varying vec3 vCol;
+        uniform vec3 uEye;
+        uniform float uSelect;
+        uniform float uAlpha;
+        uniform float uClipOn;
+        uniform float uClipAxis;
+        uniform float uClipVal;
+        void main() {
+          float coord = uClipAxis < 0.5 ? vWorld.x : vWorld.y;
+          if (uClipOn > 0.5 && coord > uClipVal) discard;
+          if (!gl_FrontFacing && uClipOn > 0.5 && uAlpha > 0.95) {
+            float st = mod(vWorld.x + vWorld.y + vWorld.z, 5.0);
+            gl_FragColor = vec4(st < 2.2 ? vec3(0.96, 0.38, 0.30) : vec3(0.70, 0.20, 0.16), 1.0);
+            return;
+          }
+          vec3 N = normalize(gl_FrontFacing ? vNorm : -vNorm);
+          vec3 V = normalize(uEye - vWorld);
+          vec3 L1 = normalize(vec3(0.46, -0.58, 0.67));
+          vec3 L2 = normalize(vec3(-0.62, 0.50, -0.52));
+          float d1 = max(dot(N, L1), 0.0);
+          float d2 = max(dot(N, L2), 0.0);
+          vec3 hemi = mix(vec3(0.25, 0.28, 0.33), vec3(0.49, 0.53, 0.59), N.z * 0.5 + 0.5);
+          float spec = pow(max(dot(N, normalize(L1 + V)), 0.0), 34.0) * 0.28;
+          vec3 col = vCol * (hemi + 0.60 * d1 + 0.38 * d2) + vec3(spec);
+          col = mix(col, col * 0.45 + vec3(0.22, 0.68, 0.98), uSelect);
+          gl_FragColor = vec4(col, uAlpha);
+        }
+      `;
+
+      const vsLine = `
+        attribute vec3 aPos;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vWorld;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorld = wp.xyz;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsLine = `
+        precision highp float;
+        varying vec3 vWorld;
+        uniform vec4 uCol;
+        uniform float uClipOn;
+        uniform float uClipAxis;
+        uniform float uClipVal;
+        void main() {
+          float coord = uClipAxis < 0.5 ? vWorld.x : vWorld.y;
+          if (uClipOn > 0.5 && coord > uClipVal) discard;
+          gl_FragColor = uCol;
+        }
+      `;
+
+      function mkProg(vs, fs) {
+        const p = gl.createProgram();
+        const c = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; };
+        gl.attachShader(p, c(gl.VERTEX_SHADER, vs));
+        gl.attachShader(p, c(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(p);
+        return p;
+      }
+
+      const pSolid = mkProg(vsSolid, fsSolid);
+      const pLine  = mkProg(vsLine, fsLine);
+
+      const uS = {
+        aPos: gl.getAttribLocation(pSolid, "aPos"),
+        aNorm: gl.getAttribLocation(pSolid, "aNorm"),
+        aCol: gl.getAttribLocation(pSolid, "aCol"),
+        uProj: gl.getUniformLocation(pSolid, "uProj"),
+        uView: gl.getUniformLocation(pSolid, "uView"),
+        uModel: gl.getUniformLocation(pSolid, "uModel"),
+        uEye: gl.getUniformLocation(pSolid, "uEye"),
+        uSelect: gl.getUniformLocation(pSolid, "uSelect"),
+        uAlpha: gl.getUniformLocation(pSolid, "uAlpha"),
+        uClipOn: gl.getUniformLocation(pSolid, "uClipOn"),
+        uClipAxis: gl.getUniformLocation(pSolid, "uClipAxis"),
+        uClipVal: gl.getUniformLocation(pSolid, "uClipVal")
+      };
+
+      const uL = {
+        aPos: gl.getAttribLocation(pLine, "aPos"),
+        uProj: gl.getUniformLocation(pLine, "uProj"),
+        uView: gl.getUniformLocation(pLine, "uView"),
+        uModel: gl.getUniformLocation(pLine, "uModel"),
+        uCol: gl.getUniformLocation(pLine, "uCol"),
+        uClipOn: gl.getUniformLocation(pLine, "uClipOn"),
+        uClipAxis: gl.getUniformLocation(pLine, "uClipAxis"),
+        uClipVal: gl.getUniformLocation(pLine, "uClipVal")
+      };
+
+      function uploadMesh(mb) {
+        const tArr = new Float32Array(mb.verts);
+        const tBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, tArr, gl.STATIC_DRAW);
+
+        const lArr = new Float32Array(mb.lines);
+        const lBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, lArr, gl.STATIC_DRAW);
+
+        return { tBuf, tCount: tArr.length / 9, tris: tArr.length / 27, lBuf, lCount: lArr.length / 3 };
+      }
+
+      function buildUnitProfileMesh(profSpec, nx, ny, lod0) {
+        const mb = new CadMeshBuilder();
+        const cAlu = [0.76, 0.78, 0.81], cCav = [0.46, 0.49, 0.53], cBore = [0.22, 0.25, 0.30];
+        const sec = profSpec.buildCrossSection2D(nx, ny, lod0);
+        const loop = sec.outer, hx = sec.width * 0.5, hy = sec.height * 0.5;
+
+        for (let i = 0; i < loop.length; i++) {
+          const p0 = loop[i], p1 = loop[(i + 1) % loop.length];
+          const dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy);
+          if (l < 1e-5) continue;
+          const mx = (p0[0] + p1[0]) * 0.5, my = (p0[1] + p1[1]) * 0.5;
+          const isOuter = (Math.abs(Math.abs(mx) - hx) < 0.6) || (Math.abs(Math.abs(my) - hy) < 0.6);
+          const col = isOuter ? cAlu : cCav;
+          mb.pushTri([p0[0],p0[1],0],[p1[0],p1[1],0],[p1[0],p1[1],1], [dy/l,-dx/l,0], col);
+          mb.pushTri([p0[0],p0[1],0],[p1[0],p1[1],1],[p0[0],p0[1],1], [dy/l,-dx/l,0], col);
+          mb.pushLine([p0[0],p0[1],0],[p1[0],p1[1],0]);
+          mb.pushLine([p0[0],p0[1],1],[p1[0],p1[1],1]);
+          if (isOuter) mb.pushLine([p0[0],p0[1],0],[p0[0],p0[1],1]);
+        }
+
+        if (lod0) {
+          const cap = triangulateSection(loop, sec.bores, hx, hy);
+          for (const [a, b, c] of cap) {
+            mb.pushTri([a[0],a[1],1],[b[0],b[1],1],[c[0],c[1],1], [0,0,1], cAlu);
+            mb.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cAlu);
+          }
+          for (const b of sec.bores) {
+            mb.addLatheZ(b.x, b.y, [[b.r, 1.0], [b.r, 0.0]], 16, cBore);
+          }
+        } else {
+          for (let i = 1; i < loop.length - 1; i++) {
+            const a = loop[0], b = loop[i], c = loop[i + 1];
+            mb.pushTri([a[0],a[1],1],[b[0],b[1],1],[c[0],c[1],1], [0,0,1], cAlu);
+            mb.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cAlu);
+          }
+          for (let s = 0; s < nx; s++) {
+            const cx = -hx + 20 + s * 40;
+            mb.addBox(cx, -hy + 0.3, 0.5, 10, 0.8, 0.998, cBore, false);
+            mb.addBox(cx,  hy - 0.3, 0.5, 10, 0.8, 0.998, cBore, false);
+          }
+          for (let s = 0; s < ny; s++) {
+            const cy = -hy + 20 + s * 40;
+            mb.addBox(-hx + 0.3, cy, 0.5, 0.8, 10, 0.998, cBore, false);
+            mb.addBox( hx - 0.3, cy, 0.5, 0.8, 10, 0.998, cBore, false);
+          }
+        }
+        return uploadMesh(mb);
+      }
+
+      const aluSpec = window.OpenVIRegistry.parts.COMMON_ALU_PROFILES;
+      const aluBank = {
+        lod0: {
+          "40x40": buildUnitProfileMesh(aluSpec, 1, 1, true),
+          "40x80": buildUnitProfileMesh(aluSpec, 1, 2, true),
+          "80x80": buildUnitProfileMesh(aluSpec, 2, 2, true)
+        },
+        lod1: {
+          "40x40": buildUnitProfileMesh(aluSpec, 1, 1, false),
+          "40x80": buildUnitProfileMesh(aluSpec, 1, 2, false),
+          "80x80": buildUnitProfileMesh(aluSpec, 2, 2, false)
+        }
+      };
+
+      const refL01Meshes = (() => {
+        const mp = new CadMeshBuilder();
+        mp.addBox(0, 0, 7.5, 160, 160, 15, [0.26, 0.28, 0.30], true);
+        const mc = new CadMeshBuilder();
+        const cSil = [0.74, 0.77, 0.82];
+        mc.addBox(0, 0, -1.6, 90, 90, 3.2, cSil, true);
+        mc.addLatheZ(0, 0, [[0,-18],[31,-18],[34,-3.2]], 20, cSil);
+        mc.addBox(12, 21, -44, 34, 3.2, 52, cSil, true);
+        mc.addBox(12,-21, -44, 34, 3.2, 52, cSil, true);
+        mc.addLatheY(30, -68.5, [[-18.5,12],[-18.5,31.5],[-14,36],[0,37.5],[14,36],[18.5,31.5],[18.5,12]], 24, [0.10,0.32,0.88]);
+        const mf = new CadMeshBuilder();
+        mf.addLatheZ(0, 0, [[0,0],[25,0],[25,7],[11,15],[8,15],[8,155],[0,155]], 18, cSil);
+        return { plate: uploadMesh(mp), caster: uploadMesh(mc), foot: uploadMesh(mf) };
+      })();
+
+      const refP03Overlay = (() => {
+        const mbSolid = new CadMeshBuilder();
+        mbSolid.addBox(0, 40, 7.5, 2000, 1480, 15, [0.38, 0.56, 0.74], true);
+
+        const mbFeatures = new CadMeshBuilder();
+        const m12Pts = [
+          [-977.5, -675.0], [-977.5, -635.0], [-977.5, 715.0], [-977.5, 755.0],
+          [ 977.5, -675.0], [ 977.5, -635.0], [ 977.5, 715.0], [ 977.5, 755.0]
+        ];
+        for (const [bx, by] of m12Pts) {
+          mbFeatures.addLatheZ(bx, by, [[10.0, 15.2], [10.0, 2.2], [6.0, 2.2], [6.0, -45.0], [0, -45.0]], 14, [0.98, 0.36, 0.42]);
+        }
+
+        const grommets = [
+          [-900,-580],[-900,-365],[-900,300],[-900,680],[-700,560],
+          [-180,650],[450,620],[880,120],[900,-580],[900,680],[920,-220]
+        ];
+        for (const [gx, gy] of grommets) {
+          mbFeatures.addLatheZ(gx, gy, [[30.0, 16.0], [30.0, -18.0]], 16, [0.76, 0.46, 0.98]);
+        }
+        mbFeatures.addLatheZ(-100.0, -60.0, [[35.0, 16.0], [35.0, -25.0]], 20, [0.98, 0.76, 0.22]);
+
+        const dp2Poly = [
+          [-330,239],[110,239],[110,340],[135,340],[135,420],[110,420],
+          [110,521],[-330,521],[-330,492.5],[-420,492.5],[-420,267.5],[-330,267.5]
+        ];
+        const mbLines = new CadMeshBuilder();
+        for (let i = 0; i < dp2Poly.length; i++) {
+          const a = dp2Poly[i], b = dp2Poly[(i + 1) % dp2Poly.length];
+          mbLines.pushLine([a[0], a[1], 16], [b[0], b[1], 16]);
+          mbLines.pushLine([a[0], a[1], -170], [b[0], b[1], -170]);
+          mbLines.pushLine([a[0], a[1], 16], [a[0], a[1], -170]);
+        }
+        for (let i = 0; i < 72; i++) {
+          const a0 = (i / 72) * Math.PI * 2, a1 = ((i + 1) / 72) * Math.PI * 2;
+          mbLines.pushLine([-100 + 527.5*Math.cos(a0), -60 + 527.5*Math.sin(a0), 16.5],
+                           [-100 + 527.5*Math.cos(a1), -60 + 527.5*Math.sin(a1), 16.5]);
+        }
+
+        return {
+          slab: uploadMesh(mbSolid),
+          features: uploadMesh(mbFeatures),
+          lines: uploadMesh(mbLines)
+        };
+      })();
+
+      const floorGridMesh = (() => {
+        const mb = new CadMeshBuilder();
+        for (let g = -1400; g <= 1400; g += 200) {
+          mb.pushLine([-1400, g, 0], [1400, g, 0]);
+          mb.pushLine([g, -1400, 0], [g, 1400, 0]);
+        }
+        return uploadMesh(mb);
+      })();
+
+      const triadMeshes = (() => {
+        const mx = new CadMeshBuilder(); mx.addBox(110, 0, 2, 220, 7, 7, [0.92, 0.26, 0.26], false);
+        const my = new CadMeshBuilder(); my.addBox(0, 110, 2, 7, 220, 7, [0.20, 0.80, 0.42], false);
+        const mz = new CadMeshBuilder(); mz.addBox(0, 0, 110, 7, 7, 220, [0.24, 0.62, 0.96], false);
+        return { x: uploadMesh(mx), y: uploadMesh(my), z: uploadMesh(mz) };
+      })();
+
+      const state = {
+        lenX: 2000,
+        widY: 1480,
+        yCenterMm: 40,
+        colH: 720,
+        jackMm: 110.0,
+        lod: "lod0",
+        style: "shaded_edges",
+        sectionOn: false,
+        sectionAxis: 0,
+        sectionVal: 975,
+        selectedGroup: "",
+        vis: {
+          upper: true,
+          columns: true,
+          lower: true,
+          gussets: true,
+          refP03: true,
+          refL01: true
+        }
+      };
+
+      const projMat = Mat4.create();
+      const viewMat = Mat4.create();
+      let frameTris = 0;
+
+      function drawMesh(mesh, modelMat, selected = false, alpha = 1.0) {
+        if (!mesh) return;
+        frameTris += mesh.tris;
+        const clipFlag = state.sectionOn ? 1.0 : 0.0;
+
+        if (state.style !== "wireframe" && mesh.tCount > 0) {
+          if (alpha < 0.99) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.depthMask(false);
+          }
+          gl.useProgram(pSolid);
+          gl.uniformMatrix4fv(uS.uProj, false, projMat);
+          gl.uniformMatrix4fv(uS.uView, false, viewMat);
+          gl.uniformMatrix4fv(uS.uModel, false, modelMat);
+          gl.uniform3fv(uS.uEye, cam.eye);
+          gl.uniform1f(uS.uSelect, selected ? 1.0 : 0.0);
+          gl.uniform1f(uS.uAlpha, alpha);
+          gl.uniform1f(uS.uClipOn, clipFlag);
+          gl.uniform1f(uS.uClipAxis, state.sectionAxis);
+          gl.uniform1f(uS.uClipVal, state.sectionVal);
+
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.15, 1.15);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.tBuf);
+          gl.enableVertexAttribArray(uS.aPos);
+          gl.vertexAttribPointer(uS.aPos, 3, gl.FLOAT, false, 36, 0);
+          gl.enableVertexAttribArray(uS.aNorm);
+          gl.vertexAttribPointer(uS.aNorm, 3, gl.FLOAT, false, 36, 12);
+          gl.enableVertexAttribArray(uS.aCol);
+          gl.vertexAttribPointer(uS.aCol, 3, gl.FLOAT, false, 36, 24);
+          gl.drawArrays(gl.TRIANGLES, 0, mesh.tCount);
+
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+          if (alpha < 0.99) {
+            gl.depthMask(true);
+            gl.disable(gl.BLEND);
+          }
+        }
+
+        if ((state.style === "shaded_edges" || state.style === "wireframe" || selected) && mesh.lCount > 0) {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uL.uProj, false, projMat);
+          gl.uniformMatrix4fv(uL.uView, false, viewMat);
+          gl.uniformMatrix4fv(uL.uModel, false, modelMat);
+          gl.uniform1f(uL.uClipOn, clipFlag);
+          gl.uniform1f(uL.uClipAxis, state.sectionAxis);
+          gl.uniform1f(uL.uClipVal, state.sectionVal);
+          gl.uniform4fv(uL.uCol, selected ? [0.24, 0.85, 1.0, 1.0] : [0.06, 0.08, 0.11, 0.90]);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);
+          if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+          if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+          if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+          gl.enableVertexAttribArray(uL.aPos);
+          gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, mesh.lCount);
+        }
+      }
+
+      function drawLinesRaw(mesh, modelMat, rgba) {
+        if (!mesh || mesh.lCount === 0) return;
+        gl.useProgram(pLine);
+        gl.uniformMatrix4fv(uL.uProj, false, projMat);
+        gl.uniformMatrix4fv(uL.uView, false, viewMat);
+        gl.uniformMatrix4fv(uL.uModel, false, modelMat);
+        gl.uniform1f(uL.uClipOn, 0.0);
+        gl.uniform4fv(uL.uCol, rgba);
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);
+        if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+        if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+        if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+        gl.enableVertexAttribArray(uL.aPos);
+        gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+        gl.drawArrays(gl.LINES, 0, mesh.lCount);
+      }
+
+      const treeItems = [
+        { key: "upper",   name: "P02 Upper Deck Bearers",     sub: "80×80 & 40×80 · Z=845 Top", color: "#38bdf8" },
+        { key: "columns", name: "P02 Vertical Columns (×6)",  sub: "4× 40×80 M12 + 2× 80×80",   color: "#94a3b8" },
+        { key: "lower",   name: "P02 Lower Tie-Frame",        sub: "80×80 & 40×80 · Z=125 Bot", color: "#60a5fa" },
+        { key: "gussets", name: "P02 45° Anti-Sway Gussets",  sub: "8× 40×40 Corner Braces",    color: "#fbbf24" },
+        { key: "refP03",  name: "Ref: P03 Deck + M12/DP2/Ø60",sub: "BASE_TABLE 2000×1480×15",   color: "#34d399" },
+        { key: "refL01",  name: "Ref: L01 4× Corner Casters", sub: "160×160 Plate + CJHB75",    color: "#f472b6" }
+      ];
+
+      function renderTreeUI() {
+        const wrap = document.getElementById("browserTree");
+        wrap.innerHTML = "";
+        for (const it of treeItems) {
+          const on = state.vis[it.key];
+          const row = document.createElement("div");
+          row.className = "tree-row" + (state.selectedGroup === it.key ? " selected" : "");
+          row.innerHTML = `
+            <div class="tree-left">
+              <span class="swatch" style="background:${it.color};"></span>
+              <div style="min-width:0;">
+                <div class="node-name">${it.name}</div>
+                <div class="node-sub">${it.sub}</div>
+              </div>
+            </div>
+            <button type="button" class="eye-btn ${on ? "" : "off"}">${on ? "EYE" : "OFF"}</button>
+          `;
+          row.addEventListener("click", (ev) => {
+            if (ev.target.tagName === "BUTTON") {
+              state.vis[it.key] = !state.vis[it.key];
+              renderTreeUI();
+              return;
+            }
+            state.selectedGroup = state.selectedGroup === it.key ? "" : it.key;
+            renderTreeUI();
+          });
+          wrap.appendChild(row);
+        }
+      }
+      renderTreeUI();
+
+      let currentFrameSpec = null;
+      function recomputeFrameAndCutList() {
+        currentFrameSpec = buildParametricFrameSpec(state);
+        const s = currentFrameSpec;
+
+        const yMin = s.yCenterMm - s.widY * 0.5;
+        const yMax = s.yCenterMm + s.widY * 0.5;
+        const floatMm = s.zPlateBot - 106.0;
+
+        document.getElementById("lblLenX").textContent = `${s.lenX.toFixed(0)} mm`;
+        document.getElementById("lblWidY").textContent = `${s.widY.toFixed(0)} mm`;
+        document.getElementById("lblAsymY").textContent = `+${s.yCenterMm.toFixed(1)} mm [${yMin.toFixed(0)}..+${yMax.toFixed(0)}]`;
+        document.getElementById("lblColH").textContent = `${s.colH.toFixed(0)} mm (Z_top = ${s.zFrameTop.toFixed(1)})`;
+        document.getElementById("lblJack").textContent = floatMm > 0
+          ? `${s.zPlateBot.toFixed(1)} mm (+${floatMm.toFixed(1)} ล้อลอย)`
+          : `${s.zPlateBot.toFixed(1)} mm (ล้อแตะพื้น)`;
+
+        const isP03Match = (s.lenX === 2000 && s.widY === 1480 && s.yCenterMm === 40);
+        document.getElementById("lblPresetTag").textContent = isP03Match ? "P03 2000×1480" : "CUSTOM SCALE";
+        document.getElementById("kpiSpan").textContent = `${s.lenX} × ${s.widY} mm (+${s.yCenterMm} Rear)`;
+
+        const grouped = new Map();
+        let totalMeters = 0.0;
+        let totalMassKg = 0.0;
+        for (const b of s.beams) {
+          const lenR = Math.round(b.lengthMm * 10) / 10;
+          const key = `${b.role}|${b.prof}|${lenR}`;
+          if (!grouped.has(key)) {
+            grouped.set(key, { role: b.role, prof: b.prof, len: lenR, qty: 0 });
+          }
+          grouped.get(key).qty += 1;
+          const m = b.lengthMm / 1000.0;
+          totalMeters += m;
+          totalMassKg += m * (aluSpec.linearMassKgPerM[b.prof] || 3.0);
+        }
+
+        document.getElementById("kpiBeams").textContent = `${s.beams.length} pcs`;
+        document.getElementById("kpiMass").textContent = `${totalMassKg.toFixed(1)} kg`;
+        document.getElementById("lblTotalMeters").textContent = `${totalMeters.toFixed(2)} m · ${totalMassKg.toFixed(1)} kg`;
+
+        const tbody = document.getElementById("cutListBody");
+        tbody.innerHTML = "";
+        for (const row of grouped.values()) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.role}</td>
+            <td style="font-family:var(--mono);color:#7dd3fc;">${row.prof}</td>
+            <td class="num">${row.len.toFixed(1)}</td>
+            <td class="num" style="color:#fde68a;">×${row.qty}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+      recomputeFrameAndCutList();
+
+      function syncSliderInputs() {
+        document.getElementById("rngLenX").value = String(state.lenX);
+        document.getElementById("rngWidY").value = String(state.widY);
+        document.getElementById("rngAsymY").value = String(state.yCenterMm);
+        document.getElementById("rngColH").value = String(state.colH);
+        document.getElementById("rngJack").value = String(state.jackMm);
+      }
+
+      document.getElementById("btnPresetP03").addEventListener("click", () => {
+        state.lenX = 2000; state.widY = 1480; state.yCenterMm = 40; state.colH = 720; state.jackMm = 110;
+        state.vis.refP03 = true;
+        document.getElementById("btnPresetP03").classList.add("active");
+        document.getElementById("btnPresetV1").classList.remove("active");
+        syncSliderInputs();
+        renderTreeUI();
+        recomputeFrameAndCutList();
+      });
+
+      document.getElementById("btnPresetV1").addEventListener("click", () => {
+        state.lenX = 1400; state.widY = 1080; state.yCenterMm = 0; state.colH = 720; state.jackMm = 110;
+        state.vis.refP03 = false;
+        document.getElementById("btnPresetV1").classList.add("active");
+        document.getElementById("btnPresetP03").classList.remove("active");
+        syncSliderInputs();
+        renderTreeUI();
+        recomputeFrameAndCutList();
+      });
+
+      for (const [id, key] of [["rngLenX","lenX"],["rngWidY","widY"],["rngAsymY","yCenterMm"],["rngColH","colH"],["rngJack","jackMm"]]) {
+        document.getElementById(id).addEventListener("input", e => {
+          state[key] = Number(e.target.value);
+          document.getElementById("btnPresetP03").classList.toggle("active", state.lenX===2000 && state.widY===1480 && state.yCenterMm===40);
+          document.getElementById("btnPresetV1").classList.toggle("active", state.lenX===1400 && state.widY===1080 && state.yCenterMm===0);
+          recomputeFrameAndCutList();
+        });
+      }
+
+      const cam = {
+        yaw: -2.18,
+        pitch: 0.44,
+        dist: 2850,
+        target: [0, 40, 480],
+        eye: [0, 0, 0]
+      };
+
+      function setCamPreset(preset) {
+        document.querySelectorAll("[data-cam]").forEach(b => b.classList.toggle("active", b.dataset.cam === preset));
+        const yc = state.yCenterMm;
+        if (preset === "iso" || preset === "fit") { cam.yaw = -2.18; cam.pitch = 0.44; cam.dist = 2850; cam.target = [0, yc, 480]; }
+        if (preset === "top")   { cam.yaw = -Math.PI * 0.5; cam.pitch = 1.51; cam.dist = 2650; cam.target = [0, yc, 600]; }
+        if (preset === "under") { cam.yaw = -Math.PI * 0.5; cam.pitch = -1.35; cam.dist = 2400; cam.target = [0, yc, 600]; }
+        if (preset === "front") { cam.yaw = -Math.PI * 0.5; cam.pitch = 0.06; cam.dist = 2650; cam.target = [0, yc, 480]; }
+        if (preset === "right") { cam.yaw = 0.0; cam.pitch = 0.08; cam.dist = 2400; cam.target = [0, yc, 480]; }
+      }
+      document.querySelectorAll("[data-cam]").forEach(b => b.addEventListener("click", () => setCamPreset(b.dataset.cam)));
+
+      let drag = 0, lx = 0, ly = 0;
+      canvas.addEventListener("contextmenu", e => e.preventDefault());
+      canvas.addEventListener("pointerdown", e => {
+        drag = (e.button === 2 || e.shiftKey) ? 2 : 1;
+        lx = e.clientX; ly = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", e => {
+        if (!drag) return;
+        const dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        if (drag === 1) {
+          cam.yaw -= dx * 0.0068;
+          cam.pitch = Math.max(-1.52, Math.min(1.52, cam.pitch + dy * 0.0068));
+        } else {
+          const sc = cam.dist * 0.0011;
+          cam.target[0] -= dx * (-Math.sin(cam.yaw)) * sc;
+          cam.target[1] -= dx * Math.cos(cam.yaw) * sc;
+          cam.target[2] += dy * sc;
+        }
+      });
+      canvas.addEventListener("pointerup", () => { drag = 0; });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        cam.dist = Math.max(140, Math.min(6500, cam.dist * (1 + e.deltaY * 0.001)));
+      }, { passive: false });
+
+      const qcSpots = {
+        m12: {
+          group: "columns",
+          target: [977.5, -655, 835],
+          dist: 340, pitch: 0.36, yaw: -2.45,
+          secOn: true, axis: 0, val: 977.5,
+          msg: "<strong>1. พิสูจน์รูสกรูมุม M12 (X = +977.5, Y = -675/-635):</strong> สลักสีแดงจากแผ่นโต๊ะ P03 ยิงตรงลงรูแกนกลางคู่พิตช์ 40 mm ของเสาตั้ง 40×80 (C2) แบบ Coaxial 0.000 mm!"
+        },
+        dp2: {
+          group: "upper",
+          target: [-135, 380, 800],
+          dist: 1380, pitch: -1.18, yaw: -1.57,
+          secOn: false,
+          msg: "<strong>2. พิสูจน์ช่องเกียร์ DP2 (555×282 mm):</strong> มองเสยจากใต้โต๊ะเห็นกรอบเขียวของชุดเกียร์ DP2 อยู่กลางช่องว่างระหว่างคาน 80×80 ซ้าย (-580), ขวา (+340), และคานกันแอ่น (+195) โล่ง 100%!"
+        },
+        grommet: {
+          group: "upper",
+          target: [-820, 120, 820],
+          dist: 1250, pitch: -1.25, yaw: -1.57,
+          secOn: false,
+          msg: "<strong>3. พิสูจน์รูร้อยสายไฟ Ø60 ทั้ง 11 จุด (ท่อสีม่วง):</strong> คานข้าง 40×80 ที่ X = ±977.5 และคานขวางทุกท่อนเว้นระยะพ้นท่อร้อยสาย G01–G11 และรูกลาง Ø70 ครบทุกจุด!"
+        },
+        tslot: {
+          group: "upper",
+          target: [-580, -615, 805],
+          dist: 260, pitch: 0.38, yaw: -2.15,
+          secOn: true, axis: 1, val: -500,
+          msg: "<strong>4. หน้าตัดโปรไฟล์ Series-40 (LOD-0):</strong> ผ่าที่ Y = -500 mm เผยให้เห็นร่อง T-Slot กว้าง 10 mm และรูแกนกลาง Ø10.2 mm (ต๊าป M12) โดยตัดโพรงฟันเฟืองด้านในทิ้งเพื่อลดเมชลง 93%"
+        }
+      };
+
+      document.querySelectorAll("[data-qc]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.lenX = 2000; state.widY = 1480; state.yCenterMm = 40;
+          state.vis.refP03 = true;
+          state.lod = "lod0";
+          document.querySelectorAll("[data-lod]").forEach(x => x.classList.toggle("active", x.dataset.lod === "lod0"));
+          syncSliderInputs();
+          recomputeFrameAndCutList();
+
+          const sp = qcSpots[btn.dataset.qc];
+          document.querySelectorAll("[data-qc]").forEach(x => x.classList.toggle("warn-act", x === btn));
+          state.selectedGroup = sp.group;
+          cam.target = [...sp.target];
+          cam.dist = sp.dist;
+          cam.pitch = sp.pitch;
+          cam.yaw = sp.yaw;
+
+          if (sp.secOn) {
+            state.sectionOn = true;
+            state.sectionAxis = sp.axis;
+            state.sectionVal = sp.val;
+          } else {
+            state.sectionOn = false;
+          }
+          syncSectionUI();
+          renderTreeUI();
+          document.getElementById("qcNote").innerHTML = sp.msg;
+        });
+      });
+
+      document.querySelectorAll("[data-lod]").forEach(b => {
+        b.addEventListener("click", () => {
+          state.lod = b.dataset.lod;
+          document.querySelectorAll("[data-lod]").forEach(x => x.classList.toggle("active", x === b));
+        });
+      });
+      document.querySelectorAll("[data-style]").forEach(b => {
+        b.addEventListener("click", () => {
+          state.style = b.dataset.style;
+          document.querySelectorAll("[data-style]").forEach(x => x.classList.toggle("active", x === b));
+        });
+      });
+
+      function syncSectionUI() {
+        document.getElementById("btnSection").classList.toggle("active", state.sectionOn);
+        document.getElementById("secControls").classList.toggle("show", state.sectionOn);
+        document.getElementById("btnSecAxis").textContent = state.sectionAxis === 0 ? "X-CUT" : "Y-CUT";
+        document.getElementById("rngSec").value = String(state.sectionVal);
+        document.getElementById("lblSecVal").textContent = `${state.sectionVal} mm`;
+      }
+      document.getElementById("btnSection").addEventListener("click", () => {
+        state.sectionOn = !state.sectionOn;
+        syncSectionUI();
+      });
+      document.getElementById("btnSecAxis").addEventListener("click", () => {
+        state.sectionAxis = state.sectionAxis === 0 ? 1 : 0;
+        state.sectionVal = state.sectionAxis === 0 ? 975 : -500;
+        syncSectionUI();
+      });
+      document.getElementById("rngSec").addEventListener("input", e => {
+        state.sectionVal = Number(e.target.value);
+        document.getElementById("lblSecVal").textContent = `${state.sectionVal} mm`;
+      });
+
+      const mId = Mat4.create();
+      const mTmp = Mat4.create();
+      const mSub = Mat4.create();
+      let lastT = performance.now();
+
+      function render(now) {
+        const dtMs = now - lastT;
+        lastT = now;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.125, 0.145, 0.18, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+
+        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;
+        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;
+        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;
+
+        Mat4.perspective(projMat, (38 * Math.PI) / 180, w / Math.max(1, h), 10.0, 14000.0);
+        Mat4.lookAt(viewMat, cam.eye, cam.target, [0, 0, 1]);
+
+        Mat4.identity(mId);
+        drawLinesRaw(floorGridMesh, mId, [0.25, 0.29, 0.36, 0.55]);
+
+        frameTris = 0;
+        drawMesh(triadMeshes.x, mId, false);
+        drawMesh(triadMeshes.y, mId, false);
+        drawMesh(triadMeshes.z, mId, false);
+
+        const s = currentFrameSpec;
+        const bank = aluBank[state.lod];
+
+        if (state.vis.refL01) {
+          const sel = state.selectedGroup === "refL01";
+          for (const c of s.l01Corners) {
+            Mat4.translate(mTmp, mId, c.x, c.y, s.zPlateBot);
+            Mat4.rotateZ(mTmp, mTmp, c.rot);
+            drawMesh(refL01Meshes.plate, mTmp, sel);
+
+            Mat4.translate(mSub, mTmp, 35.0, -35.0, 0.0);
+            Mat4.rotateZ(mSub, mSub, 2.2);
+            drawMesh(refL01Meshes.caster, mSub, sel);
+
+            Mat4.translate(mSub, mTmp, -20.0, 20.0, -s.zPlateBot);
+            drawMesh(refL01Meshes.foot, mSub, sel);
+          }
+        }
+
+        for (const b of s.beams) {
+          if (!state.vis[b.group]) continue;
+          Mat4.fromBeamEndpoints(mTmp, b.p0, b.p1, b.roll);
+          drawMesh(bank[b.prof], mTmp, state.selectedGroup === b.group);
+        }
+
+        if (state.vis.refP03) {
+          const sel = state.selectedGroup === "refP03";
+          Mat4.translate(mTmp, mId, 0, 0, s.zFrameTop);
+          drawMesh(refP03Overlay.features, mTmp, sel, 1.0);
+          drawLinesRaw(refP03Overlay.lines, mTmp, [0.22, 0.92, 0.65, 0.92]);
+          drawMesh(refP03Overlay.slab, mTmp, sel, 0.28);
+        }
+
+        document.getElementById("perfReadout").textContent =
+          `Tris: ${frameTris.toLocaleString()} · ${dtMs.toFixed(1)} ms`;
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

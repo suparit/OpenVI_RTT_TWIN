@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P04_TR1100A_Rotary_Indexer_Studio_v1.0 — WEISS 30-Station Indexer 3D Digital Twin</title>
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --panel-bg: rgba(22, 26, 33, 0.95);
+      --panel-2: #1e232d;
+      --panel-3: #2a313f;
+      --border: #384152;
+      --border-hi: #536178;
+      --ink: #eef2f7;
+      --muted: #95a2b5;
+      --brand: #0696d7;
+      --brand-hi: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #f43f5e;
+      --violet: #c084fc;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 12.5px;
+      user-select: none;
+    }
+
+    /* Header Bar */
+    .topbar {
+      height: 46px;
+      background: #0b0d10;
+      border-bottom: 1px solid #232a35;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .part-badge {
+      background: linear-gradient(135deg, #0696d7, #1d4ed8);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .spec-badge {
+      background: rgba(192, 132, 252, 0.14);
+      border: 1px solid rgba(192, 132, 252, 0.5);
+      color: #e9d5ff;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .app-title {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-kpis {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .kpi-chip {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .kpi-chip strong { color: var(--brand-hi); }
+
+    /* Main Workspace */
+    .workspace {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 46px);
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    /* Left Browser Tree */
+    .left-panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 290px;
+      max-height: calc(100% - 82px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .panel-hdr {
+      padding: 8px 11px;
+      background: #191e26;
+      border-bottom: 1px solid var(--border);
+      font-size: 10.8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #d6deeb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tree-scroll {
+      padding: 7px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tree-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: #141820;
+      border: 1px solid #282f3c;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .tree-row:hover { border-color: var(--border-hi); }
+    .tree-row.selected {
+      background: rgba(6, 150, 215, 0.22);
+      border-color: var(--brand-hi);
+    }
+    .tree-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .node-name {
+      font-size: 11.2px;
+      font-weight: 600;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node-sub {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+    }
+    .eye-btn {
+      font-family: var(--mono);
+      font-size: 9.8px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .eye-btn:hover { border-color: var(--brand-hi); }
+    .eye-btn.off {
+      opacity: 0.42;
+      text-decoration: line-through;
+    }
+
+    /* ViewCube */
+    .viewcube {
+      position: absolute;
+      top: 12px;
+      right: 346px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+    }
+    .vc-lbl {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .vc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .vc-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vc-btn:hover { border-color: var(--brand-hi); background: #313949; }
+    .vc-btn.active { background: var(--brand); border-color: var(--brand-hi); color: #fff; }
+
+    /* Right Panel: Kinematics & Inspector */
+    .right-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 322px;
+      max-height: calc(100% - 82px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .r-sec {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .r-sec:last-child { border-bottom: none; }
+    .ctrl-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .s-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .s-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.2px;
+    }
+    .s-val {
+      font-family: var(--mono);
+      font-size: 10.8px;
+      font-weight: 700;
+      color: var(--brand-hi);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--brand);
+      margin: 0;
+      cursor: pointer;
+    }
+    .flex-row {
+      display: flex;
+      gap: 6px;
+    }
+    .action-btn {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--brand-hi);
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.12s;
+    }
+    .action-btn:hover { background: #0284c7; }
+    .action-btn.secondary {
+      background: var(--panel-2);
+      border-color: var(--border-hi);
+      color: var(--ink);
+    }
+    .action-btn.secondary:hover { background: #2c3442; }
+    .action-btn.active {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--ok);
+      color: #86efac;
+    }
+
+    .audit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    .audit-btn {
+      font-family: var(--font);
+      font-size: 10.8px;
+      font-weight: 600;
+      padding: 6px 7px;
+      border-radius: 5px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: #e2e8f0;
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.3;
+    }
+    .audit-btn:hover { border-color: var(--brand-hi); background: #2a3240; }
+    .audit-btn.active {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: var(--warn);
+      color: #fde68a;
+    }
+    .audit-note {
+      margin-top: 7px;
+      padding: 7px 8px;
+      border-radius: 5px;
+      background: #11141a;
+      border: 1px solid #2a313e;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+    .audit-note strong { color: #fde68a; }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.8px;
+    }
+    .spec-table td {
+      padding: 4px 4px;
+      border-bottom: 1px solid rgba(56, 65, 80, 0.45);
+    }
+    .spec-table td.num {
+      text-align: right;
+      font-family: var(--mono);
+      color: #86efac;
+      font-weight: 600;
+    }
+
+    /* Bottom Dock */
+    .bottom-dock {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 22, 28, 0.96);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 12;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.58);
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: calc(100% - 24px);
+    }
+    .dock-btn {
+      font-family: var(--font);
+      font-size: 11.2px;
+      font-weight: 600;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .dock-btn:hover { background: #2b3240; color: #fff; }
+    .dock-btn.active {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: var(--brand);
+      color: #7dd3fc;
+    }
+    .sep { width: 1px; height: 18px; background: var(--border); }
+    .sec-controls {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: #fda4af;
+    }
+    .sec-controls.show { display: flex; }
+
+    @media (max-width: 1120px) {
+      .top-kpis { display: none; }
+      .left-panel { width: 235px; }
+      .right-panel { width: 280px; }
+      .viewcube { right: 300px; }
+    }
+    @media (max-width: 780px) {
+      .left-panel { display: none; }
+      .viewcube { left: 10px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-group">
+      <span class="part-badge">CARTRIDGE P04 v1.0</span>
+      <span class="spec-badge">DG-2026-106 · 21 SOLIDS</span>
+      <span class="app-title">P04_TR1100A_Rotary_Indexer_Studio_v1.0 — 30-Station Indexer Workbench</span>
+    </div>
+    <div class="top-kpis">
+      <span class="kpi-chip">Ring PCD: <strong>Ø1055.0 mm</strong></span>
+      <span class="kpi-chip">Bore ID: <strong>Ø750.0 mm</strong></span>
+      <span class="kpi-chip">Motor: <strong>WEISS 80L8 (0.37 kW)</strong></span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT FEATURE TREE -->
+    <aside class="left-panel" aria-label="TR1100A Component Tree">
+      <div class="panel-hdr">
+        <span>TR1100A COMPONENT BROWSER</span>
+        <span style="font-family:var(--mono);color:var(--brand-hi);">Multi-Body</span>
+      </div>
+      <div class="tree-scroll" id="browserTree"></div>
+    </aside>
+
+    <!-- VIEWCUBE -->
+    <div class="viewcube" aria-label="Camera ViewCube">
+      <div class="vc-lbl">VIEWCUBE · Z-UP (mm)</div>
+      <div class="vc-grid">
+        <button type="button" class="vc-btn active" data-cam="iso">ISO</button>
+        <button type="button" class="vc-btn" data-cam="top">TOP</button>
+        <button type="button" class="vc-btn" data-cam="under">UNDER</button>
+        <button type="button" class="vc-btn" data-cam="front">FRONT</button>
+        <button type="button" class="vc-btn" data-cam="right">RIGHT</button>
+        <button type="button" class="vc-btn" data-cam="drive">DRIVE</button>
+      </div>
+    </div>
+
+    <!-- MAIN 3D WEBGL CANV -->
+    <canvas id="glCanvas"></canvas>
+
+    <!-- RIGHT PANEL: KINEMATICS & SPECS -->
+    <aside class="right-panel" aria-label="Rotary Indexer Kinematics and QC">
+      <div class="panel-hdr">
+        <span>INDEX KINEMATICS SIMULATION</span>
+        <span style="font-family:var(--mono);color:var(--ok);">60 FPS REALTIME</span>
+      </div>
+      <div class="r-sec">
+        <div class="ctrl-stack">
+          <div class="flex-row">
+            <button type="button" class="action-btn" id="btnStartIndex" style="flex:1;">
+              ⚡ START INDEX (12°)
+            </button>
+            <button type="button" class="action-btn secondary" id="btnAutoRun" style="flex:1.2;">
+              🔄 AUTO-INDEX RUN
+            </button>
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngStation">เป้าหมายสถานีจานหมุน (1–30)</label>
+              <span class="s-val" id="lblStation">Station #01</span>
+            </div>
+            <input type="range" id="rngStation" min="1" max="30" step="1" value="1">
+          </div>
+
+          <div class="s-row">
+            <div class="s-lbl">
+              <label for="rngSpeed">ความเร็วแอนิเมชัน (Speed Override)</label>
+              <span class="s-val" id="lblSpeed">1.00x (1.18 s)</span>
+            </div>
+            <input type="range" id="rngSpeed" min="0.1" max="2.0" step="0.1" value="1.0">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>DG-2026-106 INTERFACE QC SPOTS</span>
+        <span style="font-family:var(--mono);font-size:9.8px;color:var(--warn);">4 AUDITS</span>
+      </div>
+      <div class="r-sec">
+        <div class="audit-grid">
+          <button type="button" class="audit-btn" data-qc="bolts">1. รูน็อต RB1–RB6 &amp; PCD Ø1055</button>
+          <button type="button" class="audit-btn" data-qc="pocket">2. ช่องเกียร์ DP2 &amp; ชุดขับเคลื่อนใต้โต๊ะ</button>
+          <button type="button" class="audit-btn" data-qc="island">3. เพลทเกาะกลาง P1–P3 ในกระบอกเสื้อ</button>
+          <button type="button" class="audit-btn" data-qc="dial">4. จานหมุนเอาต์พุต Ø949.5 &amp; รูพิน H7</button>
+        </div>
+        <div class="audit-note" id="qcNote">
+          คลิกจุดตรวจสอบด้านบนเพื่อบินกล้องส่องความแม่นยำและการเคลียร์แรนซ์ทางกลของ <strong>WEISS TR1100A</strong>
+        </div>
+      </div>
+
+      <div class="panel-hdr">
+        <span>KINEMATIC TELEMETRY</span>
+        <span style="font-family:var(--mono);font-size:9.8px;color:var(--brand-hi);">LIVE FEED</span>
+      </div>
+      <div class="r-sec">
+        <table class="spec-table">
+          <tbody>
+            <tr><td>Index State</td><td class="num" id="teleState" style="color:var(--ok);">LOCKED / IDLE</td></tr>
+            <tr><td>Dial Angle (Rz_world)</td><td class="num" id="teleDialAngle">0.00°</td></tr>
+            <tr><td>Cam Shaft Rotation (360°/index)</td><td class="num" id="teleCamAngle">0.00°</td></tr>
+            <tr><td>Weiss Induction Motor RPM</td><td class="num" id="teleMotorRpm">0 RPM</td></tr>
+            <tr><td>Index Time Elapsed</td><td class="num" id="teleTime">0.00 s / 1.18 s</td></tr>
+            <tr><td>Lock Sensor LED (Active High)</td><td class="num" id="teleSensor" style="color:var(--ok);">● ACTIVE (LOCKED)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-hdr">
+        <span>P04 ↔ P03 ASSEMBLY CONNECTORS</span>\n        <span style=\"font-family:var(--mono);font-size:9.8px;color:var(--ok);\">v1.0 READY</span>\n      </div>\n      <div class=\"r-sec\">\n        <table class=\"spec-table\">\n          <tbody>\n            <tr><td>Mating Rotation Rz_world</td><td class=\"num\">180.00°</td></tr>\n            <tr><td>Assembly Origin (X, Y, Z)</td><td class=\"num\">(-100.0, -60.0, 860.0) mm</td></tr>\n            <tr><td>Gearbox Clearance Space</td><td class=\"num\" style=\"color:#86efac;\">100% CLEAR (>= 8.5 mm)</td></tr>\n            <tr><td>Output Dial Station Pitch</td><td class=\"num\">12.00° (30 Stations)</td></tr>\n          </tbody>\n        </table>\n      </div>\n    </aside>\n\n    <!-- BOTTOM DOCK -->\n    <div class=\"bottom-dock\" role=\"toolbar\" aria-label=\"WebGL Viewport Display Controls\">\n      <button type="button" class=\"dock-btn active\" data-lod=\"lod0\">LOD-0: รายละเอียดเกลียว/แบริ่งกลึงจริง</button>\n      <button type="button" class=\"dock-btn\" data-lod=\"lod1\">LOD-1: Full-Cell (เมชยืดลื่นพิเศษ)</button>\n      <div class=\"sep\"></div>\n      <button type="button" class=\"dock-btn active\" data-style=\"shaded_edges\">Shaded + Edges</button>\n      <button type="button" class=\"dock-btn\" data-style=\"shaded\">Shaded</button>\n      <button type="button" class=\"dock-btn\" data-style=\"wireframe\">Wireframe</button>\n      <div class=\"sep\"></div>\n      <button type="button" class=\"dock-btn\" id=\"btnSection\">✂ Section Cut</button>\n      <div class=\"sec-controls\" id=\"secControls\">\n        <button type="button" class="eye-btn" id="btnSecAxis">Y-CUT</button>\n        <input type="range" id="rngSec" min="-600" max="600" step="5" value="-60" style="width:105px;">\n        <span id="lblSecVal">-60 mm</span>\n      </div>\n      <div class=\"sep\"></div>\n      <span id="perfReadout" style="font-family:var(--mono);font-size:10.8px;color:var(--muted);padding:0 4px;">\n        Tris: 0 · 0.0 ms\n      </span>\n    </div>\n  </div>\n\n  <script>\n    // Ensure Global OpenVIRegistry exists for standalone run AND Master Shell compatibility\n    window.OpenVIRegistry = window.OpenVIRegistry || {\n      parts: {},\n      order: [],\n      registerPart(id, spec) {\n        if (!this.parts[id]) this.order.push(id);\n        this.parts[id] = { id, visible: true, ...spec };\n      }\n    };\n\n    // Build the mock P03 data since P03 is not imported in standalone\n    window.OpenVIRegistry.registerPart("P03_BASE_TABLE_DECK", {\n      version: "2.0.0",\n      layer: "L03",\n      sourceStep: "BASE_TABLE.step",\n      specData: {\n        cornerCBores: [\n          [-977.5, -675.0], [-977.5, -635.0],\n          [-977.5,  715.0], [-977.5,  755.0],\n          [ 977.5, -675.0], [ 977.5, -635.0],\n          [ 977.5,  715.0], [ 977.5,  755.0]\n        ],\n        grommets60: [\n          [-900.0, -580.0], [-900.0, -365.0], [-900.0,  300.0], [-900.0,  680.0],\n          [-700.0,  560.0], [-180.0,  650.0], [ 450.0,  620.0], [ 880.0,  120.0],\n          [ 900.0, -580.0], [ 900.0,  680.0], [ 920.0, -220.0]\n        ],\n        h7Dowels: [\n          [ 273.000, -433.000],\n          [-473.000,  313.000]\n        ],\n        tr1100RingBolts: [\n          [ 427.500,  -60.000,    0.0],\n          [ 163.750,  396.828,   60.0],\n          [-532.103,  242.562,  145.0],\n          [-627.500,  -60.000,  180.0],\n          [-363.750, -516.828, -120.0],\n          [ 163.750, -516.828,  -60.0]\n        ],\n        m10Pads: [\n          { id: "P1", zone: "island", pitch: "100×140", theta: 149.13, rTr: 212.89,\n            holes: [[-339.781, -15.165], [-240.322, -25.619], [-225.689, 113.614], [-325.147, 124.068]] },\n          { id: "P2", zone: "island", pitch: "100.2×140", theta: 28.91, rTr: 211.13,\n            holes: [[  -1.240,  42.714], [ 112.023, -39.576], [ 170.805,  41.331], [  57.676, 123.804]] },\n          { id: "P3", zone: "island", pitch: "170×170", theta: -36.12, rTr: 254.31,\n            holes: [[ -14.787,-210.209], [ 105.709,-330.129], [ 225.629,-209.633], [ 105.133, -89.713]] },\n          { id: "P4", zone: "orbit",  pitch: "100×140", theta: 42.00, rTr: 658.00,\n            holes: [[ 303.513, 370.606], [ 370.430, 296.287], [ 474.470, 389.965], [ 407.553, 464.284]] },\n          { id: "P5", zone: "orbit",  pitch: "100×140", theta: 59.27, rTr: 764.11,\n            holes: [[ 206.151, 579.622], [ 334.047, 522.679], [ 374.723, 614.039], [ 246.827, 670.982]] },\n          { id: "P6", zone: "orbit",  pitch: "100×140", theta: 108.82, rTr: 754.18,\n            holes: [[-401.337, 590.408], [-264.397, 619.515], [-285.189, 717.336], [-422.130, 688.229]] },\n          { id: "P7", zone: "orbit",  pitch: "100×140", theta: 132.73, rTr: 764.11,\n            holes: [[-645.708, 419.702], [-532.445, 501.992], [-591.228, 582.899], [-704.490, 500.609]] },\n          { id: "P8", zone: "orbit",  pitch: "100×140", theta: 156.73, rTr: 764.11,\n            holes: [[-793.641, 156.270], [-723.641, 277.514], [-810.249, 327.517], [-880.249, 206.274]] },\n          { id: "P9", zone: "orbit",  pitch: "100×140", theta: -179.27, rTr: 764.11,\n            holes: [[-821.638,-144.556], [-807.004,  -5.323], [-906.462,   5.130], [-921.096,-134.103]] },\n          { id: "P10", zone: "conveyor", pitch: "170×170", theta: -0.30, rTr: 940.01,\n            holes: [[ 755.000,-150.000], [ 925.000,-150.000], [ 925.000,  20.000], [ 755.000,  20.000]] }\n        ]\n      }\n    });\n\n    /* <<<BEGIN_OPENVI_PART_CARTRIDGE: P04_TR1100A_ROTARY>>> */\n    window.OpenVIRegistry.registerPart("P04_TR1100A_ROTARY", {\n      version: "1.0.0",\n      layer: "L04",\n      sourceStep: "TR1100A_0000_0001_01_1.step.txt (1.25 MB, 24,839 Entities, 21 Solids)",\n\n      buildMeshes(kernel, lod = "lod0") {\n        const isLod0 = (lod === "lod0");\n        const builders = {\n          housing:  new kernel.CadMeshBuilder(), // #482 Outer ring body, PCD Ø1055, open center Ø750\n          dial:     new kernel.CadMeshBuilder(), // #480 Rotating dial ring, Ø847.5-Ø949.5, 16x Ø24.5 pockets\n          cambox:   new kernel.CadMeshBuilder(), // #477 Under-deck cam box housing, 501.5x265x238.5\n          beltbox:  new kernel.CadMeshBuilder(), // #472 & #471 vertical drive pulley box and cover\n          motor:    new kernel.CadMeshBuilder(), // #465, #466, #464, #463 Finned horizontal 80L8 motor\n          sensors:  new kernel.CadMeshBuilder()  // #475, #476 limit cam and inductive switch\n        };\n\n        const cSteel      = [0.65, 0.67, 0.70];\n        const cSteelDark  = [0.48, 0.50, 0.54];\n        const cBeltBox    = [0.18, 0.20, 0.24]; // Dark charcoal housing\n        const cAluFins    = [0.72, 0.74, 0.76]; // Finned motor casing\n        const cDialCyan   = [0.03, 0.55, 0.82]; // Bright indexing ring dial\n        const cSensorFlag = [0.88, 0.62, 0.12]; // Amber target flag\n\n        // --- 1. Stationary Ring Flange Housing #482 (Z = 0 .. +68 mm) ---\n        const mbH = builders.housing;\n        // Outer base flange (Ø1090 to Ø1020, Z=0..17)\n        mbH.addLatheZ(0, 0, [[375.0, 0], [545.0, 0], [545.0, 17.0], [510.0, 17.0], [510.0, 68.0], [375.0, 68.0]], isLod0 ? 40 : 20, cSteel);\n        // Bosses for 6x PCD Ø1055.0 mm bolts + 2x Ø12.0 H7 dowels\n        const bolts = [0, 60, 145, 180, -120, -60];\n        for (const deg of bolts) {\n          const r = (deg * Math.PI) / 180.0;\n          mbH.addBox(527.5 * Math.cos(r), 527.5 * Math.sin(r), 10.0, 32, 32, 20.0, cSteelDark, true);\n        }\n        // Inner Island Flange PCD Ø770/Ø794 (Z=38..64)\n        mbH.addLatheZ(0, 0, [[375.0, 38.0], [397.0, 38.0], [397.0, 64.0], [375.0, 64.0]], isLod0 ? 32 : 18, cSteelDark);\n\n        // --- 2. Rotating Output Ring Dial #480 (Z = +54 .. +70 mm) ---\n        const mbD = builders.dial;\n        // Rotating main ring (OD Ø949.5, ID Ø847.5, Height 16)\n        mbD.addLatheZ(0, 0, [[423.75, 54.0], [474.75, 54.0], [474.75, 70.0], [423.75, 70.0]], isLod0 ? 48 : 24, cDialCyan);\n        // 16x Ø24.5 mm cylindrical cam-follower roller pockets on PCD Ø900.0 mm\n        for (let i = 0; i < 16; i++) {\n          const ang = (i / 16) * Math.PI * 2.0;\n          const px = 450.0 * Math.cos(ang), py = 450.0 * Math.sin(ang);\n          mbD.addLatheZ(px, py, [[12.25, 70.1], [12.25, 54.0]], 12, cSteelDark);\n        }\n        // 8x M8 tooling taps + 4x Ø8 H7 dowels on PCD Ø865.5 mm (Z=70)\n        for (let i = 0; i < 12; i++) {\n          const ang = (i / 12) * Math.PI * 2.0;\n          const px = 432.75 * Math.cos(ang), py = 432.75 * Math.sin(ang);\n          mbD.addLatheZ(px, py, [[4.0, 70.2], [4.0, 62.0]], 8, [0.15, 0.15, 0.18]);\n        }\n\n        // --- 3. Under-Deck Cam Barrel Housing #477 (Z = 0 .. -238.5 mm) ---\n        const mbC = builders.cambox;\n        // Box block (501.5 x 265 x 238.5) offset to the left as per CAD coordinates!\n        mbC.addBox(131.0, -440.0, -119.25, 501.5, 265.0, 238.5, cSteelDark, true);\n        // Input Cam Shaft extending on right side (X = +82..+108.5, Y = -440.0, Z = -69.0 mm)\n        mbC.addLatheY(108.5, -69.0, [[0, 15.0], [-55.0, 15.0], [-55.0, 0.0]], 16, cSteel);\n\n        // --- 4. Belt / Pulley Box #472 & Cover #471 (Z = -61 .. -381 mm) ---\n        const mbB = builders.beltbox;\n        // Belt box vertical housing (55 x 200 x 320) centered on left of cam housing (local X = 272.5)\n        mbB.addBox(272.5, -440.0, -221.0, 55.0, 200.0, 320.0, cBeltBox, true);\n        // Belt cover plate #471 (1.5 mm thick steel) on the very left face (local X = 300.0)\n        mbB.addBox(300.75, -440.0, -221.0, 1.5, 199.0, 319.0, [0.35, 0.38, 0.42], true);\n\n        // --- 5. Finned Induction Motor #465 / Front #466 / Cowl #464 / TermBox #463 ---\n        const mbM = builders.motor;\n        // Motor axis Y = -440.0 mm, Z = -315.0 mm. Horizontal cylinder (OD Ø156, length 131)\n        mbM.addLatheY(78.0, -315.0, [[-440.0, 78.0], [-500.0, 78.0], [-500.0, 72.0], [-571.0, 72.0], [-571.0, 0.0]], isLod0 ? 24 : 12, cSteel);\n        // Cooling fins\n        if (isLod0) {\n          for (let fx = 95.0; fx <= 195.0; fx += 10.0) {\n            mbM.addLatheY(fx, -315.0, [[-440.0, 78.0], [-500.0, 78.0]], 16, cAluFins);\n          }\n        }\n        // Fan shroud Cowl #464\n        mbM.addBox(23.0, -440.0, -315.0, 110.0, 156.0, 156.0, cBeltBox, true);\n        // Terminal connection box #463\n        mbM.addBox(129.75, -551.5, -315.0, 180.5, 41.0, 112.0, cBeltBox, true);\n\n        // --- 6. Sensors & Limit Target Cam #475 / #476 ---\n        const mbS = builders.sensors;\n        // Index shaft target cam #475\n        mbS.addLatheY(226.0, -27.0, [[-440.0, 30.0], [-470.0, 30.0], [-470.0, 0.0]], 12, cSteelDark);\n        // Inductive proximity switch pointing at target flag\n        mbS.addBox(251.0, -470.0, -27.0, 12.0, 12.0, 30.0, cSensorFlag, true);\n\n        const uploaded = {};\n        let totalTris = 0;\n        for (const k of Object.keys(builders)) {\n          uploaded[k] = kernel.uploadMesh(builders[k]);\n          totalTris += uploaded[k].tris;\n        }\n        uploaded.totalTris = totalTris;\n        return uploaded;\n      },\n\n      drawInstance(kernel, meshes, worldMat, animState = {}) {\n        if (!meshes) return;\n        const sd = partP03.specData;\n        const zDeckTop = Number.isFinite(animState.zDeckTopMm) ? animState.zDeckTopMm : 860.0;\n        const dialRotRad = (animState.dialAngleDeg || 0) * Math.PI / 180.0;\n        const camRotRad  = (animState.camAngleDeg || 0) * Math.PI / 180.0;\n        const sel = animState.selected;\n\n        // Assembly Transformation: Rz(180°) + Translate(-100, -60, Z_deck_top)\n        const mBase = kernel.Mat4.create();\n        kernel.Mat4.translate(mBase, worldMat, -100.0, -60.0, zDeckTop);\n        kernel.Mat4.rotateZ(mBase, mBase, Math.PI); // Rz(180)\n\n        // 1. Draw Stationary Housing\n        kernel.drawMesh(meshes.housing, mBase, sel || animState.selectedBody === "housing");\n\n        // 2. Draw Rotating Output Ring Dial (#480) with dynamic rotation!\n        const mDial = kernel.Mat4.create();\n        kernel.Mat4.rotateZ(mDial, mBase, dialRotRad);\n        kernel.drawMesh(meshes.dial, mDial, sel || animState.selectedBody === "dial");\n\n        // 3. Draw Stationary Under-Deck Cam Box (#477)\n        kernel.drawMesh(meshes.cambox, mBase, sel || animState.selectedBody === "cambox");\n\n        // 4. Draw Stationary Pulley Belt Box (#471/#472)\n        kernel.drawMesh(meshes.beltbox, mBase, sel || animState.selectedBody === "beltbox");\n\n        // 5. Draw Stationary Induction Motor (#465)\n        kernel.drawMesh(meshes.motor, mBase, sel || animState.selectedBody === "motor");\n\n        // 6. Draw Sensors & Limit Switch with rotating target cam!\n        const mSens = kernel.Mat4.create();\n        kernel.Mat4.translate(mSens, mBase, 226.0, 0.0, -27.0);\n        const mRotY = kernel.Mat4.create();\n        mRotY[0] = Math.cos(camRotRad);  mRotY[2] = -Math.sin(camRotRad);\n        mRotY[8] = Math.sin(camRotRad); mRotY[10] = Math.cos(camRotRad);\n        kernel.Mat4.multiply(mSens, mSens, mRotY);\n        kernel.Mat4.translate(mSens, mSens, -226.0, 0.0, 27.0);\n        kernel.drawMesh(meshes.sensors, mSens, sel || animState.selectedBody === "sensors");\n      }\n    });\n    /* <<<END_OPENVI_PART_CARTRIDGE: P04_TR1100A_ROTARY>>> */\n\n    // =========================================================================\n    // STANDALONE 3D WEBGL WORKBENCH FOR P04 ROTARY INDEXER (QC & WORKFLOWS)\n    // =========================================================================\n    (() => {\n      "use strict";\n\n      const Mat4 = {\n        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },\n        identity(o) { o.fill(0); o[0]=o[5]=o[10]=o[15]=1; return o; },\n        multiply(o, a, b) {\n          const out = new Float32Array(16);\n          for (let i = 0; i < 4; i++) {\n            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];\n            out[i*4]   = b0*a[0] + b1*a[4] + b2*a[8]  + b3*a[12];\n            out[i*4+1] = b0*a[1] + b1*a[5] + b2*a[9]  + b3*a[13];\n            out[i*4+2] = b0*a[2] + b1*a[6] + b2*a[10] + b3*a[14];\n            out[i*4+3] = b0*a[3] + b1*a[7] + b2*a[11] + b3*a[15];\n          }\n          o.set(out);\n          return o;\n        },\n        perspective(o, fovy, aspect, near, far) {\n          const f = 1.0 / Math.tan(fovy / 2);\n          o.fill(0); o[0] = f / aspect; o[5] = f;\n          o[10] = (far + near) / (near - far); o[11] = -1;\n          o[14] = (2 * far * near) / (near - far);\n          return o;\n        },\n        lookAt(o, eye, ctr, up) {\n          let zx=eye[0]-ctr[0], zy=eye[1]-ctr[1], zz=eye[2]-ctr[2];\n          let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;\n          let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;\n          l=Math.hypot(xx,xy,xz)||1; xx/=l; xy/=l; xz/=l;\n          const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;\n          o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;\n          o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;\n          o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;\n          o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);\n          o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);\n          o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);\n          o[15]=1;\n          return o;\n        },\n        translate(o, a, x, y, z) {\n          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;\n          return Mat4.multiply(o, a, t);\n        },\n        rotateZ(o, a, rad) {\n          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();\n          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;\n          return Mat4.multiply(o, a, r);\n        }\n      };\n\n      const canvas = document.getElementById("glCanvas");\n      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });\n\n      // Shaders\n      const vsSolid = `\n        attribute vec3 aPos;\n        attribute vec3 aNorm;\n        attribute vec3 aCol;\n        uniform mat4 uProj;\n        uniform mat4 uView;\n        uniform mat4 uModel;\n        varying vec3 vNorm;\n        varying vec3 vWorld;\n        varying vec3 vCol;\n        void main() {\n          vec4 wp = uModel * vec4(aPos, 1.0);\n          vWorld = wp.xyz;\n          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);\n          vCol = aCol;\n          gl_Position = uProj * uView * wp;\n        }\n      `;\n\n      const fsSolid = `\n        precision highp float;\n        varying vec3 vNorm;\n        varying vec3 vWorld;\n        varying vec3 vCol;\n        uniform vec3 uEye;\n        uniform float uSelect;\n        uniform float uClipOn;\n        uniform float uClipAxis;\n        uniform float uClipVal;\n        void main() {\n          float coord = uClipAxis < 0.5 ? vWorld.x : vWorld.y;\n          if (uClipOn > 0.5 && coord > uClipVal) discard;\n          if (!gl_FrontFacing && uClipOn > 0.5) {\n            float st = mod(vWorld.x + vWorld.y + vWorld.z, 5.0);\n            gl_FragColor = vec4(st < 2.2 ? vec3(0.96, 0.38, 0.30) : vec3(0.70, 0.20, 0.16), 1.0);\n            return;\n          }\n          vec3 N = normalize(gl_FrontFacing ? vNorm : -vNorm);\n          vec3 V = normalize(uEye - vWorld);\n          vec3 L1 = normalize(vec3(0.48, -0.55, 0.68));\n          vec3 L2 = normalize(vec3(-0.62, 0.52, -0.48));\n          float d1 = max(dot(N, L1), 0.0);\n          float d2 = max(dot(N, L2), 0.0);\n          vec3 hemi = mix(vec3(0.24, 0.26, 0.31), vec3(0.48, 0.51, 0.57), N.z * 0.5 + 0.5);\n          float spec = pow(max(dot(N, normalize(L1 + V)), 0.0), 32.0) * 0.28;\n          vec3 col = vCol * (hemi + 0.60 * d1 + 0.38 * d2) + vec3(spec);\n          col = mix(col, col * 0.45 + vec3(0.22, 0.68, 0.98), uSelect);\n          gl_FragColor = vec4(col, 1.0);\n        }\n      `;\n\n      const vsLine = `\n        attribute vec3 aPos;\n        uniform mat4 uProj;\n        uniform mat4 uView;\n        uniform mat4 uModel;\n        varying vec3 vWorld;\n        void main() {\n          vec4 wp = uModel * vec4(aPos, 1.0);\n          vWorld = wp.xyz;\n          gl_Position = uProj * uView * wp;\n        }\n      `;\n\n      const fsLine = `\n        precision highp float;\n        varying vec3 vWorld;\n        uniform vec4 uCol;\n        uniform float uClipOn;\n        uniform float uClipAxis;\n        uniform float uClipVal;\n        void main() {\n          float coord = uClipAxis < 0.5 ? vWorld.x : vWorld.y;\n          if (uClipOn > 0.5 && coord > uClipVal) discard;\n          gl_FragColor = uCol;\n        }\n      `;\n\n      function mkProg(vs, fs) { \n        const p = gl.createProgram();\n        const c = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; };\n        gl.attachShader(p, c(gl.VERTEX_SHADER, vs));\n        gl.attachShader(p, c(gl.FRAGMENT_SHADER, fs));\n        gl.linkProgram(p);\n        return p;\n      }\n\n      const pSolid = mkProg(vsSolid, fsSolid);\n      const pLine  = mkProg(vsLine, fsLine);\n\n      const uS = {\n        aPos: gl.getAttribLocation(pSolid, "aPos"),\n        aNorm: gl.getAttribLocation(pSolid, "aNorm"),\n        aCol: gl.getAttribLocation(pSolid, "aCol"),\n        uProj: gl.getUniformLocation(pSolid, "uProj"),\n        uView: gl.getUniformLocation(pSolid, "uView"),\n        uModel: gl.getUniformLocation(pSolid, "uModel"),\n        uEye: gl.getUniformLocation(pSolid, "uEye"),\n        uSelect: gl.getUniformLocation(pSolid, "uSelect"),\n        uClipOn: gl.getUniformLocation(pSolid, "uClipOn"),\n        uClipAxis: gl.getUniformLocation(pSolid, "uClipAxis"),\n        uClipVal: gl.getUniformLocation(pSolid, "uClipVal")\n      };\n\n      const uL = {\n        aPos: gl.getAttribLocation(pLine, "aPos"),\n        uProj: gl.getUniformLocation(pLine, "uProj"),\n        uView: gl.getUniformLocation(pLine, "uView"),\n        uModel: gl.getUniformLocation(pLine, "uModel"),\n        uCol: gl.getUniformLocation(pLine, "uCol"),\n        uClipOn: gl.getUniformLocation(pLine, "uClipOn"),\n        uClipAxis: gl.getUniformLocation(pLine, "uClipAxis"),\n        uClipVal: gl.getUniformLocation(pLine, "uClipVal")\n      };\n\n      function uploadMesh(mb) {\n        const tArr = new Float32Array(mb.verts);\n        const tBuf = gl.createBuffer();\n        gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);\n        gl.bufferData(gl.ARRAY_BUFFER, tArr, gl.STATIC_DRAW);\n\n        const lArr = new Float32Array(mb.lines);\n        const lBuf = gl.createBuffer();\n        gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);\n        gl.bufferData(gl.ARRAY_BUFFER, lArr, gl.STATIC_DRAW);\n\n        return { tBuf, tCount: tArr.length / 9, tris: tArr.length / 27, lBuf, lCount: lArr.length / 3 };\n      }\n\n      const appState = {\n        lod: "lod0",\n        style: "shaded_edges",\n        sectionOn: false,\n        sectionAxis: 1, // 0 = X, 1 = Y\n        sectionVal: -60.0,\n        selectedBody: "",\n        // Kinematic Simulation states:\n        currentStation: 1,\n        targetStation: 1,\n        isAnimating: false,\n        animProgress: 0.0, // 0.0 -> 1.0 (over 1.18 seconds)\n        speedMultiplier: 1.0,\n        autoRun: false,\n        autoRunWait: 0.0,\n        // Dial/Cam current physical rotation angles (degrees)\n        dialAngle: 0.0,\n        camAngle: 0.0,\n        motorRpm: 0.0,\n        // Visibility toggles\n        vis: {\n          housing: true,\n          dial: true,\n          cambox: true,\n          beltbox: true,\n          motor: true,\n          sensors: true,\n          refP03: true\n        }\n      };\n\n      const projMat = Mat4.create();\n      const viewMat = Mat4.create();\n      let frameTris = 0;\n\n      // Wrap local WebGL draw mesh helper\n      function drawMesh(mesh, modelMat, selected = false) {\n        if (!mesh) return;\n        frameTris += mesh.tris;\n        const clipFlag = appState.sectionOn ? 1.0 : 0.0;\n\n        if (appState.style !== "wireframe" && mesh.tCount > 0) {\n          gl.useProgram(pSolid);\n          gl.uniformMatrix4fv(uS.uProj, false, projMat);\n          gl.uniformMatrix4fv(uS.uView, false, viewMat);\n          gl.uniformMatrix4fv(uS.uModel, false, modelMat);\n          gl.uniform3fv(uS.uEye, cam.eye);\n          gl.uniform1f(uS.uSelect, selected ? 1.0 : 0.0);\n          gl.uniform1f(uS.uClipOn, clipFlag);\n          gl.uniform1f(uS.uClipAxis, appState.sectionAxis);\n          gl.uniform1f(uS.uClipVal, appState.sectionVal);\n\n          gl.enable(gl.POLYGON_OFFSET_FILL);\n          gl.polygonOffset(1.15, 1.15);\n\n          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.tBuf);\n          gl.enableVertexAttribArray(uS.aPos);\n          gl.vertexAttribPointer(uS.aPos, 3, gl.FLOAT, false, 36, 0);\n          gl.enableVertexAttribArray(uS.aNorm);\n          gl.vertexAttribPointer(uS.aNorm, 3, gl.FLOAT, false, 36, 12);\n          gl.enableVertexAttribArray(uS.aCol);\n          gl.vertexAttribPointer(uS.aCol, 3, gl.FLOAT, false, 36, 24);\n          gl.drawArrays(gl.TRIANGLES, 0, mesh.tCount);\n\n          gl.disable(gl.POLYGON_OFFSET_FILL);\n        }\n\n        if ((appState.style === "shaded_edges" || appState.style === "wireframe" || selected) && mesh.lCount > 0) {\n          gl.useProgram(pLine);\n          gl.uniformMatrix4fv(uL.uProj, false, projMat);\n          gl.uniformMatrix4fv(uL.uView, false, viewMat);\n          gl.uniformMatrix4fv(uL.uModel, false, modelMat);\n          gl.uniform1f(uL.uClipOn, clipFlag);\n          gl.uniform1f(uL.uClipAxis, appState.sectionAxis);\n          gl.uniform1f(uL.uClipVal, appState.sectionVal);\n          gl.uniform4fv(uL.uCol, selected ? [0.24, 0.85, 1.0, 1.0] : [0.06, 0.08, 0.11, 0.92]);\n\n          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);\n          if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);\n          if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);\n          if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);\n          gl.enableVertexAttribArray(uL.aPos);\n          gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);\n          gl.drawArrays(gl.LINES, 0, mesh.lCount);\n        }\n      }\n\n      function drawLinesRaw(mesh, modelMat, rgba) { \n        if (!mesh || mesh.lCount === 0) return;\n        gl.useProgram(pLine);\n        gl.uniformMatrix4fv(uL.uProj, false, projMat);\n        gl.uniformMatrix4fv(uL.uView, false, viewMat);\n        gl.uniformMatrix4fv(uL.uModel, false, modelMat);\n        gl.uniform1f(uL.uClipOn, 0.0);\n        gl.uniform4fv(uL.uCol, rgba);\n        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);\n        if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);\n        if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);\n        if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);\n        gl.enableVertexAttribArray(uL.aPos);\n        gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);\n        gl.drawArrays(gl.LINES, 0, mesh.lCount);\n      }\n\n      // Shared WebGL Kernel Object\n      const localKernel = { Mat4, CadMeshBuilder, uploadMesh, drawMesh };\n\n      // Rebuild P04 WebGL Meshes\n      const partP04 = window.OpenVIRegistry.parts.P04_TR1100A_ROTARY;\n      let activeMeshes = null;\n      function rebuildP04() {\n        activeMeshes = partP04.buildMeshes(localKernel, appState.lod);\n      }\n      rebuildP04();\n\n      // P03 Tabletop Reference Mesh (translucent slab + red coaxial bolts + green DP2 pocket wall)\n      const refP03Mesh = (() => {\n        const mb = new CadMeshBuilder();\n        mb.addBox(0.0, 40.0, -7.5, 2000.0, 1480.0, 15.0, [0.38, 0.44, 0.52], true);\n        return uploadMesh(mb);\n      })();\n\n      const floorGridMesh = (() => {\n        const mb = new CadMeshBuilder();\n        for (let g = -1400; g <= 1400; g += 200) {\n          mb.pushLine([-1400, g, 0], [1400, g, 0]);\n          mb.pushLine([g, -1400, 0], [g, 1400, 0]);\n        }\n        return uploadMesh(mb);\n      })();\n\n      const triadMeshes = (() => {\n        const mx = new CadMeshBuilder(); mx.addBox(110, 0, 2, 220, 7, 7, [0.92, 0.26, 0.26], false);\n        const my = new CadMeshBuilder(); my.addBox(0, 110, 2, 7, 220, 7, [0.20, 0.80, 0.42], false);\n        const mz = new CadMeshBuilder(); mz.addBox(0, 0, 110, 7, 7, 220, [0.24, 0.62, 0.96], false);\n        return { x: uploadMesh(mx), y: uploadMesh(my), z: uploadMesh(mz) };\n      })();\n\n      // =======================================================================\n      // KINEMATICS RENDER TREE & CONTROLS UI\n      // =======================================================================\n      const treeItems = [\n        { key: "housing",  name: "Housing Ring Body (#482)",   sub: "Stationary · PCD Ø1055 · Ø750 ID", color: "#64748b" },\n        { key: "dial",     name: "Rotating Output Dial (#480)",sub: "30-Station Index Ring · Ø949.5",   color: "#0384c2" },\n        { key: "cambox",   name: "Under-Deck Cam Box (#477)",  sub: "Cam Barrel Housing · 501.5×265",   color: "#475569" },\n        { key: "beltbox",  name: "Drive Pulleys Box (#471)",   sub: "Belt Box · Z=-61..-381 mm",        color: "#18202c" },\n        { key: "motor",    name: "80L8 Induction Motor (#465)",sub: "WEISS 0.37 kW · Ø156 Finned Cylinder", color: "#74777c" },\n        { key: "sensors",  name: "Home Cam & Sensor (#475)",   sub: "Inductive Limit Cam · Z=-27",      color: "#e28a12" },\n        { key: "refP03",   name: "Ref: P03 Tabletop Plate",    sub: "Steel Deck 2000×1480×15 mm",       color: "#4b586d" }\n      ];\n\n      function renderTreeUI() {\n        const wrap = document.getElementById("browserTree");\n        wrap.innerHTML = "";\n        for (const it of treeItems) {\n          const on = appState.vis[it.key];\n          const row = document.createElement("div");\n          row.className = "tree-row" + (appState.selectedBody === it.key ? " selected" : "");\n          row.innerHTML = `\n            <div class="tree-left">\n              <span class="swatch" style="background:${it.color};"></span>\n              <div style="min-width:0;">\n                <div class="node-name">${it.name}</div>\n                <div class="node-sub">${it.sub}</div>\n              </div>\n            </div>\n            <button type="button" class="eye-btn ${on ? "" : "off"}">${on ? "EYE" : "OFF"}</button>\n          `;\n          row.addEventListener("click", (ev) => {\n            if (ev.target.tagName === "BUTTON") {\n              appState.vis[it.key] = !appState.vis[it.key];\n              renderTreeUI();\n              return;\n            }\n            appState.selectedBody = appState.selectedBody === it.key ? "" : it.key;\n            renderTreeUI();\n          });\n          wrap.appendChild(row);\n        }\n      }\n      renderTreeUI();\n\n      // Indexing Trigger\n      document.getElementById("btnStartIndex").addEventListener("click", () => {\n        if (appState.isAnimating) return;\n        triggerIndexCycle((appState.currentStation % 30) + 1);\n      });\n\n      function triggerIndexCycle(targetSt) { \n        appState.targetStation = targetSt;\n        appState.isAnimating = true;\n        appState.animProgress = 0.0;\n        document.getElementById("teleState").textContent = `INDEXING (St #${String(appState.currentStation).padStart(2, "0")} ➔ #${String(targetSt).padStart(2, "0")})`;\n        document.getElementById("teleState").style.color = "var(--warn)";\n        document.getElementById("btnStartIndex").classList.add("active");\n      }\n\n      const btnAuto = document.getElementById("btnAutoRun");\n      btnAuto.addEventListener("click", () => {\n        appState.autoRun = !appState.autoRun;\n        btnAuto.classList.toggle("active", appState.autoRun);\n        btnAuto.textContent = appState.autoRun ? "● AUTO-INDEXING ON" : "🔄 AUTO-INDEX RUN";\n      });\n\n      document.getElementById("rngStation").addEventListener("input", e => {\n        if (appState.isAnimating) return;\n        const target = Number(e.target.value);\n        triggerIndexCycle(target);\n      });\n\n      document.getElementById("rngSpeed").addEventListener("input", e => {\n        appState.speedMultiplier = Number(e.target.value);\n        document.getElementById("lblSpeed").textContent = `${appState.speedMultiplier.toFixed(2)}x (${(1.18/appState.speedMultiplier).toFixed(2)} s)`;\n      });\n\n      // Camera preset quick jumps\n      const cam = {\n        yaw: -1.92,\n        pitch: 0.58,\n        dist: 2350,\n        target: [-100, -60, 800],\n        eye: [0, 0, 0]\n      };\n\n      function setCamPreset(preset) {\n        document.querySelectorAll("[data-cam]").forEach(b => b.classList.toggle("active", b.dataset.cam === preset));\n        const yc = -60.0;\n        if (preset === "iso" || preset === "fit") { cam.yaw = -1.92; cam.pitch = 0.58; cam.dist = 2350; cam.target = [-100, yc, 800]; }\n        if (preset === "top")   { cam.yaw = -Math.PI * 0.5; cam.pitch = 1.51; cam.dist = 1880; cam.target = [-100, yc, 860]; }\n        if (preset === "under") { cam.yaw = -Math.PI * 0.5; cam.pitch = -1.25; cam.dist = 1680; cam.target = [-100, yc, 720]; }\n        if (preset === "front") { cam.yaw = -Math.PI * 0.5; cam.pitch = 0.08; cam.dist = 1950; cam.target = [-100, yc, 750]; }\n        if (preset === "right") { cam.yaw = 0.0; cam.pitch = 0.08; cam.dist = 1950; cam.target = [-100, yc, 750]; }\n        if (preset === "drive") { cam.yaw = -1.65; cam.pitch = 0.78; cam.dist = 880;  cam.target = [-150, 320, 680]; }\n      }\n      document.querySelectorAll("[data-cam]").forEach(b => b.addEventListener("click", () => setCamPreset(b.dataset.cam)));\n\n      let drag = 0, lx = 0, ly = 0;\n      canvas.addEventListener("contextmenu", e => e.preventDefault());\n      canvas.addEventListener("pointerdown", e => {\n        drag = (e.button === 2 || e.shiftKey) ? 2 : 1;\n        lx = e.clientX; ly = e.clientY;\n        canvas.setPointerCapture(e.pointerId);\n      });\n      canvas.addEventListener("pointermove", e => {\n        if (!drag) return;\n        const dx = e.clientX - lx, dy = e.clientY - ly;\n        lx = e.clientX; ly = e.clientY;\n        if (drag === 1) {\n          cam.yaw -= dx * 0.0068;\n          cam.pitch = Math.max(-1.52, Math.min(1.52, cam.pitch + dy * 0.0068));\n        } else {\n          const sc = cam.dist * 0.0011;\n          cam.target[0] -= dx * (-Math.sin(cam.yaw)) * sc;\n          cam.target[1] -= dx * Math.cos(cam.yaw) * sc;\n          cam.target[2] += dy * sc;\n        }\n      });\n      canvas.addEventListener("pointerup", () => { drag = 0; });\n      canvas.addEventListener("wheel", e => {\n        e.preventDefault();\n        cam.dist = Math.max(120, Math.min(6800, cam.dist * (1 + e.deltaY * 0.001)));\n      }, { passive: false });\n\n      // QC Spot Inspect Quick Jumps\n      const qcSpots = {\n        bolts: {\n          body: "housing",\n          target: [-500, 242, 860],\n          dist: 500, pitch: 0.88, yaw: -1.35,\n          secOn: false,\n          msg: "<strong>1. รูน็อต RB1–RB6 &amp; PCD Ø1055:</strong> เสื้อวงแหวน `#482` วางทับรูต๊าปบนแผ่นโต๊ะเป๊ะ รูน็อตตัวที่ 3 (`RB3`) เยื้องเอียงไปที่ `+145°` เพื่อหลบช่องเกียร์ `DP2` ตามพิกัดจริงใน CAD!"\n        },\n        pocket: {\n          body: "cambox",\n          target: [-135, 380, 800],\n          dist: 1100, pitch: -0.92, yaw: -1.57,\n          secOn: false,\n          msg: "<strong>2. ช่องเกียร์ DP2 &amp; ชุดขับเคลื่อนใต้โต๊ะ:</strong> เสื้อห้องลูกเบี้ยว `#477` และตูดมอเตอร์เกียร์ ย้อยทะลุลงแผงช่องเปิดแบบ 24 ขอบของแผ่นโต๊ะ `P03` โดยมีระยะเคลียร์พ้นขอบเหล็ก >= 8.5 mm รอบตัว!"\n        },\n        island: {\n          body: "housing",\n          target: [-100, -60, 860],\n          dist: 680, pitch: 1.15, yaw: -1.57,\n          secOn: false,\n          msg: "<strong>3. รูแกนกลางจาน Ø750 mm:</strong> เสื้อวงแหวนหลักตรงกลางเปิดกลวงกว้างถึง `Ø750 mm` ทำให้แผ่นโต๊ะส่วนล่างนั่งทะลุขึ้นมารับแท่นแป้นเครื่องมือ `P1, P2, P3` ยึดแนบนิ่งสนิทกับหน้าโต๊ะเหล็กกล้า!"\n        },\n        dial: {\n          body: "dial",\n          target: [280, 200, 930],\n          dist: 580, pitch: 0.65, yaw: -2.35,\n          secOn: false,\n          msg: "<strong>4. จานหมุนเอาต์พุต Ø949.5:</strong> วงแหวนสีฟ้าเอาต์พุตมีขนาดจริงหนา `16 mm` หมุนลื่นบนเสื้อเครื่อง มีรู M8 และรูพินโดเวลสลักกันหมุนผิดทิศที่พิกัดเชิงขั้ว `+85.00°` (สลักสีส้ม) ครบสมบูรณ์!"\n        }\n      };\n\n      document.querySelectorAll("[data-qc]").forEach(btn => { \n        btn.addEventListener("click", () => {\n          const key = btn.dataset.qc;\n          const sp = qcSpots[key];\n          document.querySelectorAll("[data-qc]").forEach(x => x.classList.toggle("active", x === btn));\n          appState.selectedBody = sp.body;\n          cam.target = [...sp.target];\n          cam.dist = sp.dist;\n          cam.pitch = sp.pitch;\n          cam.yaw = sp.yaw;\n\n          if (sp.secOn) {\n            appState.sectionOn = true;\n            appState.sectionAxis = sp.axis;\n            appState.sectionVal = sp.val;\n          } else {\n            appState.sectionOn = false;\n          }\n          syncSectionUI();\n          renderTreeUI();\n          document.getElementById("qcNote").innerHTML = sp.msg;\n        });\n      });\n\n      // Bottom Toolbar Sync\n      document.querySelectorAll("[data-lod]").forEach(b => {\n        b.addEventListener("click", () => {\n          appState.lod = b.dataset.lod;\n          document.querySelectorAll("[data-lod]").forEach(x => x.classList.toggle("active", x === b));\n          rebuildP04();\n        });\n      });\n      document.querySelectorAll("[data-style]").forEach(b => {\n        b.addEventListener("click", () => {\n          appState.style = b.dataset.style;\n          document.querySelectorAll("[data-style]").forEach(x => x.classList.toggle("active", x === b));\n        });\n      });\n\n      function syncSectionUI() {\n        document.getElementById("btnSection").classList.toggle("active", appState.sectionOn);\n        document.getElementById("secControls").classList.toggle("show", appState.sectionOn);\n        document.getElementById("btnSecAxis").textContent = appState.sectionAxis === 0 ? "X-CUT" : "Y-CUT";\n        document.getElementById("rngSec").value = String(appState.sectionVal);\n        document.getElementById("lblSecVal").textContent = `${appState.sectionVal} mm`;\n      }\n      document.getElementById("btnSection").addEventListener("click", () => {\n        appState.sectionOn = !appState.sectionOn;\n        syncSectionUI();\n      });\n      document.getElementById("btnSecAxis").addEventListener("click", () => {\n        appState.sectionAxis = appState.sectionAxis === 0 ? 1 : 0;\n        appState.sectionVal = appState.sectionAxis === 0 ? -100 : -60;\n        syncSectionUI();\n      });\n      document.getElementById("rngSec").addEventListener("input", e => {\n        appState.sectionVal = Number(e.target.value);\n        document.getElementById("lblSecVal").textContent = `${appState.sectionVal} mm`;\n      });\n\n      syncSectionUI();\n\n      // =======================================================================\n      // 60 FPS MATHEMATICAL CYCLE SIMULATION & SCENE RENDER LOOP\n      // =======================================================================\n      const mId = Mat4.create();\n      const mSlab = Mat4.create();\n      let lastT = performance.now();\n\n      function cycloidalTransition(t) {\n        return t - Math.sin(2.0 * Math.PI * t) / (2.0 * Math.PI);\n      }\n\n      function updateSimulation(dtMs) {\n        const dtSec = dtMs / 1000.0;\n\n        if (appState.isAnimating) {\n          const baseCycleDuration = 1.18;\n          const speedFactor = appState.speedMultiplier || 1.0;\n          const cycleSec = baseCycleDuration / speedFactor;\n\n          appState.animProgress += dtSec / cycleSec;\n          if (appState.animProgress >= 1.0) {\n            appState.animProgress = 1.0;\n            appState.isAnimating = false;\n            appState.currentStation = appState.targetStation;\n            document.getElementById("teleState").textContent = "LOCKED / IDLE";\n            document.getElementById("teleState").style.color = "var(--ok)";\n            document.getElementById("btnStartIndex").classList.remove("active");\n            document.getElementById("rngStation").value = String(appState.currentStation);\n            document.getElementById("lblStation").textContent = `Station #${String(appState.currentStation).padStart(2, "0")}`;\n            appState.motorRpm = 0.0;\n            if (appState.autoRun) appState.autoRunWait = 1.0; // 1s delay\n          } else {\n            appState.motorRpm = 1410.0;\n          }\n\n          const stepFrac = cycloidalTransition(appState.animProgress);\n          const stDelta = appState.targetStation - appState.currentStation;\n          const normalizedDelta = ((stDelta + 15) % 30) - 15;\n\n          const startDialAngle = (1 - appState.currentStation) * 12.0;\n          const targetDialAngle = startDialAngle - normalizedDelta * 12.0;\n\n          appState.dialAngle = startDialAngle + (targetDialAngle - startDialAngle) * stepFrac;\n          appState.camAngle = appState.animProgress * 360.0;\n        } else {\n          appState.motorRpm = 0.0;\n          appState.dialAngle = (1 - appState.currentStation) * 12.0;\n          appState.camAngle = 0.0;\n\n          if (appState.autoRun) {\n            appState.autoRunWait -= dtSec;\n            if (appState.autoRunWait <= 0.0) {\n              triggerIndexCycle((appState.currentStation % 30) + 1);\n            }\n          }\n        }\n\n        document.getElementById("teleDialAngle").textContent = `${appState.dialAngle.toFixed(2)}°`;\n        document.getElementById("teleCamAngle").textContent = `${appState.camAngle.toFixed(1)}°`;\n        document.getElementById("teleMotorRpm").textContent = `${Math.round(appState.motorRpm)} RPM`;\n        document.getElementById("teleTime").textContent = appState.isAnimating\n          ? `${(appState.animProgress * 1.18).toFixed(2)} s / 1.18 s`\n          : "0.00 s / 1.18 s";\n\n        const sensorLed = document.getElementById("teleSensor");\n        if (!appState.isAnimating) {\n          sensorLed.textContent = "● ACTIVE (LOCKED)";\n          sensorLed.style.color = "var(--ok)";\n        } else {\n          const overlap = Math.abs((appState.camAngle % 360.0)) < 15.0 || Math.abs((appState.camAngle % 360.0) - 360.0) < 15.0;\n          if (overlap) {\n            sensorLed.textContent = "● OVERLAP PASSING";\n            sensorLed.style.color = "var(--warn)";\n          } else {\n            sensorLed.textContent = "○ INACTIVE (SPINNING)";\n            sensorLed.style.color = "var(--muted)";\n          }\n        }\n      }\n\n      function render(now) {\n        const dtMs = now - lastT;\n        lastT = now;\n\n        updateSimulation(dtMs);\n\n        const dpr = Math.min(window.devicePixelRatio || 1, 2);\n        const w = Math.floor(canvas.clientWidth * dpr);\n        const h = Math.floor(canvas.clientHeight * dpr);\n        if (canvas.width !== w || canvas.height !== h) {\n          canvas.width = w; canvas.height = h;\n        }\n        gl.viewport(0, 0, w, h);\n        gl.clearColor(0.11, 0.125, 0.16, 1.0);\n        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);\n        gl.enable(gl.DEPTH_TEST);\n\n        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;\n        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;\n        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;\n\n        Mat4.perspective(projMat, (38 * Math.PI) / 180, w / Math.max(1, h), 10.0, 14000.0);\n        Mat4.lookAt(viewMat, cam.eye, cam.target, [0, 0, 1]);\n\n        Mat4.identity(mId);\n        drawLinesRaw(floorGridMesh, mId, [0.25, 0.28, 0.35, 0.52]);\n\n        frameTris = 0;\n        drawMesh(triadMeshes.x, mId, false);\n        drawMesh(triadMeshes.y, mId, false);\n        drawMesh(triadMeshes.z, mId, false);\n\n        if (appState.vis.refP03) {\n          Mat4.translate(mSlab, mId, 0.0, 0.0, 860.0);\n          gl.enable(gl.BLEND);\n          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);\n          gl.depthMask(false);\n          drawMesh(refP03Mesh, mSlab, appState.selectedBody === "refP03");\n          gl.depthMask(true);\n          gl.disable(gl.BLEND);\n        }\n\n        partP04.drawInstance(localKernel, activeMeshes, mId, {\n          zDeckTopMm: 860.0,\n          dialAngleDeg: appState.dialAngle,\n          camAngleDeg: appState.camAngle,\n          selectedBody: appState.selectedBody,\n          selected: false\n        });\n\n        document.getElementById("perfReadout").textContent =\n          `Tris: ${frameTris.toLocaleString()} · ${dtMs.toFixed(1)} ms`;\n        requestAnimationFrame(render);\n      }\n\n      requestAnimationFrame(render);\n    })();\n  </script>\n</body>\n</html>\n

@@ -1,0 +1,32 @@
+# =========================================================================
+# OpenVI_TR1100_CELL_TWIN — .gitignore
+# =========================================================================
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+*.lnk
+.vscode/
+.idea/
+*.suo
+*.user
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.py[co]
+
+# --- Large binaries (kept locally, NOT pushed to git) ---
+# Use Git LFS or Google Drive for these instead.
+*.zip
+*.docx
+
+# --- Archive / golden release folders (bulk material) ---
+01_GOLDEN_HTML_RELEASES/
+99_ARCHIVE_OLD_DRAFTS/
+
+# --- Build / dist outputs (regenerate with scripts) ---
+dist/
+DIST_FULL_CELL_TWIN.html
+05_tests_and_webgl/parts/

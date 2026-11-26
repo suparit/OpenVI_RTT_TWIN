@@ -1,0 +1,1646 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenVI Common Profile &amp; Base Frame Studio (P02 — Solid1 267 Verified)</title>
+  <style>
+    :root {
+      --bg-dark: #181b20;
+      --panel-bg: rgba(29, 33, 40, 0.95);
+      --panel-2: #262b34;
+      --panel-3: #313844;
+      --border: #3c4452;
+      --border-hi: #546074;
+      --ink: #edf1f7;
+      --muted: #9aa6b8;
+      --accent: #0696d7;
+      --accent-hi: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 12.5px;
+      user-select: none;
+    }
+
+    .topbar {
+      height: 46px;
+      background: #15181d;
+      border-bottom: 1px solid #2d333d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+    }
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .badge-pro {
+      background: linear-gradient(135deg, #0696d7, #0284c7);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .app-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mode-tabs {
+      display: flex;
+      gap: 5px;
+      background: #20252d;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .mem-pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 4px;
+      background: rgba(34, 197, 94, 0.14);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 46px);
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    .left-panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 294px;
+      max-height: calc(100% - 78px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .p-hdr {
+      padding: 8px 11px;
+      background: #232831;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #d5dde8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .p-body {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .p-body:last-child { border-bottom: none; }
+
+    .profile-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .prof-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: #171a20;
+      border: 1px solid #2f3643;
+      cursor: pointer;
+    }
+    .prof-item:hover { border-color: var(--border-hi); }
+    .prof-item.selected {
+      background: rgba(6, 150, 215, 0.2);
+      border-color: var(--accent-hi);
+    }
+    .prof-name {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .prof-sub {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+    .vbo-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: rgba(56, 189, 248, 0.14);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    #sec2dCanvas {
+      width: 100%;
+      height: 158px;
+      background: #111419;
+      border: 1px solid #2d3542;
+      border-radius: 5px;
+      display: block;
+    }
+    .sec-caption {
+      margin-top: 6px;
+      font-size: 10.5px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .viewcube {
+      position: absolute;
+      top: 12px;
+      right: 356px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+    }
+    .vc-lbl {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .vc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+    }
+    .vc-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vc-btn:hover { border-color: var(--accent-hi); background: #363e4c; }
+    .vc-btn.active {
+      background: var(--accent);
+      border-color: var(--accent-hi);
+      color: #fff;
+    }
+    .vc-wide { grid-column: span 2; }
+
+    .right-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 334px;
+      max-height: calc(100% - 78px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+
+    .ctrl-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .c-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .c-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+    }
+    .c-val {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-hi);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .cut-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .cut-table th {
+      text-align: left;
+      padding: 5px 6px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .cut-table th.num, .cut-table td.num {
+      text-align: right;
+      font-family: var(--mono);
+    }
+    .cut-table tr.cut-row {
+      cursor: pointer;
+      border-bottom: 1px solid rgba(60, 68, 82, 0.5);
+    }
+    .cut-table tr.cut-row:hover { background: rgba(255,255,255,0.05); }
+    .cut-table tr.cut-row.selected {
+      background: rgba(59, 130, 246, 0.24);
+      color: #fff;
+    }
+    .cut-table td { padding: 5px 6px; }
+    .cut-total {
+      margin-top: 7px;
+      padding-top: 7px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .audit-note {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      border-radius: 5px;
+      padding: 7px 9px;
+      font-size: 11px;
+      color: #d1fae5;
+      line-height: 1.45;
+    }
+
+    .bottom-dock {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(22, 25, 31, 0.95);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      z-index: 12;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .dock-btn {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .dock-btn:hover { background: #2c3340; color: #fff; }
+    .dock-btn.active {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+    .sep { width: 1px; height: 18px; background: var(--border); }
+
+    @media (max-width: 1060px) {
+      .left-panel { width: 240px; }
+      .right-panel { width: 285px; }
+      .viewcube { right: 305px; }
+    }
+    @media (max-width: 780px) {
+      .left-panel { display: none; }
+      .viewcube { left: 10px; right: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-left">
+      <span class="badge-pro">P02 · COMMON PROFILE ENGINE</span>
+      <span class="app-title">Reusable Aluminum Profile Studio — 40×40 · 40×80 (Solid1 267) · 80×80 + Adjuster Set</span>
+    </div>
+
+    <div class="mode-tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-scene="frame">1. โครงฐานเครื่อง + Adjuster 4 มุม</button>
+      <button type="button" class="tab-btn" data-scene="bench">2. เทียบหน้าตัด 3 โปรไฟล์ (ซูมร่อง 10mm)</button>
+    </div>
+
+    <span class="mem-pill" id="memBadge">3 Shared VBOs · ลดขนาด STEP 99.8%</span>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT PANEL: COMMON PROFILE LIBRARY & 2D STEP CROSS-SECTION -->
+    <aside class="left-panel" aria-label="Common Profile Library">
+      <div class="p-hdr">
+        <span>COMMON PROFILE LIBRARY (1 VBO/TYPE)</span>
+        <span style="font-family:var(--mono);color:var(--accent-hi);">10mm SLOT</span>
+      </div>
+
+      <div class="p-body">
+        <div class="profile-cards">
+          <div class="prof-item selected" data-prof="40x80">
+            <div>
+              <div class="prof-name">ALU_40x80 — Solid1 (267)</div>
+              <div class="prof-sub">6 ร่อง T-Slot (พิตช์ 40mm) · เสาตั้งจริง 720mm</div>
+            </div>
+            <span class="vbo-tag">VBO #1</span>
+          </div>
+
+          <div class="prof-item" data-prof="80x80">
+            <div>
+              <div class="prof-name">ALU_80x80 — Main Frame</div>
+              <div class="prof-sub">8 ร่อง T-Slot (2 ร่อง/ด้าน) · คานรับน้ำหนักหลัก</div>
+            </div>
+            <span class="vbo-tag">VBO #2</span>
+          </div>
+
+          <div class="prof-item" data-prof="40x40">
+            <div>
+              <div class="prof-name">ALU_40x40 — Door / Mullion</div>
+              <div class="prof-sub">4 ร่อง T-Slot (1 ร่อง/ด้าน) · เสาแบ่งกรอบฝาข้าง</div>
+            </div>
+            <span class="vbo-tag">VBO #3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-hdr">
+        <span>STEP AUDIT: Solid1 (267).step</span>
+        <span style="font-family:var(--mono);color:#fda4af;">587.9 KB → 1.9 KB</span>
+      </div>
+      <div class="p-body">
+        <canvas id="sec2dCanvas" width="268" height="158"></canvas>
+        <div class="sec-caption">
+          สกัดจริงจาก <strong>Solid1 (267).step (11,648 Entities)</strong>: ขนาดแท้ <strong>40×80×720 mm</strong>, ปากร่องกว้าง <strong>10.0 mm</strong>, บ่าหนา <strong>5.5 mm</strong>, โพรง T-Nut <strong>23.54 mm</strong>, มุมนอก <strong>R3.0</strong> — ตัดโพรงฟันเฟืองข้างในสีแดง 272 เส้นทิ้ง เหลือผิวร่องนอกคมกริบ!
+        </div>
+      </div>
+
+      <div class="p-body">
+        <div class="audit-note">
+          <strong>เฉลยจิ๊กซอว์เสา 40×80 บนเพลทมุม 15mm:</strong><br>
+          เสา <code>Solid1 (267)</code> วางชิดขอบมุมเครื่องตรงรูต๊าปหัวเสา 2 รูเป๊ะ ทำให้ลูกล้อฟ้าพับเก็บในกรอบเครื่อง และรูสตัดขาหยั่ง <code>M16</code> ที่โผล่ขึ้นมา <code>+51 mm</code> <strong>พ้นขอบเสา 40mm ออกมาอยู่ในที่โล่ง ไม่ชนเสา 100%!</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- VIEWCUBE -->
+    <div class="viewcube" aria-label="Camera Presets">
+      <div class="vc-lbl">VIEWCUBE · ORBIT / PAN</div>
+      <div class="vc-grid">
+        <button type="button" class="vc-btn vc-wide active" data-cam="fusion_inv">★ มุมหงายโครงเทียบภาพ Fusion</button>
+        <button type="button" class="vc-btn vc-wide" data-cam="floor_iso">ตั้งบนพื้นโรงงาน Z=0 (ISO)</button>
+        <button type="button" class="vc-btn" data-cam="corner_zoom">ซูมจุดพ้นสตัด M16</button>
+        <button type="button" class="vc-btn" data-cam="endcap">ส่องหัวเสา T-Slot</button>
+      </div>
+    </div>
+
+    <!-- 3D VIEWPORT -->
+    <canvas id="glCanvas"></canvas>
+
+    <!-- RIGHT PANEL: PARAMETRIC SIZER & AUTOMATED CUT-LIST -->
+    <aside class="right-panel" aria-label="Parametric Frame and Cut-List">
+      <div class="p-hdr">
+        <span>PARAMETRIC FRAME SIZER (0 EXTRA BYTES)</span>
+        <button type="button" class="vbo-tag" id="btnResetDim" style="cursor:pointer;">RESET</button>
+      </div>
+      <div class="p-body">
+        <div class="ctrl-list">
+          <div class="c-row">
+            <div class="c-lbl">
+              <label for="rngLenX">ความยาวโครงแกน X (Frame Length)</label>
+              <span class="c-val" id="lblLenX">1400 mm</span>
+            </div>
+            <input type="range" id="rngLenX" min="1000" max="1800" step="20" value="1400">
+          </div>
+
+          <div class="c-row">
+            <div class="c-lbl">
+              <label for="rngWidY">ความกว้างโครงแกน Y (Frame Width)</label>
+              <span class="c-val" id="lblWidY">1080 mm</span>
+            </div>
+            <input type="range" id="rngWidY" min="800" max="1400" step="20" value="1080">
+          </div>
+
+          <div class="c-row">
+            <div class="c-lbl">
+              <label for="rngColH">ความสูงเสาตั้ง Solid1 (267) (STEP = 720)</label>
+              <span class="c-val" id="lblColH">720 mm</span>
+            </div>
+            <input type="range" id="rngColH" min="500" max="900" step="10" value="720">
+          </div>
+
+          <div class="c-row">
+            <div class="c-lbl">
+              <label for="rngJack">ขันขาหยั่งทั้ง 4 มุม (Adjuster Lift)</label>
+              <span class="c-val" id="lblJack">110.0 mm (+4 ล้อลอย)</span>
+            </div>
+            <input type="range" id="rngJack" min="102" max="122" step="1" value="110">
+          </div>
+        </div>
+      </div>
+
+      <div class="p-hdr">
+        <span>AUTOMATED CUT-LIST (คลิกเพื่อไฮไลต์ท่อนคาน)</span>
+        <span id="lblBarCount" style="font-family:var(--mono);color:var(--accent-hi);">19 Bars</span>
+      </div>
+      <div class="p-body">
+        <table class="cut-table">
+          <thead>
+            <tr>
+              <th>รหัสกลุ่มคาน</th>
+              <th>โปรไฟล์</th>
+              <th class="num">ยาว (mm)</th>
+              <th class="num">จำนวน</th>
+            </tr>
+          </thead>
+          <tbody id="cutListBody"></tbody>
+        </table>
+        <div class="cut-total">
+          <span>ความยาวตัดรวม / ประหยัดไฟล์:</span>
+          <strong id="cutSummaryTxt" style="color:var(--ok);">--</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- BOTTOM DOCK: LOD SWITCHER & VISUAL STYLE -->
+    <div class="bottom-dock" role="toolbar">
+      <button type="button" class="dock-btn active" data-lod="lod0">LOD-0: ร่อง T-Slot จริง (ซูมชัด)</button>
+      <button type="button" class="dock-btn" data-lod="lod1">LOD-1: กล่องเบาพิเศษ (Full-Cell)</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn active" data-style="shaded_edges">Shaded + Edges</button>
+      <button type="button" class="dock-btn" data-style="wireframe">Wireframe</button>
+      <div class="sep"></div>
+      <button type="button" class="dock-btn active" id="btnToggleGussets">ฉากยึดมุม + ฝาข้าง</button>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 6px;" id="triCounter">Tris: --</span>
+    </div>
+  </div>
+
+  <script>
+    window.OpenVIRegistry = window.OpenVIRegistry || {
+      parts: {},
+      registerPart(id, spec) { this.parts[id] = spec; }
+    };
+
+    /* <<<BEGIN_OPENVI_PART_CARTRIDGE: COMMON_ALU_PROFILES>>> */
+    window.OpenVIRegistry.registerPart("COMMON_ALU_PROFILES", {
+      version: "1.0.0",
+      sourceStep: "Solid1 (267).step (40.0 x 80.0 x 720.0 mm, 11,648 Entities, 10.0mm Throat Series-40)",
+      slotSpecMm: {
+        pitch: 40.0,
+        throatWidth: 10.0,
+        lipDepth: 5.5,
+        cavityShoulderWidth: 20.0,
+        cavityMaxWidth: 23.536,
+        totalDepth: 10.0,
+        outerCornerRadius: 3.0,
+        centerTapBoreDia: 11.19
+      },
+
+      buildCrossSection2D(nx, ny, includeTSlots = true) {
+        const hx = nx * 20.0;
+        const hy = ny * 20.0;
+        const r = 3.0;
+        const pts = [];
+
+        function addCornerArc(cx, cy, a0, a1, steps = 4) {
+          for (let i = 0; i <= steps; i++) {
+            const a = a0 + (i / steps) * (a1 - a0);
+            pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+          }
+        }
+
+        function addSlotsAlongEdge(pStart, tx, ty, inx, iny, nSlots) {
+          for (let s = 0; s < nSlots; s++) {
+            const cDist = 20.0 + s * 40.0;
+            const cx = pStart[0] + tx * cDist;
+            const cy = pStart[1] + ty * cDist;
+            if (!includeTSlots) continue;
+            const notch = [
+              [-5.0,    0.0],
+              [-5.0,    5.5],
+              [-10.0,   5.5],
+              [-11.768, 8.232],
+              [-11.768, 10.0],
+              [ 11.768, 10.0],
+              [ 11.768, 8.232],
+              [ 10.0,   5.5],
+              [  5.0,   5.5],
+              [  5.0,   0.0]
+            ];
+            for (const [u, v] of notch) {
+              pts.push([cx + tx * u + inx * v, cy + ty * u + iny * v]);
+            }
+          }
+        }
+
+        addCornerArc(-hx + r, -hy + r, Math.PI, Math.PI * 1.5);
+        addSlotsAlongEdge([-hx, -hy], 1, 0, 0, 1, nx);
+
+        addCornerArc(hx - r, -hy + r, Math.PI * 1.5, Math.PI * 2.0);
+        addSlotsAlongEdge([hx, -hy], 0, 1, -1, 0, ny);
+
+        addCornerArc(hx - r, hy - r, 0, Math.PI * 0.5);
+        addSlotsAlongEdge([hx, hy], -1, 0, 0, -1, nx);
+
+        addCornerArc(-hx + r, hy - r, Math.PI * 0.5, Math.PI);
+        addSlotsAlongEdge([-hx, hy], 0, -1, 1, 0, ny);
+
+        const bores = [];
+        for (let ix = 0; ix < nx; ix++) {
+          for (let iy = 0; iy < ny; iy++) {
+            bores.push({
+              x: -hx + 20.0 + ix * 40.0,
+              y: -hy + 20.0 + iy * 40.0,
+              r: 5.5
+            });
+          }
+        }
+        return { outer: pts, bores, width: nx * 40.0, height: ny * 40.0, nx, ny };
+      }
+    });
+    /* <<<END_OPENVI_PART_CARTRIDGE: COMMON_ALU_PROFILES>>> */
+
+    (() => {
+      "use strict";
+
+      const PROF_API = window.OpenVIRegistry.parts.COMMON_ALU_PROFILES;
+
+      function draw2dAuditCanvas(profKey) {
+        const cv = document.getElementById("sec2dCanvas");
+        const ctx = cv.getContext("2d");
+        const W = cv.width, H = cv.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const dims = profKey === "40x40" ? [1, 1] : profKey === "40x80" ? [1, 2] : [2, 2];
+        const sec = PROF_API.buildCrossSection2D(dims[0], dims[1], true);
+
+        const scale = profKey === "80x80" ? 1.55 : 1.65;
+        const cx = W * 0.5, cy = H * 0.5;
+        const swapXY = (profKey === "40x80");
+        const mapPt = (x, y) => swapXY ? [cx + y * scale, cy - x * scale] : [cx + x * scale, cy - y * scale];
+
+        ctx.strokeStyle = "#1f2632";
+        ctx.lineWidth = 1;
+        for (let g = -60; g <= 60; g += 20) {
+          const [x0, y0] = mapPt(g, -60), [x1, y1] = mapPt(g, 60);
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+          const [xa, ya] = mapPt(-60, g), [xb, yb] = mapPt(60, g);
+          ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke();
+        }
+
+        ctx.beginPath();
+        sec.outer.forEach((p, idx) => {
+          const [px, py] = mapPt(p[0], p[1]);
+          if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+        ctx.fillStyle = "rgba(56, 189, 248, 0.20)";
+        ctx.fill();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        for (const b of sec.bores) {
+          const [bx, by] = mapPt(b.x, b.y);
+          ctx.beginPath();
+          ctx.arc(bx, by, b.r * scale, 0, Math.PI * 2);
+          ctx.fillStyle = "#111419";
+          ctx.fill();
+          ctx.strokeStyle = "#f43f5e";
+          ctx.setLineDash([2, 2]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        if (profKey === "40x80") {
+          const [rx0, ry0] = mapPt(-14, -11), [rx1, ry1] = mapPt(14, 11);
+          ctx.strokeStyle = "rgba(244, 63, 94, 0.75)";
+          ctx.setLineDash([3, 2]);
+          ctx.strokeRect(Math.min(rx0, rx1), Math.min(ry0, ry1), Math.abs(rx1 - rx0), Math.abs(ry1 - ry0));
+          ctx.setLineDash([]);
+        }
+
+        ctx.fillStyle = "#9aa6b8";
+        ctx.font = "10px monospace";
+        ctx.fillText(`${sec.width}×${sec.height} mm (ฟ้า=เก็บไว้ · แดงประ=โพรงในที่ตัดทิ้ง)`, 8, H - 7);
+      }
+
+      const Mat4 = {
+        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
+        identity(o) { o.fill(0); o[0]=o[5]=o[10]=o[15]=1; return o; },
+        multiply(o, a, b) {
+          const out = new Float32Array(16);
+          for (let i = 0; i < 4; i++) {
+            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];
+            out[i*4]   = b0*a[0] + b1*a[4] + b2*a[8]  + b3*a[12];
+            out[i*4+1] = b0*a[1] + b1*a[5] + b2*a[9]  + b3*a[13];
+            out[i*4+2] = b0*a[2] + b1*a[6] + b2*a[10] + b3*a[14];
+            out[i*4+3] = b0*a[3] + b1*a[7] + b2*a[11] + b3*a[15];
+          }
+          o.set(out);
+          return o;
+        },
+        perspective(o, fovy, aspect, near, far) {
+          const f = 1 / Math.tan(fovy / 2);
+          o.fill(0); o[0] = f / aspect; o[5] = f;
+          o[10] = (far + near) / (near - far); o[11] = -1;
+          o[14] = (2 * far * near) / (near - far);
+          return o;
+        },
+        lookAt(o, eye, ctr, up) {
+          let zx=eye[0]-ctr[0], zy=eye[1]-ctr[1], zz=eye[2]-ctr[2];
+          let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
+          let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+          l=Math.hypot(xx,xy,xz)||1; xx/=l; xy/=l; xz/=l;
+          const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+          o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;
+          o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;
+          o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;
+          o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+          o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+          o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+          o[15]=1;
+          return o;
+        },
+        translate(o, a, x, y, z) {
+          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;
+          return Mat4.multiply(o, a, t);
+        },
+        rotateZ(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        fromBeamEndpoints(out, pStart, pEnd, rollDeg = 0) {
+          let zx = pEnd[0] - pStart[0], zy = pEnd[1] - pStart[1], zz = pEnd[2] - pStart[2];
+          const len = Math.hypot(zx, zy, zz) || 1.0;
+          const dzx = zx / len, dzy = zy / len, dzz = zz / len;
+
+          let up = Math.abs(dzz) > 0.92 ? [0, 1, 0] : [0, 0, 1];
+          let xx = up[1]*dzz - up[2]*dzy;
+          let xy = up[2]*dzx - up[0]*dzz;
+          let xz = up[0]*dzy - up[1]*dzx;
+          const xl = Math.hypot(xx, xy, xz) || 1;
+          xx/=xl; xy/=xl; xz/=xl;
+
+          let yx = dzy*xz - dzz*xy;
+          let yy = dzz*xx - dzx*xz;
+          let yz = dzx*xy - dzy*xx;
+
+          const rad = (rollDeg * Math.PI) / 180;
+          const cr = Math.cos(rad), sr = Math.sin(rad);
+          const rxx = xx*cr + yx*sr, rxy = xy*cr + yy*sr, rxz = xz*cr + yz*sr;
+          const ryx = -xx*sr + yx*cr, ryy = -xy*sr + yy*cr, ryz = -xz*sr + yz*cr;
+
+          out[0]=rxx; out[1]=rxy; out[2]=rxz; out[3]=0;
+          out[4]=ryx; out[5]=ryy; out[6]=ryz; out[7]=0;
+          out[8]=zx;  out[9]=zy;  out[10]=zz; out[11]=0;
+          out[12]=pStart[0]; out[13]=pStart[1]; out[14]=pStart[2]; out[15]=1;
+          return out;
+        }
+      };
+
+      function pointInPolygon(px, py, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i][0], yi = poly[i][1];
+          const xj = poly[j][0], yj = poly[j][1];
+          const intersect = ((yi > py) !== (yj > py)) &&
+            (px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-12) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      }
+
+      function triangulateConcaveSection(outerLoop, bores, halfW, halfH) {
+        const verts = [];
+        for (let i = 0; i < outerLoop.length; i++) {
+          const p0 = outerLoop[i], p1 = outerLoop[(i + 1) % outerLoop.length];
+          const d = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+          const steps = Math.max(1, Math.ceil(d / 2.3));
+          for (let s = 0; s < steps; s++) {
+            const u = s / steps;
+            verts.push([p0[0] + (p1[0] - p0[0]) * u, p0[1] + (p1[1] - p0[1]) * u]);
+          }
+        }
+        for (const b of bores) {
+          const segs = 18;
+          for (let i = 0; i < segs; i++) {
+            const a = (i / segs) * Math.PI * 2;
+            verts.push([b.x + Math.cos(a) * b.r, b.y + Math.sin(a) * b.r]);
+          }
+        }
+        for (let gx = -halfW + 4; gx <= halfW - 4; gx += 4.5) {
+          for (let gy = -halfH + 4; gy <= halfH - 4; gy += 4.5) {
+            if (!pointInPolygon(gx, gy, outerLoop)) continue;
+            let ok = true;
+            for (const b of bores) {
+              if (Math.hypot(gx - b.x, gy - b.y) < b.r + 1.8) { ok = false; break; }
+            }
+            if (ok) verts.push([gx, gy]);
+          }
+        }
+
+        const n0 = verts.length;
+        verts.push([-500, -500], [500, -500], [0, 600]);
+
+        function makeTri(i, j, k) {
+          const ax=verts[i][0], ay=verts[i][1], bx=verts[j][0], by=verts[j][1], cx=verts[k][0], cy=verts[k][1];
+          const d = 2 * (ax*(by-cy) + bx*(cy-ay) + cx*(ay-by));
+          if (Math.abs(d) < 1e-8) return null;
+          const a2=ax*ax+ay*ay, b2=bx*bx+by*by, c2=cx*cx+cy*cy;
+          const ux = (a2*(by-cy) + b2*(cy-ay) + c2*(ay-by)) / d;
+          const uy = (a2*(cx-bx) + b2*(ax-cx) + c2*(bx-ax)) / d;
+          return { i, j, k, ux, uy, r2: (ax-ux)*(ax-ux) + (ay-uy)*(ay-uy) };
+        }
+
+        let tris = [makeTri(n0, n0+1, n0+2)];
+        for (let p = 0; p < n0; p++) {
+          const px = verts[p][0], py = verts[p][1];
+          const bad = [], good = [];
+          for (const t of tris) {
+            const dx = px - t.ux, dy = py - t.uy;
+            if (dx*dx + dy*dy <= t.r2 * (1 + 1e-7)) bad.push(t); else good.push(t);
+          }
+          const emap = new Map();
+          const addE = (u, v) => {
+            const k = u < v ? `${u}_${v}` : `${v}_${u}`;
+            if (emap.has(k)) emap.delete(k); else emap.set(k, [u, v]);
+          };
+          for (const t of bad) { addE(t.i,t.j); addE(t.j,t.k); addE(t.k,t.i); }
+          tris = good;
+          for (const [u, v] of emap.values()) {
+            const nt = makeTri(u, v, p);
+            if (nt) tris.push(nt);
+          }
+        }
+
+        const out = [];
+        for (const t of tris) {
+          if (t.i >= n0 || t.j >= n0 || t.k >= n0) continue;
+          const A = verts[t.i], B = verts[t.j], C = verts[t.k];
+          const mx = (A[0]+B[0]+C[0])/3, my = (A[1]+B[1]+C[1])/3;
+          if (!pointInPolygon(mx, my, outerLoop)) continue;
+          let inBore = false;
+          for (const b of bores) {
+            if (Math.hypot(mx - b.x, my - b.y) < b.r - 0.05) { inBore = true; break; }
+          }
+          if (inBore) continue;
+          const cr = (B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0]);
+          out.push(cr > 0 ? [A, B, C] : [A, C, B]);
+        }
+        return out;
+      }
+
+      class MeshBuilder {
+        constructor() { this.verts = []; this.lines = []; }
+        pushTri(p1, p2, p3, n, c) {
+          this.verts.push(
+            p1[0],p1[1],p1[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p2[0],p2[1],p2[2], n[0],n[1],n[2], c[0],c[1],c[2],
+            p3[0],p3[1],p3[2], n[0],n[1],n[2], c[0],c[1],c[2]
+          );
+        }
+        pushLine(p1, p2) {
+          this.lines.push(p1[0],p1[1],p1[2], p2[0],p2[1],p2[2]);
+        }
+        addBox(cx, cy, cz, sx, sy, sz, col, addEdges = true) {
+          const hx=sx/2, hy=sy/2, hz=sz/2;
+          const x0=cx-hx, x1=cx+hx, y0=cy-hy, y1=cy+hy, z0=cz-hz, z1=cz+hz;
+          const faces = [
+            [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[0,0,1]],
+            [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[0,0,-1]],
+            [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1],[1,0,0]],
+            [[x0,y1,z0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[-1,0,0]],
+            [[x0,y1,z0],[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[0,1,0]],
+            [[x0,y0,z1],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[0,-1,0]]
+          ];
+          for (const [a,b,c,d,n] of faces) {
+            this.pushTri(a,b,c,n,col); this.pushTri(a,c,d,n,col);
+          }
+          if (addEdges) {
+            const c8 = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+            for (const [u,v] of [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]) {
+              this.pushLine(c8[u], c8[v]);
+            }
+          }
+        }
+        addLatheZ(cx, cy, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const r0=prof[s][0], z0=prof[s][1], r1=prof[s+1][0], z1=prof[s+1][1];
+            const dr=r1-r0, dz=z1-z0, l=Math.hypot(dr,dz);
+            if (l < 1e-6) continue;
+            const nr=dz/l, nz=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,cy+r0*s0,z0], p10=[cx+r0*c1,cy+r0*s1,z0];
+              const p11=[cx+r1*c1,cy+r1*s1,z1], p01=[cx+r1*c0,cy+r1*s0,z1];
+              const n=[(c0+c1)*0.5*nr, (s0+s1)*0.5*nr, nz];
+              if (r0>1e-4) this.pushTri(p00,p10,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p01,n,col);
+            }
+          }
+          for (const [r, z] of prof) {
+            if (r > 1.5) {
+              for (let i = 0; i < segs; i++) {
+                const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+                this.pushLine([cx+r*Math.cos(a0),cy+r*Math.sin(a0),z], [cx+r*Math.cos(a1),cy+r*Math.sin(a1),z]);
+              }
+            }
+          }
+        }
+        addLatheY(cx, cz, prof, segs, col) {
+          for (let s = 0; s < prof.length - 1; s++) {
+            const y0=prof[s][0], r0=prof[s][1], y1=prof[s+1][0], r1=prof[s+1][1];
+            const dy=y1-y0, dr=r1-r0, l=Math.hypot(dy,dr);
+            if (l < 1e-6) continue;
+            const nr=dy/l, ny=-dr/l;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+              const p00=[cx+r0*c0,y0,cz+r0*s0], p10=[cx+r0*c1,y0,cz+r0*s1];
+              const p11=[cx+r1*c1,y1,cz+r1*s1], p01=[cx+r1*c0,y1,cz+r1*s0];
+              const n=[(c0+c1)*0.5*nr, ny, (s0+s1)*0.5*nr];
+              if (r0>1e-4) this.pushTri(p00,p01,p11,n,col);
+              if (r1>1e-4) this.pushTri(p00,p11,p10,n,col);
+            }
+          }
+        }
+      }
+
+      function buildUnitExtrusionMesh(nx, ny, lod0) {
+        const mb = new MeshBuilder();
+        const cAlu   = [0.749, 0.755, 0.770];
+        const cCavity= [0.46,  0.48,  0.51];
+        const cBore  = [0.22,  0.24,  0.28];
+
+        const sec = PROF_API.buildCrossSection2D(nx, ny, lod0);
+        const loop = sec.outer;
+        const hx = sec.width * 0.5, hy = sec.height * 0.5;
+
+        for (let i = 0; i < loop.length; i++) {
+          const p0 = loop[i], p1 = loop[(i + 1) % loop.length];
+          const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+          const len = Math.hypot(dx, dy);
+          if (len < 1e-5) continue;
+          const n = [dy / len, -dx / len, 0];
+          const midX = (p0[0]+p1[0])*0.5, midY = (p0[1]+p1[1])*0.5;
+          const onOuterFace = (Math.abs(Math.abs(midX) - hx) < 0.6) || (Math.abs(Math.abs(midY) - hy) < 0.6);
+          const wallCol = onOuterFace ? cAlu : cCavity;
+
+          mb.pushTri([p0[0],p0[1],0], [p1[0],p1[1],0], [p1[0],p1[1],1], n, wallCol);
+          mb.pushTri([p0[0],p0[1],0], [p1[0],p1[1],1], [p0[0],p0[1],1], n, wallCol);
+
+          const pPrev = loop[(i - 1 + loop.length) % loop.length];
+          const dx0 = p0[0] - pPrev[0], dy0 = p0[1] - pPrev[1], l0 = Math.hypot(dx0, dy0) || 1;
+          const dot = (dx0/l0)*(dx/len) + (dy0/l0)*(dy/len);
+          if (dot < 0.91) {
+            mb.pushLine([p0[0], p0[1], 0], [p0[0], p0[1], 1]);
+          }
+          mb.pushLine([p0[0], p0[1], 0], [p1[0], p1[1], 0]);
+          mb.pushLine([p0[0], p0[1], 1], [p1[0], p1[1], 1]);
+        }
+
+        if (lod0) {
+          const capTris = triangulateConcaveSection(loop, sec.bores, hx, hy);
+          for (const [a, b, c] of capTris) {
+            mb.pushTri([a[0],a[1],1], [b[0],b[1],1], [c[0],c[1],1], [0,0,1], cAlu);
+            mb.pushTri([a[0],a[1],0], [c[0],c[1],0], [b[0],b[1],0], [0,0,-1], cAlu);
+          }
+          for (const b of sec.bores) {
+            const segs = 16;
+            for (let i = 0; i < segs; i++) {
+              const a0=(i/segs)*Math.PI*2, a1=((i+1)/segs)*Math.PI*2;
+              const x0=b.x+Math.cos(a0)*b.r, y0=b.y+Math.sin(a0)*b.r;
+              const x1=b.x+Math.cos(a1)*b.r, y1=b.y+Math.sin(a1)*b.r;
+              mb.pushTri([b.x,b.y,0.99],[x0,y0,0.99],[x1,y1,0.99], [0,0,1], cBore);
+              mb.pushTri([b.x,b.y,0.01],[x1,y1,0.01],[x0,y0,0.01], [0,0,-1], cBore);
+              mb.pushLine([x0,y0,1], [x1,y1,1]);
+              mb.pushLine([x0,y0,0], [x1,y1,0]);
+            }
+          }
+        } else {
+          for (let i = 1; i < loop.length - 1; i++) {
+            const a = loop[0], b = loop[i], c = loop[i+1];
+            mb.pushTri([a[0],a[1],1],[b[0],b[1],1],[c[0],c[1],1], [0,0,1], cAlu);
+            mb.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cAlu);
+          }
+          for (let s = 0; s < nx; s++) {
+            const cx = -hx + 20 + s * 40;
+            mb.addBox(cx, -hy + 0.3, 0.5, 10.0, 0.8, 0.998, cBore, false);
+            mb.addBox(cx,  hy - 0.3, 0.5, 10.0, 0.8, 0.998, cBore, false);
+          }
+          for (let s = 0; s < ny; s++) {
+            const cy = -hy + 20 + s * 40;
+            mb.addBox(-hx + 0.3, cy, 0.5, 0.8, 10.0, 0.998, cBore, false);
+            mb.addBox( hx - 0.3, cy, 0.5, 0.8, 10.0, 0.998, cBore, false);
+          }
+        }
+        return mb;
+      }
+
+      const canvas = document.getElementById("glCanvas");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+
+      const vsSolid = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec3 aCol;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vNorm;
+        varying vec3 vPos;
+        varying vec3 vCol;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vPos = wp.xyz;
+          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);
+          vCol = aCol;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsSolid = `
+        precision highp float;
+        varying vec3 vNorm;
+        varying vec3 vPos;
+        varying vec3 vCol;
+        uniform vec3 uEye;
+        uniform float uSelect;
+        uniform float uAlpha;
+        void main() {
+          vec3 N = normalize(gl_FrontFacing ? vNorm : -vNorm);
+          vec3 V = normalize(uEye - vPos);
+          vec3 L1 = normalize(vec3(0.52, -0.60, 0.61));
+          vec3 L2 = normalize(vec3(-0.68, 0.48, -0.55));
+          float d1 = max(dot(N, L1), 0.0);
+          float d2 = max(dot(N, L2), 0.0);
+          vec3 hemi = mix(vec3(0.25, 0.27, 0.31), vec3(0.45, 0.48, 0.54), N.z * 0.5 + 0.5);
+          vec3 H = normalize(L1 + V);
+          float spec = pow(max(dot(N, H), 0.0), 36.0) * 0.30;
+          vec3 col = vCol * (hemi + 0.60 * d1 + 0.42 * d2) + vec3(spec);
+          col = mix(col, col * 0.52 + vec3(0.28, 0.48, 0.82), uSelect);
+          gl_FragColor = vec4(col, uAlpha);
+        }
+      `;
+
+      const vsLine = `
+        attribute vec3 aPos;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        void main() {
+          gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+        }
+      `;
+
+      const fsLine = `
+        precision mediump float;
+        uniform vec4 uCol;
+        void main() { gl_FragColor = uCol; }
+      `;
+
+      function mkProg(vs, fs) {
+        const p = gl.createProgram();
+        const c = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; };
+        gl.attachShader(p, c(gl.VERTEX_SHADER, vs));
+        gl.attachShader(p, c(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(p);
+        return p;
+      }
+
+      const pSolid = mkProg(vsSolid, fsSolid);
+      const pLine  = mkProg(vsLine, fsLine);
+
+      const uS = {
+        aPos: gl.getAttribLocation(pSolid, "aPos"),
+        aNorm: gl.getAttribLocation(pSolid, "aNorm"),
+        aCol: gl.getAttribLocation(pSolid, "aCol"),
+        uProj: gl.getUniformLocation(pSolid, "uProj"),
+        uView: gl.getUniformLocation(pSolid, "uView"),
+        uModel: gl.getUniformLocation(pSolid, "uModel"),
+        uEye: gl.getUniformLocation(pSolid, "uEye"),
+        uSelect: gl.getUniformLocation(pSolid, "uSelect"),
+        uAlpha: gl.getUniformLocation(pSolid, "uAlpha")
+      };
+
+      const uL = {
+        aPos: gl.getAttribLocation(pLine, "aPos"),
+        uProj: gl.getUniformLocation(pLine, "uProj"),
+        uView: gl.getUniformLocation(pLine, "uView"),
+        uModel: gl.getUniformLocation(pLine, "uModel"),
+        uCol: gl.getUniformLocation(pLine, "uCol")
+      };
+
+      function uploadMesh(mb) {
+        const tArr = new Float32Array(mb.verts);
+        const tBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, tArr, gl.STATIC_DRAW);
+
+        const lArr = new Float32Array(mb.lines);
+        const lBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, lBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, lArr, gl.STATIC_DRAW);
+
+        return { tBuf, tCount: tArr.length / 9, tris: tArr.length / 27, lBuf, lCount: lArr.length / 3 };
+      }
+
+      const profBanks = {
+        lod0: {
+          "40x40": uploadMesh(buildUnitExtrusionMesh(1, 1, true)),
+          "40x80": uploadMesh(buildUnitExtrusionMesh(1, 2, true)),
+          "80x80": uploadMesh(buildUnitExtrusionMesh(2, 2, true))
+        },
+        lod1: {
+          "40x40": uploadMesh(buildUnitExtrusionMesh(1, 1, false)),
+          "40x80": uploadMesh(buildUnitExtrusionMesh(1, 2, false)),
+          "80x80": uploadMesh(buildUnitExtrusionMesh(2, 2, false))
+        }
+      };
+
+      const hwMeshes = {};
+      {
+        const mp = new MeshBuilder();
+        const cPlate = [0.24, 0.25, 0.24];
+        const loop160 = [
+          [-75,-80],[75,-80],[80,-75],[80,75],[75,80],[-75,80],[-80,75],[-80,-75]
+        ];
+        const holes12 = [
+          {x:-60,y:60,r:7.5},{x:-20,y:60,r:7.5},{x:-60,y:20,r:7.5},
+          {x:20,y:60,r:7.5},{x:60,y:20,r:7.5},{x:-60,y:-20,r:7.5},{x:-20,y:-60,r:7.5},
+          {x:-20,y:20,r:6.92},
+          {x:-0.5,y:0.5,r:4.2},{x:70.5,y:0.5,r:4.2},{x:-0.5,y:-70.5,r:4.2},{x:70.5,y:-70.5,r:4.2}
+        ];
+        const pTris = triangulateConcaveSection(loop160, holes12, 80, 80);
+        for (const [a,b,c] of pTris) {
+          mp.pushTri([a[0],a[1],15],[b[0],b[1],15],[c[0],c[1],15], [0,0,1], cPlate);
+          mp.pushTri([a[0],a[1],0],[c[0],c[1],0],[b[0],b[1],0], [0,0,-1], cPlate);
+        }
+        for (let i = 0; i < loop160.length; i++) {
+          const p0=loop160[i], p1=loop160[(i+1)%loop160.length];
+          const dx=p1[0]-p0[0], dy=p1[1]-p0[1], l=Math.hypot(dx,dy)||1;
+          mp.pushTri([p0[0],p0[1],0],[p1[0],p1[1],0],[p1[0],p1[1],15], [dy/l,-dx/l,0], cPlate);
+          mp.pushTri([p0[0],p0[1],0],[p1[0],p1[1],15],[p0[0],p0[1],15], [dy/l,-dx/l,0], cPlate);
+          mp.pushLine([p0[0],p0[1],0],[p1[0],p1[1],0]);
+          mp.pushLine([p0[0],p0[1],15],[p1[0],p1[1],15]);
+          mp.pushLine([p0[0],p0[1],0],[p0[0],p0[1],15]);
+        }
+        for (const h of holes12) {
+          const s = 16;
+          for (let i = 0; i < s; i++) {
+            const a0=(i/s)*Math.PI*2, a1=((i+1)/s)*Math.PI*2;
+            const x0=h.x+Math.cos(a0)*h.r, y0=h.y+Math.sin(a0)*h.r;
+            const x1=h.x+Math.cos(a1)*h.r, y1=h.y+Math.sin(a1)*h.r;
+            mp.pushLine([x0,y0,0],[x1,y1,0]);
+            mp.pushLine([x0,y0,15],[x1,y1,15]);
+          }
+        }
+        hwMeshes.plate = uploadMesh(mp);
+
+        const mc = new MeshBuilder();
+        const cSil = [0.76, 0.78, 0.82];
+        mc.addBox(0, 0, -1.6, 90, 90, 3.2, cSil);
+        mc.addLatheZ(0, 0, [[0,-18],[31,-18],[34,-3.2]], 24, cSil);
+        mc.addBox(12, 21, -44, 34, 3.2, 52, cSil);
+        mc.addBox(12, -21, -44, 34, 3.2, 52, cSil);
+        mc.addLatheY(30, -68.5, [[-25,0],[-25,5.5],[25,5.5],[25,0]], 16, cSil);
+        const wProf = [[-18.5,12],[-18.5,31.5],[-15,35.5],[0,37.5],[15,35.5],[18.5,31.5],[18.5,12]];
+        mc.addLatheY(30, -68.5, wProf, 32, [0.08, 0.25, 0.88]);
+        hwMeshes.caster = uploadMesh(mc);
+
+        const mfPad = new MeshBuilder();
+        mfPad.addLatheZ(0, 0, [[0,0],[8.5,0],[8.5,6],[19.5,4],[19.5,0],[25,0],[25,6.7],[12,14],[11.2,20],[0,20]], 28, cSil);
+        hwMeshes.footPad = uploadMesh(mfPad);
+
+        const mfStud = new MeshBuilder();
+        mfStud.addLatheZ(0, 0, [[0,0],[7,0],[5.5,6],[9.8,7.3],[9.8,12.3],[8.0,12.3],[8.0,159],[6.8,160.3],[0,160.3]], 20, cSil);
+        mfStud.addLatheZ(0, 0, [[7,78],[13.5,78],[13.5,90.2],[7,90.2]], 6, cSil);
+        hwMeshes.footStud = uploadMesh(mfStud);
+
+        const mg = new MeshBuilder();
+        mg.addBox(0, 0, 0, 74, 8, 74, [0.58, 0.61, 0.66]);
+        mg.addBox(-18, -5, -18, 12, 6, 12, [0.16, 0.18, 0.20]);
+        mg.addBox( 18, -5, -18, 12, 6, 12, [0.16, 0.18, 0.20]);
+        mg.addBox(-18, -5,  18, 12, 6, 12, [0.16, 0.18, 0.20]);
+        mg.addBox( 18, -5,  18, 12, 6, 12, [0.16, 0.18, 0.20]);
+        hwMeshes.gusset = uploadMesh(mg);
+
+        const mPanel = new MeshBuilder();
+        mPanel.addBox(0, 0, 0.5, 1, 4, 1, [0.46, 0.48, 0.51], true);
+        hwMeshes.panelUnit = uploadMesh(mPanel);
+      }
+
+      let gridBuf = null, gridCount = 0;
+      {
+        const gLines = [];
+        for (let g = -1100; g <= 1100; g += 100) {
+          gLines.push(-1100, g, 0, 1100, g, 0);
+          gLines.push(g, -1100, 0, g, 1100, 0);
+        }
+        const arr = new Float32Array(gLines);
+        gridBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, gridBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+        gridCount = arr.length / 3;
+      }
+
+      const state = {
+        sceneMode: "frame",
+        lod: "lod0",
+        style: "shaded_edges",
+        showExtras: true,
+        lenX: 1400,
+        widY: 1080,
+        colH: 720,
+        jackMm: 110,
+        selectedGroup: "COL_267",
+        selectedProf: "40x80"
+      };
+
+      /* <<<BEGIN_OPENVI_PART_CARTRIDGE: P02_BASE_FRAME_ASSY>>> */
+      function buildParametricFrameSpec(s) {
+        const L = s.lenX, W = s.widY, H = s.colH;
+        const hx = L * 0.5, hy = W * 0.5;
+        const zBotPlate = Math.max(106.0, s.jackMm);
+        const zFrame0 = zBotPlate + 15.0;
+
+        const beams = [];
+        const addBeam = (group, label, prof, p0, p1, roll = 0) => {
+          const cutMm = Math.round(Math.hypot(p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2]));
+          beams.push({ group, label, prof, p0, p1, roll, cutMm });
+        };
+
+        const zColBot = zFrame0;
+        const zColTop = zFrame0 + H;
+        addBeam("COL_267", "เสามุมตั้ง Solid1 (267)", "40x80", [-hx+20, -hy+40, zColBot], [-hx+20, -hy+40, zColTop], 0);
+        addBeam("COL_267", "เสามุมตั้ง Solid1 (267)", "40x80", [ hx-20, -hy+40, zColBot], [ hx-20, -hy+40, zColTop], 0);
+        addBeam("COL_267", "เสามุมตั้ง Solid1 (267)", "40x80", [-hx+20,  hy-40, zColBot], [-hx+20,  hy-40, zColTop], 0);
+        addBeam("COL_267", "เสามุมตั้ง Solid1 (267)", "40x80", [ hx-20,  hy-40, zColBot], [ hx-20,  hy-40, zColTop], 0);
+
+        const zLow = zFrame0 + 40.0;
+        addBeam("BASE_X", "คานล่างยาวแกน X", "80x80", [-hx+40, -hy+40, zLow], [hx-40, -hy+40, zLow], 0);
+        addBeam("BASE_X", "คานล่างยาวแกน X", "80x80", [-hx+40,  hy-40, zLow], [hx-40,  hy-40, zLow], 0);
+        addBeam("BASE_Y", "คานล่างขวางแกน Y", "80x80", [-hx+40, -hy+80, zLow], [-hx+40, hy-80, zLow], 0);
+        addBeam("BASE_Y", "คานล่างขวางแกน Y", "80x80", [ hx-40, -hy+80, zLow], [ hx-40, hy-80, zLow], 0);
+
+        addBeam("POCKET_Y", "คานค้ำกลางช่องมอเตอร์ DP2", "80x80", [-140, -hy+80, zLow], [-140, hy-80, zLow], 0);
+        addBeam("POCKET_Y", "คานค้ำกลางช่องมอเตอร์ DP2", "80x80", [ 260, -hy+80, zLow], [ 260, hy-80, zLow], 0);
+        addBeam("SPINE_X",  "คานรับแท่นกลางแกน X", "40x80", [-100, 0, zLow], [220, 0, zLow], 90);
+
+        const zUp = zColTop - 40.0;
+        addBeam("DECK_X", "คานบนรับแผ่นโต๊ะ X", "80x80", [-hx+40, -hy+40, zUp], [hx-40, -hy+40, zUp], 0);
+        addBeam("DECK_X", "คานบนรับแผ่นโต๊ะ X", "80x80", [-hx+40,  hy-40, zUp], [hx-40,  hy-40, zUp], 0);
+        addBeam("DECK_Y", "คานบนรับแผ่นโต๊ะ Y", "80x80", [-hx+40, -hy+80, zUp], [-hx+40, hy-80, zUp], 0);
+        addBeam("DECK_Y", "คานบนรับแผ่นโต๊ะ Y", "80x80", [ hx-40, -hy+80, zUp], [ hx-40, hy-80, zUp], 0);
+
+        addBeam("DOOR_40", "เสาแบ่งฝาประตูเซอร์วิส", "40x40", [-220, -hy+20, zFrame0+80], [-220, -hy+20, zColTop-80], 0);
+        addBeam("DOOR_40", "เสาแบ่งฝาประตูเซอร์วิส", "40x40", [ 220, -hy+20, zFrame0+80], [ 220, -hy+20, zColTop-80], 0);
+        addBeam("DOOR_40", "เสาแบ่งฝาข้างแกน Y",     "40x40", [-hx+20, 0, zFrame0+80],     [-hx+20, 0, zColTop-80], 0);
+        addBeam("DOOR_40", "เสาแบ่งฝาข้างแกน Y",     "40x40", [ hx-20, 0, zFrame0+80],     [ hx-20, 0, zColTop-80], 0);
+
+        return { beams, zBotPlate, zFrame0, zColTop, hx, hy };
+      }
+      /* <<<END_OPENVI_PART_CARTRIDGE: P02_BASE_FRAME_ASSY>>> */
+
+      function refreshCutListUI() {
+        const spec = buildParametricFrameSpec(state);
+        const groups = new Map();
+        let totalLenMm = 0;
+
+        for (const b of spec.beams) {
+          totalLenMm += b.cutMm;
+          const key = `${b.group}|${b.prof}|${b.cutMm}`;
+          if (!groups.has(key)) {
+            groups.set(key, { group: b.group, label: b.label, prof: b.prof, cutMm: b.cutMm, qty: 0 });
+          }
+          groups.get(key).qty++;
+        }
+
+        const tbody = document.getElementById("cutListBody");
+        tbody.innerHTML = "";
+        for (const g of groups.values()) {
+          const tr = document.createElement("tr");
+          tr.className = "cut-row" + (state.selectedGroup === g.group ? " selected" : "");
+          tr.innerHTML = `
+            <td>${g.label}</td>
+            <td style="font-family:var(--mono);color:#7dd3fc;">${g.prof}</td>
+            <td class="num">${g.cutMm}</td>
+            <td class="num">${g.qty}</td>
+          `;
+          tr.addEventListener("click", () => {
+            state.selectedGroup = g.group;
+            state.selectedProf = g.prof;
+            syncProfileSelectionUI();
+            refreshCutListUI();
+          });
+          tbody.appendChild(tr);
+        }
+
+        const totalBars = spec.beams.length;
+        const rawStepMb = (totalBars * 0.5879).toFixed(1);
+        document.getElementById("lblBarCount").textContent = `${totalBars} Bars`;
+        document.getElementById("cutSummaryTxt").textContent =
+          `${(totalLenMm / 1000).toFixed(2)} m · ประหยัด ~${rawStepMb} MB`;
+      }
+
+      function syncProfileSelectionUI() {
+        document.querySelectorAll(".prof-item").forEach(el => {
+          el.classList.toggle("selected", el.dataset.prof === state.selectedProf);
+        });
+        draw2dAuditCanvas(state.selectedProf);
+      }
+
+      const cam = {
+        yaw: -2.35,
+        pitch: -0.38,
+        dist: 1260,
+        target: [-480, -360, 480],
+        invertUp: true,
+        eye: [0, 0, 0]
+      };
+
+      function setCameraPreset(mode) {
+        document.querySelectorAll("[data-cam]").forEach(b => b.classList.toggle("active", b.dataset.cam === mode));
+        const hx = state.lenX * 0.5, hy = state.widY * 0.5;
+        if (mode === "fusion_inv") {
+          cam.invertUp = true;
+          cam.yaw = -2.35;
+          cam.pitch = -0.38;
+          cam.dist = 1260;
+          cam.target = [-hx + 220, -hy + 180, 480];
+        } else if (mode === "floor_iso") {
+          cam.invertUp = false;
+          cam.yaw = -2.25;
+          cam.pitch = 0.40;
+          cam.dist = 2250;
+          cam.target = [0, 0, 420];
+        } else if (mode === "corner_zoom") {
+          cam.invertUp = false;
+          cam.yaw = -0.68;
+          cam.pitch = 0.42;
+          cam.dist = 460;
+          cam.target = [-hx + 75, -hy + 75, 145];
+        } else if (mode === "endcap") {
+          cam.invertUp = false;
+          cam.yaw = -1.57;
+          cam.pitch = 1.40;
+          cam.dist = 310;
+          cam.target = state.sceneMode === "bench" ? [0, 0, 220] : [-hx + 20, -hy + 40, state.jackMm + 15 + state.colH];
+        }
+      }
+
+      document.querySelectorAll("[data-cam]").forEach(btn => {
+        btn.addEventListener("click", () => setCameraPreset(btn.dataset.cam));
+      });
+
+      let drag = 0, lx = 0, ly = 0;
+      canvas.addEventListener("contextmenu", e => e.preventDefault());
+      canvas.addEventListener("pointerdown", e => {
+        drag = (e.button === 2 || e.shiftKey) ? 2 : 1;
+        lx = e.clientX; ly = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", e => {
+        if (!drag) return;
+        const dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        const upSgn = cam.invertUp ? -1 : 1;
+        if (drag === 1) {
+          cam.yaw -= dx * 0.007 * upSgn;
+          cam.pitch = Math.max(-1.48, Math.min(1.48, cam.pitch + dy * 0.007 * upSgn));
+        } else {
+          const sc = cam.dist * 0.0012;
+          const rx = -Math.sin(cam.yaw), ry = Math.cos(cam.yaw);
+          cam.target[0] -= dx * rx * sc * upSgn;
+          cam.target[1] -= dx * ry * sc * upSgn;
+          cam.target[2] += dy * sc * upSgn;
+        }
+      });
+      canvas.addEventListener("pointerup", () => { drag = 0; });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        cam.dist = Math.max(150, Math.min(4200, cam.dist * (1 + e.deltaY * 0.001)));
+      }, { passive: false });
+
+      document.querySelectorAll("[data-scene]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.sceneMode = btn.dataset.scene;
+          document.querySelectorAll("[data-scene]").forEach(b => b.classList.toggle("active", b === btn));
+          if (state.sceneMode === "bench") {
+            cam.invertUp = false;
+            cam.yaw = -1.25; cam.pitch = 0.58; cam.dist = 520; cam.target = [0, 0, 140];
+          } else {
+            setCameraPreset("fusion_inv");
+          }
+        });
+      });
+
+      document.querySelectorAll(".prof-item").forEach(el => {
+        el.addEventListener("click", () => {
+          state.selectedProf = el.dataset.prof;
+          if (state.selectedProf === "40x80") state.selectedGroup = "COL_267";
+          else if (state.selectedProf === "80x80") state.selectedGroup = "BASE_X";
+          else state.selectedGroup = "DOOR_40";
+          syncProfileSelectionUI();
+          refreshCutListUI();
+        });
+      });
+
+      const bindSlider = (id, key, lblId, fmt) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", () => {
+          state[key] = Number(el.value);
+          document.getElementById(lblId).textContent = fmt(state[key]);
+          refreshCutListUI();
+        });
+      };
+      bindSlider("rngLenX", "lenX", "lblLenX", v => `${v} mm`);
+      bindSlider("rngWidY", "widY", "lblWidY", v => `${v} mm`);
+      bindSlider("rngColH", "colH", "lblColH", v => `${v} mm`);
+      bindSlider("rngJack", "jackMm", "lblJack", v => {
+        const fl = Math.max(0, v - 106);
+        return fl > 0 ? `${v.toFixed(1)} mm (+${fl} ล้อลอย)` : `${v.toFixed(1)} mm (ล้อแตะพื้น)`;
+      });
+
+      document.getElementById("btnResetDim").addEventListener("click", () => {
+        state.lenX = 1400; state.widY = 1080; state.colH = 720; state.jackMm = 110;
+        document.getElementById("rngLenX").value = "1400";
+        document.getElementById("rngWidY").value = "1080";
+        document.getElementById("rngColH").value = "720";
+        document.getElementById("rngJack").value = "110";
+        document.getElementById("lblLenX").textContent = "1400 mm";
+        document.getElementById("lblWidY").textContent = "1080 mm";
+        document.getElementById("lblColH").textContent = "720 mm";
+        document.getElementById("lblJack").textContent = "110.0 mm (+4 ล้อลอย)";
+        refreshCutListUI();
+      });
+
+      document.querySelectorAll("[data-lod]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.lod = btn.dataset.lod;
+          document.querySelectorAll("[data-lod]").forEach(b => b.classList.toggle("active", b === btn));
+        });
+      });
+      document.querySelectorAll("[data-style]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.style = btn.dataset.style;
+          document.querySelectorAll("[data-style]").forEach(b => b.classList.toggle("active", b === btn));
+        });
+      });
+      const btnExtras = document.getElementById("btnToggleGussets");
+      btnExtras.addEventListener("click", () => {
+        state.showExtras = !state.showExtras;
+        btnExtras.classList.toggle("active", state.showExtras);
+      });
+
+      syncProfileSelectionUI();
+      refreshCutListUI();
+      setCameraPreset("fusion_inv");
+
+      const projMat = Mat4.create();
+      const viewMat = Mat4.create();
+      const mId = Mat4.create();
+      const mTmp = Mat4.create();
+      const mSub = Mat4.create();
+
+      let frameTris = 0;
+
+      function drawMesh(mesh, modelMat, selected = false) {
+        if (!mesh) return;
+        frameTris += mesh.tris;
+
+        if (state.style !== "wireframe") {
+          gl.useProgram(pSolid);
+          gl.uniformMatrix4fv(uS.uProj, false, projMat);
+          gl.uniformMatrix4fv(uS.uView, false, viewMat);
+          gl.uniformMatrix4fv(uS.uModel, false, modelMat);
+          gl.uniform3fv(uS.uEye, cam.eye);
+          gl.uniform1f(uS.uSelect, selected ? 1.0 : 0.0);
+          gl.uniform1f(uS.uAlpha, 1.0);
+
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.15, 1.15);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.tBuf);
+          gl.enableVertexAttribArray(uS.aPos);
+          gl.vertexAttribPointer(uS.aPos, 3, gl.FLOAT, false, 36, 0);
+          gl.enableVertexAttribArray(uS.aNorm);
+          gl.vertexAttribPointer(uS.aNorm, 3, gl.FLOAT, false, 36, 12);
+          gl.enableVertexAttribArray(uS.aCol);
+          gl.vertexAttribPointer(uS.aCol, 3, gl.FLOAT, false, 36, 24);
+          gl.drawArrays(gl.TRIANGLES, 0, mesh.tCount);
+
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+        }
+
+        if ((state.style === "shaded_edges" || state.style === "wireframe" || selected) && mesh.lCount > 0) {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uL.uProj, false, projMat);
+          gl.uniformMatrix4fv(uL.uView, false, viewMat);
+          gl.uniformMatrix4fv(uL.uModel, false, modelMat);
+          gl.uniform4fv(uL.uCol, selected ? [0.08, 0.22, 0.48, 1.0] : [0.07, 0.08, 0.10, 0.90]);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.lBuf);
+          if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+          if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+          if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+          gl.enableVertexAttribArray(uL.aPos);
+          gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, mesh.lCount);
+        }
+      }
+
+      function render() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.185, 0.205, 0.238, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+
+        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;
+        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;
+        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;
+
+        Mat4.perspective(projMat, (38 * Math.PI) / 180, w / Math.max(1, h), 10.0, 9000.0);
+        Mat4.lookAt(viewMat, cam.eye, cam.target, cam.invertUp ? [0, 0, -1] : [0, 0, 1]);
+
+        if (!cam.invertUp || state.sceneMode === "bench") {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uL.uProj, false, projMat);
+          gl.uniformMatrix4fv(uL.uView, false, viewMat);
+          Mat4.identity(mId);
+          gl.uniformMatrix4fv(uL.uModel, false, mId);
+          gl.uniform4fv(uL.uCol, [0.30, 0.34, 0.40, 0.5]);
+          gl.bindBuffer(gl.ARRAY_BUFFER, gridBuf);
+          if (uS.aNorm >= 0) gl.disableVertexAttribArray(uS.aNorm);
+          if (uS.aCol >= 0) gl.disableVertexAttribArray(uS.aCol);
+          if (uS.aPos >= 0 && uS.aPos !== uL.aPos) gl.disableVertexAttribArray(uS.aPos);
+          gl.enableVertexAttribArray(uL.aPos);
+          gl.vertexAttribPointer(uL.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, gridCount);
+        }
+
+        frameTris = 0;
+        const bank = profBanks[state.lod];
+
+        if (state.sceneMode === "bench") {
+          const samples = [
+            { prof: "40x40", x: -130 },
+            { prof: "40x80", x:    0 },
+            { prof: "80x80", x:  145 }
+          ];
+          for (const it of samples) {
+            Mat4.fromBeamEndpoints(mTmp, [it.x, 0, 0], [it.x, 0, 240], 0);
+            drawMesh(bank[it.prof], mTmp, state.selectedProf === it.prof);
+          }
+        } else {
+          const spec = buildParametricFrameSpec(state);
+          const { hx, hy, zBotPlate } = spec;
+
+          for (let i = 0; i < spec.beams.length; i++) {
+            const b = spec.beams[i];
+            Mat4.fromBeamEndpoints(mTmp, b.p0, b.p1, b.roll);
+            const isHi = (state.selectedGroup === "COL_267" && i === 0) ||
+                         (state.selectedGroup !== "COL_267" && b.group === state.selectedGroup);
+            drawMesh(bank[b.prof], mTmp, isHi);
+          }
+
+          const corners = [
+            { x: -hx + 80, y: -hy + 80, rot:  Math.PI * 0.5 },
+            { x:  hx - 80, y: -hy + 80, rot:  Math.PI },
+            { x:  hx - 80, y:  hy - 80, rot: -Math.PI * 0.5 },
+            { x: -hx + 80, y:  hy - 80, rot:  0.0 }
+          ];
+          const footFloat = Math.max(0, zBotPlate - state.jackMm);
+          Mat4.identity(mId);
+
+          for (const c of corners) {
+            Mat4.translate(mTmp, mId, c.x, c.y, zBotPlate);
+            Mat4.rotateZ(mTmp, mTmp, c.rot);
+            drawMesh(hwMeshes.plate, mTmp, false);
+
+            Mat4.translate(mSub, mTmp, 35.0, -35.0, 0.0);
+            Mat4.rotateZ(mSub, mSub, 2.2);
+            drawMesh(hwMeshes.caster, mSub, false);
+
+            Mat4.translate(mSub, mTmp, -20.0, 20.0, -zBotPlate + footFloat);
+            drawMesh(hwMeshes.footPad, mSub, false);
+            Mat4.translate(mSub, mSub, 0, 0, 15.70);
+            drawMesh(hwMeshes.footStud, mSub, false);
+          }
+
+          if (state.showExtras) {
+            const panelH = state.colH - 160;
+            if (panelH > 60) {
+              for (const sy of [-hy + 18, hy - 18]) {
+                for (const px of [-hx * 0.5 - 60, 0, hx * 0.5 + 60]) {
+                  const pw = (state.lenX - 240) / 3;
+                  const mP = Mat4.create();
+                  mP[0] = pw; mP[5] = 1; mP[10] = panelH;
+                  mP[12] = px; mP[13] = sy; mP[14] = spec.zFrame0 + 80;
+                  drawMesh(hwMeshes.panelUnit, mP, false);
+                }
+              }
+            }
+            for (const sx of [-1, 1]) {
+              for (const sy of [-1, 1]) {
+                Mat4.translate(mTmp, mId, sx * (hx - 95), sy * (hy - 44), spec.zFrame0 + 118);
+                drawMesh(hwMeshes.gusset, mTmp, false);
+              }
+            }
+          }
+        }
+
+        document.getElementById("triCounter").textContent = `GPU Tris: ${frameTris.toLocaleString()}`;
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,2167 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenVI CAD Studio — Adjuster set.step (8-Body B-Rep Digital Twin)</title>
+  <style>
+    :root {
+      --bg-viewport-top: #3a4049;
+      --bg-viewport-bot: #22262c;
+      --panel-bg: rgba(31, 35, 41, 0.94);
+      --panel-solid: #1e2228;
+      --panel-2: #282d35;
+      --panel-3: #323842;
+      --border: #3d4451;
+      --border-hi: #556072;
+      --ink: #ecf0f6;
+      --muted: #9aa5b5;
+      --accent: #0696d7; /* Autodesk-inspired CAD cyan-blue */
+      --accent-hi: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #f43f5e;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1b1e23;
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 12.5px;
+      user-select: none;
+    }
+
+    /* Top CAD Application Bar */
+    .cad-header {
+      height: 44px;
+      background: #181b20;
+      border-bottom: 1px solid #2e343e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+      z-index: 20;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .cad-badge {
+      background: linear-gradient(135deg, #0696d7, #0284c7);
+      color: #fff;
+      font-family: var(--mono);
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .doc-title {
+      font-weight: 700;
+      font-size: 13.5px;
+      color: #f3f6fa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .doc-ver {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      background: #252a32;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid #363d49;
+      white-space: nowrap;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      white-space: nowrap;
+    }
+    .status-pill.warn {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #fcd34d;
+    }
+
+    /* Main CAD Workspace */
+    .workspace {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 44px);
+      display: flex;
+    }
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #glCanvas:active { cursor: grabbing; }
+
+    /* Left Floating Fusion-Style Browser Tree */
+    .browser-panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 282px;
+      max-height: calc(100% - 80px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .panel-titlebar {
+      padding: 8px 11px;
+      background: #252a33;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 11.5px;
+      letter-spacing: 0.04em;
+      color: #d5dde8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tree-scroll {
+      overflow-y: auto;
+      padding: 6px 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .tree-group-hdr {
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+      padding: 5px 7px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      margin-top: 3px;
+    }
+    .tree-node {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 4px 7px 4px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #d1d9e4;
+      font-size: 11.5px;
+      border: 1px solid transparent;
+      transition: background 0.1s;
+    }
+    .tree-node:hover { background: rgba(255, 255, 255, 0.06); }
+    .tree-node.selected {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: rgba(56, 189, 248, 0.65);
+      color: #ffffff;
+    }
+    .node-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.4);
+      flex-shrink: 0;
+    }
+    .node-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .eye-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #9aa5b5;
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .eye-btn:hover { background: #363d49; color: #fff; }
+    .eye-btn.hidden-part {
+      color: #64748b;
+      text-decoration: line-through;
+      opacity: 0.55;
+    }
+
+    /* Top-Right ViewCube + Camera Presets */
+    .viewcube-box {
+      position: absolute;
+      top: 12px;
+      right: 344px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+    }
+    .vc-title {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.06em;
+    }
+    .vc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .vc-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .vc-btn:hover { background: #3a4250; border-color: var(--accent-hi); }
+    .vc-btn.active {
+      background: var(--accent);
+      border-color: var(--accent-hi);
+      color: #fff;
+    }
+    .vc-match {
+      grid-column: span 3;
+      background: rgba(6, 150, 215, 0.2);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+
+    /* Right Inspector & Joint Motion Panel */
+    .inspector-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 320px;
+      max-height: calc(100% - 80px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .insp-sec {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .insp-sec:last-child { border-bottom: none; }
+    .sec-hdr {
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .s-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .s-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+    }
+    .s-val {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-hi);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+      margin: 0;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 3px;
+    }
+    .chip-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-2);
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .chip-btn:hover { border-color: var(--accent-hi); color: #fff; }
+    .chip-btn.active {
+      background: rgba(6, 150, 215, 0.25);
+      border-color: var(--accent-hi);
+      color: #fff;
+    }
+
+    /* Engineering Audit Toggles */
+    .audit-card {
+      background: #16191e;
+      border: 1px solid #333a46;
+      border-radius: 5px;
+      padding: 7px 9px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .audit-card:last-child { margin-bottom: 0; }
+    .audit-txt {
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .audit-txt strong { color: #f1f5f9; display: block; }
+    .audit-txt span { color: var(--muted); font-size: 10.5px; }
+    .toggle-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel-3);
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .toggle-btn.fixed {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--ok);
+      color: #86efac;
+    }
+
+    /* Telemetry Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .kpi-cell {
+      background: #16191e;
+      border: 1px solid #2f3642;
+      border-radius: 5px;
+      padding: 6px 8px;
+    }
+    .kpi-cell .k {
+      font-size: 10px;
+      color: var(--muted);
+      display: block;
+    }
+    .kpi-cell .v {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .brep-prop-box {
+      background: #14171c;
+      border: 1px solid #2f3642;
+      border-radius: 5px;
+      padding: 8px 9px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      line-height: 1.5;
+      color: #cbd5e1;
+      white-space: pre-line;
+    }
+
+    /* Bottom Floating Fusion 360 Display & Section Dock */
+    .bottom-dock {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(24, 28, 34, 0.95);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+      z-index: 12;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .dock-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+    .dock-btn {
+      font-family: var(--font);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .dock-btn:hover { background: #2c333f; color: #fff; }
+    .dock-btn.active {
+      background: rgba(6, 150, 215, 0.24);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+    .sec-inline {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #fda4af;
+    }
+    .sec-inline.show { display: flex; }
+
+    @media (max-width: 1024px) {
+      .browser-panel { width: 220px; }
+      .inspector-panel { width: 265px; }
+      .viewcube-box { right: 285px; }
+    }
+    @media (max-width: 760px) {
+      .browser-panel { display: none; }
+      .viewcube-box { left: 10px; right: auto; }
+      .inspector-panel { width: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP APPLICATION BAR -->
+  <header class="cad-header">
+    <div class="brand-group">
+      <span class="cad-badge">OPENVI CAD B-REP</span>
+      <span class="doc-title">Adjuster set.step — 8-Body Exact STEP Digital Twin</span>
+      <span class="doc-ver">5,930 Entities · Cartridge v2.0</span>
+    </div>
+    <div class="header-right">
+      <span class="status-pill" id="hdrModeBadge">CAD DATUM · ล้อลอย +4.0 mm (Plate 110/125 mm)</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT FUSION 360 BROWSER TREE -->
+    <aside class="browser-panel" aria-label="STEP Assembly Browser">
+      <div class="panel-titlebar">
+        <span>BROWSER (STEP HIERARCHY)</span>
+        <button type="button" class="eye-btn" id="btnShowAll" title="เปิดแสดงทุกชิ้น">ALL ON</button>
+      </div>
+      <div class="tree-scroll" id="browserTree">
+        <div class="tree-group-hdr">
+          <span>▼ Adjuster set (Active)</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);">8 Solids</span>
+        </div>
+
+        <!-- Plate Solid1 (64) -->
+        <div class="tree-node selected" data-body="solid64">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(77,78,74);"></span>
+            <span class="node-label">Solid1 (64):1 — เพลทมุม 15mm</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid64">EYE</button>
+        </div>
+
+        <!-- CJHB75 Sub-Assembly -->
+        <div class="tree-group-hdr">
+          <span>▼ CJHB75:1 (Swivel Caster)</span>
+          <button type="button" class="eye-btn" data-group-eye="cjhb">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid60">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(192,192,192);"></span>
+            <span class="node-label">Solid1 (60) — แป้นยึด 90×90 + ถ้วยคอ</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid60">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid61">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(192,192,192);"></span>
+            <span class="node-label">Solid1 (61) — ตะเกียบโค้ง + สลักเพลา</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid61">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid62">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(128,128,128);"></span>
+            <span class="node-label">Solid1 (62) — บูชปลอกเพลา Ø25</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid62">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid63">
+          <div class="node-left">
+            <span class="swatch" style="background:#1546e8;"></span>
+            <span class="node-label">Solid1 (63) — ล้อไนลอนหน้าโค้ง Ø75</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid63">EYE</button>
+        </div>
+
+        <!-- C-AJPJ16-148 Sub-Assembly -->
+        <div class="tree-group-hdr">
+          <span>▼ C-AJPJ16-148:1 (Leveler)</span>
+          <button type="button" class="eye-btn" data-group-eye="cajp">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid65">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(192,192,192);"></span>
+            <span class="node-label">Solid1 (65) — แป้นฐานคว้านร่อง Ø50</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid65">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid66">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(192,192,192);"></span>
+            <span class="node-label">Solid1 (66) — สตัดหัวบอล M16 + ประแจ17</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid66">EYE</button>
+        </div>
+        <div class="tree-node" data-body="solid67">
+          <div class="node-left">
+            <span class="swatch" style="background:rgb(192,192,192);"></span>
+            <span class="node-label">Solid1 (67) — น็อตล็อก M16 (ประแจ 24)</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="solid67">EYE</button>
+        </div>
+
+        <!-- Scene Reference Context -->
+        <div class="tree-group-hdr">
+          <span>▼ Reference Context (เหมือนรูป CAD)</span>
+        </div>
+        <div class="tree-node" data-body="refFrame">
+          <div class="node-left">
+            <span class="swatch" style="background:#4b5563;"></span>
+            <span class="node-label">80×80 Frame + Gusset + SHCS</span>
+          </div>
+          <button type="button" class="eye-btn" data-eye="refFrame">EYE</button>
+        </div>
+        <div class="tree-node" data-body="m10Bolts">
+          <div class="node-left">
+            <span class="swatch" style="background:#64748b;"></span>
+            <span class="node-label">4× M10×20 SHCS (เติมสกรูยึดล้อ)</span>
+          </div>
+          <button type="button" class="eye-btn hidden-part" data-eye="m10Bolts">OFF</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- TOP-RIGHT INTERACTIVE VIEWCUBE -->
+    <div class="viewcube-box" aria-label="ViewCube Orientation">
+      <div class="vc-title">VIEWCUBE · ORBIT / PAN</div>
+      <div class="vc-grid">
+        <button type="button" class="vc-btn vc-match active" data-cam="cad_shot">★ มุมเดียวกับภาพแคปเจอร์ Fusion</button>
+        <button type="button" class="vc-btn" data-cam="iso">HOME ISO</button>
+        <button type="button" class="vc-btn" data-cam="front">FRONT</button>
+        <button type="button" class="vc-btn" data-cam="right">RIGHT</button>
+        <button type="button" class="vc-btn" data-cam="top">TOP</button>
+        <button type="button" class="vc-btn" data-cam="bottom">BOTTOM</button>
+        <button type="button" class="vc-btn" id="btnFit">FIT</button>
+      </div>
+    </div>
+
+    <!-- MAIN NATIVE WEBGL CAD VIEWPORT -->
+    <canvas id="glCanvas"></canvas>
+
+    <!-- RIGHT INSPECTOR & KINEMATIC JOINT PANEL -->
+    <aside class="inspector-panel" aria-label="CAD Inspector and Joint Drives">
+      <div class="insp-sec">
+        <div class="sec-hdr">
+          <span>JOINT DRIVES (ขับเคลื่อนกลไกจริง)</span>
+          <span style="font-family:var(--mono);color:var(--accent-hi);">0.001 mm</span>
+        </div>
+        <div class="slider-group">
+          <div class="s-row">
+            <div class="s-top">
+              <label for="rngJack">ขันสตัด M16×2.0 (ระยะใต้เพลทถึงพื้น)</label>
+              <span class="s-val" id="lblJack">110.0 mm (CAD +4)</span>
+            </div>
+            <input type="range" id="rngJack" min="98" max="126" step="0.5" value="110">
+            <div class="chip-row">
+              <button type="button" class="chip-btn" data-jack="102">เข็นย้าย (ล้อแตะพื้น)</button>
+              <button type="button" class="chip-btn active" data-jack="110">ตามไฟล์ STEP (+4 mm)</button>
+              <button type="button" class="chip-btn" data-jack="115">ตั้งเครื่อง (+9 mm)</button>
+            </div>
+          </div>
+
+          <div class="s-row">
+            <div class="s-top">
+              <label for="rngSwivel">หมุนคอแบริ่งลูกล้อ CJHB75 (Swivel)</label>
+              <span class="s-val" id="lblSwivel">215°</span>
+            </div>
+            <input type="range" id="rngSwivel" min="0" max="360" step="1" value="215">
+          </div>
+
+          <div class="s-row">
+            <div class="s-top">
+              <label for="rngTilt">เอียงแป้นฐานหัวบอล Ø14 รับพื้นลาด (Pad Tilt)</label>
+              <span class="s-val" id="lblTilt">0.0°</span>
+            </div>
+            <input type="range" id="rngTilt" min="-8" max="8" step="0.5" value="0">
+          </div>
+
+          <div class="s-row">
+            <div class="s-top">
+              <label for="rngExplode">ระเบิดชิ้นส่วน 8 ก้อน (Explode Assembly)</label>
+              <span class="s-val" id="lblExplode">0%</span>
+            </div>
+            <input type="range" id="rngExplode" min="0" max="100" step="1" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Design Review Findings Interactive Fixers -->
+      <div class="insp-sec">
+        <div class="sec-hdr">
+          <span>DESIGN REVIEW AUDIT (จุดตรวจพบใน STEP)</span>
+        </div>
+        <div class="audit-card">
+          <div class="audit-txt">
+            <strong>1. น็อตล็อก M16 (Solid1 67) ลอยห่างเพลท 8.1 mm</strong>
+            <span id="txtNutAudit">สถานะ: วางตามพิกัด STEP เดิม (89.7..101.9 mm)</span>
+          </div>
+          <button type="button" class="toggle-btn" id="btnLockNut">ขันอัดชิดเพลท</button>
+        </div>
+        <div class="audit-card">
+          <div class="audit-txt">
+            <strong>2. สกรูยึดแป้นล้อ 4× M10×20L (ละไว้ใน STEP)</strong>
+            <span>รู Ø10.5 ตรงต๊าป M10 เป๊ะ (Error 0.000 mm)</span>
+          </div>
+          <button type="button" class="toggle-btn" id="btnAddM10">ใส่สกรู M10</button>
+        </div>
+      </div>
+
+      <!-- Live Metrology Readouts -->
+      <div class="insp-sec">
+        <div class="sec-hdr"><span>MEASURE / DATUM STACK-UP</span></div>
+        <div class="kpi-grid">
+          <div class="kpi-cell">
+            <span class="k">Plate Bot / Top (Z)</span>
+            <span class="v" id="kpiPlateZ">110.0 / 125.0 mm</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="k">Wheel Float (Z_min)</span>
+            <span class="v" id="kpiWheelFloat" style="color:var(--ok);">+4.00 mm</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="k">M16 Stud Protrusion</span>
+            <span class="v" id="kpiStudTop">+51.0 mm (ในรูเสา)</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="k">Wheel-to-Stud Gap</span>
+            <span class="v" id="kpiGap">29.8 mm (SAFE)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Solid B-Rep Properties -->
+      <div class="insp-sec">
+        <div class="sec-hdr">
+          <span>B-REP PROPERTIES</span>
+          <span id="propTag" style="font-family:var(--mono);color:var(--accent-hi);">Solid1 (64)</span>
+        </div>
+        <div class="brep-prop-box" id="propBox"></div>
+      </div>
+    </aside>
+
+    <!-- BOTTOM FUSION 360 VIEWPORT DISPLAY DOCK -->
+    <div class="bottom-dock" role="toolbar" aria-label="Viewport Display Controls">
+      <button type="button" class="dock-btn active" data-style="shaded_edges">Shaded w/ Visible Edges</button>
+      <button type="button" class="dock-btn" data-style="shaded">Shaded Only</button>
+      <button type="button" class="dock-btn" data-style="wireframe">Wireframe B-Rep</button>
+      <div class="dock-sep"></div>
+      <button type="button" class="dock-btn" id="btnSection">✂ Section Analysis (ผ่าดูหัวบอล/เกลียว)</button>
+      <div class="sec-inline" id="secControls">
+        <button type="button" class="chip-btn active" data-axis="diag">ผ่าทแยงผ่านขา+ล้อ</button>
+        <button type="button" class="chip-btn" data-axis="x">แกน X</button>
+        <button type="button" class="chip-btn" data-axis="y">แกน Y</button>
+        <input type="range" id="rngSection" min="-95" max="95" step="0.5" value="0" style="width:105px;">
+      </div>
+      <div class="dock-sep"></div>
+      <button type="button" class="dock-btn active" id="btnGrid">Floor Grid Z=0</button>
+    </div>
+  </div>
+
+  <script>
+    window.OpenVIRegistry = window.OpenVIRegistry || {
+      parts: {},
+      registerPart(id, spec) { this.parts[id] = spec; }
+    };
+
+    /* <<<BEGIN_OPENVI_PART_CARTRIDGE: L01_ADJUSTER_SET>>> */
+    window.OpenVIRegistry.registerPart("L01_ADJUSTER_SET", {
+      version: "2.0.0",
+      sourceStep: "Adjuster set.step (5,930 ISO-10303-21 Entities, 8 Manifold Solid B-Reps)",
+      plateHoles: [
+        { x: -60.0, y:  60.0, rTop: 4.5, rBot: 7.5, cbDepth: 10.0, group: "CB10_COL" },
+        { x: -20.0, y:  60.0, rTop: 4.5, rBot: 7.5, cbDepth: 10.0, group: "CB10_COL" },
+        { x: -60.0, y:  20.0, rTop: 4.5, rBot: 7.5, cbDepth: 10.0, group: "CB10_COL" },
+        { x:  20.0, y:  60.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x:  60.0, y:  20.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x: -60.0, y: -20.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x: -20.0, y: -60.0, rTop: 4.5, rBot: 7.5, cbDepth:  8.5, group: "CB85_RAIL" },
+        { x: -20.0, y:  20.0, rTop: 6.9175, rBot: 6.9175, cbDepth: 0.0, threaded: true, group: "M16_FOOT" },
+        { x:  -0.5, y:   0.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" },
+        { x:  70.5, y:   0.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" },
+        { x:  -0.5, y: -70.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" },
+        { x:  70.5, y: -70.5, rTop: 4.188, rBot: 4.188, cbDepth: 0.0, threaded: true, group: "M10_CASTER" }
+      ],
+      casterCenterMm: [35.0, -35.0],
+      footCenterMm: [-20.0, 20.0],
+      exportsDatum(params = {}) {
+        const jackExt = params.jackExtensionMm ?? 110.0;
+        const zPlateBot = Math.max(106.0, jackExt);
+        return {
+          zFloorMm: 0.0,
+          zPlateBotMm: zPlateBot,
+          zPlateTopMm: zPlateBot + 15.0,
+          wheelFloatMm: zPlateBot - 106.0,
+          footFloatMm: zPlateBot - jackExt,
+          studTopMm: Math.max(0.0, zPlateBot - jackExt) + 176.0
+        };
+      }
+    });
+    /* <<<END_OPENVI_PART_CARTRIDGE: L01_ADJUSTER_SET>>> */
+
+    (() => {
+      "use strict";
+
+      const SPEC = window.OpenVIRegistry.parts.L01_ADJUSTER_SET;
+      const PLATE_HOLES = SPEC.plateHoles;
+      const CASTER_CTR = SPEC.casterCenterMm;
+      const FOOT_CTR = SPEC.footCenterMm;
+
+      const BODY_INFO = {
+        solid64:
+          "Body: Solid1 (64) — Steel Corner Plate\n" +
+          "Size: 160.0 × 160.0 × 15.0 mm (R5.0 Corners)\n" +
+          "Color: Opaque(77, 78, 74) · Mass: 2.859 kg\n" +
+          "Features: 3× Ø9/Ø15⌴10 (Column), 4× Ø9/Ø15⌴8.5 (Rails), 1× M16×2.0 Tap (-20,+20), 4× M10×1.5 Tap (71×71 pitch)",
+        solid60:
+          "Body: Solid1 (60) — CJHB75 Top Plate & Raceway\n" +
+          "Size: 90.0 × 90.0 × 9.60 mm (Plate t=3.2 mm, R9.5)\n" +
+          "Color: Opaque(192, 192, 192) Zinc Steel\n" +
+          "Features: 4× Ø10.50 mm Bolt Holes @ (±35.5, ±35.5) + Stamped Ø66.7 Swivel Bearing Dust Shield",
+        solid61:
+          "Body: Solid1 (61) — Pressed Swivel Fork & Axle Bolt\n" +
+          "Size: 65.0 × 72.5 × 68.90 mm (Sheet t=3.0 mm)\n" +
+          "Kinematics: Trail Offset = +30.00 mm from Kingpin\n" +
+          "Hardware: Domed Carriage Bolt Head (+Side) + 13mm AF Hex Locknut & Ø8 Stud Tip (-Side)",
+        solid62:
+          "Body: Solid1 (62) — Axle Spacer Sleeve\n" +
+          "Size: Ø25.00 mm OD × Ø12.00 mm ID × 39.00 mm L\n" +
+          "Color: Opaque(128, 128, 128) Ground Bearing Steel\n" +
+          "Role: Precision inner raceway bush between fork cheeks (|Y| = 19.5 mm)",
+        solid63:
+          "Body: Solid1 (63) — Blue MC Nylon Crowned Wheel\n" +
+          "Size: Ø75.00 mm Spherical Tread × 37.00 mm Width\n" +
+          "Color: Opaque(0, 0, 255) Cast MC Nylon\n" +
+          "B-Rep Detail: SPHERICAL_SURFACE R=37.50 mm + R2.0 Toroidal Rim Fillet + Ø62.9 Flat Hub Faces",
+        solid65:
+          "Body: Solid1 (65) — Swivel Leveling Base Pad\n" +
+          "Size: Ø50.00 mm Base × 20.00 mm Height\n" +
+          "B-Rep Detail: Ø14.00 mm Internal Spherical Socket @ Z=15.70 mm + Hollow Annular Underside Recess (Ø39.4 / Ø17.0)",
+        solid66:
+          "Body: Solid1 (66) — M16×148 Ball Stud + Wrench Hex\n" +
+          "Size: Total L = 160.30 mm (Ø14.0 Ball + 17mm AF Wrench Collar + 148.0 mm M16×2.0 Thread)\n" +
+          "Protrusion: Extends +51.0 mm above plate into 80×80 column center bore",
+        solid67:
+          "Body: Solid1 (67) — M16 Hex Jam Nut\n" +
+          "Size: 24.00 mm Across Flats (27.71 mm Corner) × 12.20 mm H\n" +
+          "B-Rep Detail: Double-sided 30° conical hex chamfers + Ø13.835 mm thread bore (8.10 mm gap in raw STEP)",
+        refFrame:
+          "Context: 80×80 T-Slot Extrusion + Cast Gussets + M8 SHCS\n" +
+          "Matches the background structural assembly visible in your Fusion 360 inspection screenshot!",
+        m10Bolts:
+          "BOM Addition: 4× M10×20L Socket Head Cap Screws\n" +
+          "Omitted in raw Adjuster set.step; required (16 pcs per machine) to bolt CJHB75 to Solid1 (64)."
+      };
+
+      // =========================================================================
+      // 1. MATRIX MATH & B-REP MESH / FEATURE-EDGE KERNEL
+      // =========================================================================
+      const Mat4 = {
+        create() { const m = new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
+        identity(o) { o.fill(0); o[0]=o[5]=o[10]=o[15]=1; return o; },
+        copy(o, a) { o.set(a); return o; },
+        multiply(o, a, b) {
+          const a00=a[0],a01=a[1],a02=a[2],a03=a[3], a10=a[4],a11=a[5],a12=a[6],a13=a[7];
+          const a20=a[8],a21=a[9],a22=a[10],a23=a[11], a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+          const out = new Float32Array(16);
+          for (let i = 0; i < 4; i++) {
+            const b0=b[i*4], b1=b[i*4+1], b2=b[i*4+2], b3=b[i*4+3];
+            out[i*4]   = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+            out[i*4+1] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+            out[i*4+2] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+            out[i*4+3] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+          }
+          o.set(out);
+          return o;
+        },
+        perspective(o, fovy, aspect, near, far) {
+          const f = 1.0 / Math.tan(fovy / 2);
+          o.fill(0); o[0] = f / aspect; o[5] = f;
+          o[10] = (far + near) / (near - far); o[11] = -1;
+          o[14] = (2 * far * near) / (near - far);
+          return o;
+        },
+        lookAt(o, eye, ctr, up) {
+          let zx = eye[0]-ctr[0], zy = eye[1]-ctr[1], zz = eye[2]-ctr[2];
+          let l = Math.hypot(zx,zy,zz) || 1; zx/=l; zy/=l; zz/=l;
+          let xx = up[1]*zz - up[2]*zy, xy = up[2]*zx - up[0]*zz, xz = up[0]*zy - up[1]*zx;
+          l = Math.hypot(xx,xy,xz) || 1; xx/=l; xy/=l; xz/=l;
+          const yx = zy*xz - zz*xy, yy = zz*xx - zx*xz, yz = zx*xy - zy*xx;
+          o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;
+          o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;
+          o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;
+          o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+          o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+          o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+          o[15]=1;
+          return o;
+        },
+        translate(o, a, x, y, z) {
+          const t = Mat4.create(); t[12]=x; t[13]=y; t[14]=z;
+          return Mat4.multiply(o, a, t);
+        },
+        rotateZ(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[1]=s; r[4]=-s; r[5]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        rotateX(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[5]=c; r[6]=s; r[9]=-s; r[10]=c;
+          return Mat4.multiply(o, a, r);
+        },
+        rotateY(o, a, rad) {
+          const s = Math.sin(rad), c = Math.cos(rad), r = Mat4.create();
+          r[0]=c; r[2]=-s; r[8]=s; r[10]=c;
+          return Mat4.multiply(o, a, r);
+        }
+      };
+
+      function buildRoundedRectLoop(halfW, rCorner, cornerSegs, edgeSubdiv) {
+        const pts = [];
+        const inner = halfW - rCorner;
+        const corners = [
+          { cx:  inner, cy:  inner, a0: 0,             a1: Math.PI * 0.5 },
+          { cx: -inner, cy:  inner, a0: Math.PI * 0.5, a1: Math.PI },
+          { cx: -inner, cy: -inner, a0: Math.PI,       a1: Math.PI * 1.5 },
+          { cx:  inner, cy: -inner, a0: Math.PI * 1.5, a1: Math.PI * 2.0 }
+        ];
+        for (let c = 0; c < 4; c++) {
+          const cur = corners[c];
+          for (let k = 0; k <= cornerSegs; k++) {
+            const a = cur.a0 + (k / cornerSegs) * (cur.a1 - cur.a0);
+            pts.push([cur.cx + Math.cos(a) * rCorner, cur.cy + Math.sin(a) * rCorner]);
+          }
+          const nxt = corners[(c + 1) % 4];
+          const pEnd = [cur.cx + Math.cos(cur.a1) * rCorner, cur.cy + Math.sin(cur.a1) * rCorner];
+          const pNxt = [nxt.cx + Math.cos(nxt.a0) * rCorner, nxt.cy + Math.sin(nxt.a0) * rCorner];
+          for (let s = 1; s < edgeSubdiv; s++) {
+            const u = s / edgeSubdiv;
+            pts.push([pEnd[0] + (pNxt[0] - pEnd[0]) * u, pEnd[1] + (pNxt[1] - pEnd[1]) * u]);
+          }
+        }
+        return pts;
+      }
+
+      function insideRoundedSquare(x, y, halfW, r) {
+        const ax = Math.abs(x), ay = Math.abs(y);
+        if (ax > halfW - 0.02 || ay > halfW - 0.02) return false;
+        const inner = halfW - r;
+        if (ax > inner && ay > inner) return Math.hypot(ax - inner, ay - inner) <= r - 0.02;
+        return true;
+      }
+
+      function triangulatePerforatedFace(outerPts, holesList, halfW, rCorner, gridStep = 16) {
+        const verts = [];
+        outerPts.forEach(p => verts.push([p[0], p[1]]));
+        const holeSegs = 28;
+        for (const h of holesList) {
+          for (let i = 0; i < holeSegs; i++) {
+            const a = (i / holeSegs) * Math.PI * 2;
+            verts.push([h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r]);
+          }
+        }
+        for (let gx = -halfW + 10; gx <= halfW - 10; gx += gridStep) {
+          for (let gy = -halfW + 10; gy <= halfW - 10; gy += gridStep) {
+            if (!insideRoundedSquare(gx, gy, halfW - 3, rCorner)) continue;
+            let ok = true;
+            for (const h of holesList) {
+              if (Math.hypot(gx - h.x, gy - h.y) < h.r + 3.2) { ok = false; break; }
+            }
+            if (ok) verts.push([gx, gy]);
+          }
+        }
+        const n0 = verts.length;
+        verts.push([-600, -600], [600, -600], [0, 700]);
+
+        function makeTri(i, j, k) {
+          const ax = verts[i][0], ay = verts[i][1], bx = verts[j][0], by = verts[j][1], cx = verts[k][0], cy = verts[k][1];
+          const d = 2 * (ax*(by-cy) + bx*(cy-ay) + cx*(ay-by));
+          if (Math.abs(d) < 1e-8) return null;
+          const a2 = ax*ax+ay*ay, b2 = bx*bx+by*by, c2 = cx*cx+cy*cy;
+          const ux = (a2*(by-cy) + b2*(cy-ay) + c2*(ay-by)) / d;
+          const uy = (a2*(cx-bx) + b2*(ax-cx) + c2*(bx-ax)) / d;
+          return { i, j, k, ux, uy, r2: (ax-ux)*(ax-ux) + (ay-uy)*(ay-uy) };
+        }
+
+        let tris = [makeTri(n0, n0+1, n0+2)];
+        for (let p = 0; p < n0; p++) {
+          const px = verts[p][0], py = verts[p][1];
+          const bad = [], good = [];
+          for (const t of tris) {
+            const dx = px - t.ux, dy = py - t.uy;
+            if (dx*dx + dy*dy <= t.r2 * (1 + 1e-7)) bad.push(t);
+            else good.push(t);
+          }
+          const emap = new Map();
+          const addE = (u, v) => {
+            const k = u < v ? `${u}_${v}` : `${v}_${u}`;
+            if (emap.has(k)) emap.delete(k); else emap.set(k, [u, v]);
+          };
+          for (const t of bad) { addE(t.i, t.j); addE(t.j, t.k); addE(t.k, t.i); }
+          tris = good;
+          for (const [u, v] of emap.values()) {
+            const nt = makeTri(u, v, p);
+            if (nt) tris.push(nt);
+          }
+        }
+
+        const out = [];
+        for (const t of tris) {
+          if (t.i >= n0 || t.j >= n0 || t.k >= n0) continue;
+          const A = verts[t.i], B = verts[t.j], C = verts[t.k];
+          const mx = (A[0]+B[0]+C[0])/3, my = (A[1]+B[1]+C[1])/3;
+          if (!insideRoundedSquare(mx, my, halfW, rCorner)) continue;
+          let insideH = false;
+          for (const h of holesList) {
+            if (Math.hypot(mx - h.x, my - h.y) < h.r - 0.04) { insideH = true; break; }
+          }
+          if (insideH) continue;
+          const cr = (B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0]);
+          out.push(cr > 0 ? [A, B, C] : [A, C, B]);
+        }
+        return out;
+      }
+
+      class CadMeshBuilder {
+        constructor() {
+          this.verts = [];
+          this.extraEdges = [];
+        }
+        pushV(p, n, c) {
+          this.verts.push(p[0], p[1], p[2], n[0], n[1], n[2], c[0], c[1], c[2]);
+        }
+        pushTriSmooth(p1, p2, p3, n1, n2, n3, col) {
+          this.pushV(p1, n1, col);
+          this.pushV(p2, n2, col);
+          this.pushV(p3, n3, col);
+        }
+        pushTri(p1, p2, p3, n, col) {
+          this.pushV(p1, n, col);
+          this.pushV(p2, n, col);
+          this.pushV(p3, n, col);
+        }
+        addEdgeSeg(p1, p2) {
+          this.extraEdges.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+        }
+        addCircleLoopZ(cx, cy, z, r, segs = 40) {
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+            this.addEdgeSeg(
+              [cx + Math.cos(a0)*r, cy + Math.sin(a0)*r, z],
+              [cx + Math.cos(a1)*r, cy + Math.sin(a1)*r, z]
+            );
+          }
+        }
+        addCircleLoopY(cx, y, cz, r, segs = 44) {
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+            this.addEdgeSeg(
+              [cx + Math.cos(a0)*r, y, cz + Math.sin(a0)*r],
+              [cx + Math.cos(a1)*r, y, cz + Math.sin(a1)*r]
+            );
+          }
+        }
+        addLatheZ(cx, cy, profile, segs, col) {
+          for (let s = 0; s < profile.length - 1; s++) {
+            const r0 = profile[s][0], z0 = profile[s][1];
+            const r1 = profile[s+1][0], z1 = profile[s+1][1];
+            const dr = r1 - r0, dz = z1 - z0;
+            const len = Math.hypot(dr, dz);
+            if (len < 1e-6) continue;
+            const nr = dz / len, nz = -dr / len;
+            for (let i = 0; i < segs; i++) {
+              const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+              const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+              const p00 = [cx + r0*c0, cy + r0*s0, z0];
+              const p10 = [cx + r0*c1, cy + r0*s1, z0];
+              const p11 = [cx + r1*c1, cy + r1*s1, z1];
+              const p01 = [cx + r1*c0, cy + r1*s0, z1];
+              const n0 = [nr*c0, nr*s0, nz];
+              const n1 = [nr*c1, nr*s1, nz];
+              if (r0 > 1e-4) this.pushTriSmooth(p00, p10, p11, n0, n1, n1, col);
+              if (r1 > 1e-4) this.pushTriSmooth(p00, p11, p01, n0, n1, n0, col);
+            }
+          }
+        }
+        addLatheY(cx, cz, profile, segs, col) {
+          for (let s = 0; s < profile.length - 1; s++) {
+            const y0 = profile[s][0], r0 = profile[s][1];
+            const y1 = profile[s+1][0], r1 = profile[s+1][1];
+            const dy = y1 - y0, dr = r1 - r0;
+            const len = Math.hypot(dy, dr);
+            if (len < 1e-6) continue;
+            const nr = dy / len, ny = -dr / len;
+            for (let i = 0; i < segs; i++) {
+              const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+              const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+              const p00 = [cx + r0*c0, y0, cz + r0*s0];
+              const p10 = [cx + r0*c1, y0, cz + r0*s1];
+              const p11 = [cx + r1*c1, y1, cz + r1*s1];
+              const p01 = [cx + r1*c0, y1, cz + r1*s0];
+              const n0 = [nr*c0, ny, nr*s0];
+              const n1 = [nr*c1, ny, nr*s1];
+              if (r0 > 1e-4) this.pushTriSmooth(p00, p01, p11, n0, n0, n1, col);
+              if (r1 > 1e-4) this.pushTriSmooth(p00, p11, p10, n0, n1, n1, col);
+            }
+          }
+        }
+        addCylinderZSmooth(cx, cy, z0, z1, r, segs, col, inward = false) {
+          const sgn = inward ? -1 : 1;
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+            const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+            const x0 = cx + r*c0, y0 = cy + r*s0, x1 = cx + r*c1, y1 = cy + r*s1;
+            const n0 = [sgn*c0, sgn*s0, 0], n1 = [sgn*c1, sgn*s1, 0];
+            if (!inward) {
+              this.pushTriSmooth([x0,y0,z0],[x1,y1,z0],[x1,y1,z1], n0,n1,n1, col);
+              this.pushTriSmooth([x0,y0,z0],[x1,y1,z1],[x0,y0,z1], n0,n1,n0, col);
+            } else {
+              this.pushTriSmooth([x1,y1,z0],[x0,y0,z0],[x1,y1,z1], n1,n0,n1, col);
+              this.pushTriSmooth([x0,y0,z0],[x0,y0,z1],[x1,y1,z1], n0,n0,n1, col);
+            }
+          }
+        }
+        addAnnulusZ(cx, cy, z, rIn, rOut, segs, nzSign, col) {
+          const n = [0, 0, nzSign];
+          for (let i = 0; i < segs; i++) {
+            const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+            const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+            const xi0 = cx + rIn*c0, yi0 = cy + rIn*s0, xi1 = cx + rIn*c1, yi1 = cy + rIn*s1;
+            const xo0 = cx + rOut*c0, yo0 = cy + rOut*s0, xo1 = cx + rOut*c1, yo1 = cy + rOut*s1;
+            if (nzSign > 0) {
+              this.pushTri([xi0,yi0,z],[xo0,yo0,z],[xo1,yo1,z], n, col);
+              this.pushTri([xi0,yi0,z],[xo1,yo1,z],[xi1,yi1,z], n, col);
+            } else {
+              this.pushTri([xo0,yo0,z],[xi0,yi0,z],[xo1,yo1,z], n, col);
+              this.pushTri([xi0,yi0,z],[xi1,yi1,z],[xo1,yo1,z], n, col);
+            }
+          }
+        }
+        addChamferedHexZ(cx, cy, z0, z1, acrossFlats, rBore, col) {
+          const rFlat = acrossFlats * 0.5;
+          const rCorn = rFlat / Math.cos(Math.PI / 6);
+          const chZ = (rCorn - rFlat) * Math.tan(Math.PI / 6);
+          const za = z0 + chZ, zb = z1 - chZ;
+
+          for (let i = 0; i < 6; i++) {
+            const a0 = (i / 6) * Math.PI * 2, a1 = ((i + 1) / 6) * Math.PI * 2;
+            const am = (a0 + a1) * 0.5;
+            const nm = [Math.cos(am), Math.sin(am), 0];
+            const x0 = cx + rCorn*Math.cos(a0), y0 = cy + rCorn*Math.sin(a0);
+            const x1 = cx + rCorn*Math.cos(a1), y1 = cy + rCorn*Math.sin(a1);
+            const xf0 = cx + rFlat*Math.cos(a0), yf0 = cy + rFlat*Math.sin(a0);
+            const xf1 = cx + rFlat*Math.cos(a1), yf1 = cy + rFlat*Math.sin(a1);
+            this.pushTri([x0,y0,za],[x1,y1,za],[x1,y1,zb], nm, col);
+            this.pushTri([x0,y0,za],[x1,y1,zb],[x0,y0,zb], nm, col);
+            const nt = [nm[0]*0.5, nm[1]*0.5, 0.866];
+            this.pushTri([x0,y0,zb],[x1,y1,zb],[xf1,yf1,z1], nt, col);
+            this.pushTri([x0,y0,zb],[xf1,yf1,z1],[xf0,yf0,z1], nt, col);
+            const nb = [nm[0]*0.5, nm[1]*0.5, -0.866];
+            this.pushTri([x1,y1,za],[x0,y0,za],[xf1,yf1,z0], nb, col);
+            this.pushTri([x0,y0,za],[xf0,yf0,z0],[xf1,yf1,z0], nb, col);
+
+            const sub = 4;
+            for (let k = 0; k < sub; k++) {
+              const u0 = k / sub, u1 = (k + 1) / sub;
+              const tx0 = xf0 + (xf1 - xf0)*u0, ty0 = yf0 + (yf1 - yf0)*u0;
+              const tx1 = xf0 + (xf1 - xf0)*u1, ty1 = yf0 + (yf1 - yf0)*u1;
+              const ba0 = a0 + (a1 - a0)*u0, ba1 = a0 + (a1 - a0)*u1;
+              const bx0 = cx + rBore*Math.cos(ba0), by0 = cy + rBore*Math.sin(ba0);
+              const bx1 = cx + rBore*Math.cos(ba1), by1 = cy + rBore*Math.sin(ba1);
+              this.pushTri([bx0,by0,z1],[tx0,ty0,z1],[tx1,ty1,z1], [0,0,1], col);
+              this.pushTri([bx0,by0,z1],[tx1,ty1,z1],[bx1,by1,z1], [0,0,1], col);
+              this.pushTri([tx0,ty0,z0],[bx0,by0,z0],[tx1,ty1,z0], [0,0,-1], col);
+              this.pushTri([bx0,by0,z0],[bx1,by1,z0],[tx1,ty1,z0], [0,0,-1], col);
+            }
+          }
+          if (rBore > 0.1) {
+            this.addCylinderZSmooth(cx, cy, z0, z1, rBore, 24, [0.55, 0.59, 0.64], true);
+          }
+        }
+        addBox(cx, cy, cz, sx, sy, sz, col) {
+          const hx=sx/2, hy=sy/2, hz=sz/2;
+          const x0=cx-hx, x1=cx+hx, y0=cy-hy, y1=cy+hy, z0=cz-hz, z1=cz+hz;
+          const faces = [
+            [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[0,0,1]],
+            [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[0,0,-1]],
+            [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1],[1,0,0]],
+            [[x0,y1,z0],[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[-1,0,0]],
+            [[x0,y1,z0],[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[0,1,0]],
+            [[x0,y0,z1],[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[0,-1,0]]
+          ];
+          for (const [a,b,c,d,n] of faces) {
+            this.pushTri(a,b,c,n,col);
+            this.pushTri(a,c,d,n,col);
+          }
+        }
+      }
+
+      function buildFeatureEdges(mb, creaseDeg = 27.0) {
+        const cosThresh = Math.cos((creaseDeg * Math.PI) / 180);
+        const v = mb.verts;
+        const nTris = v.length / 27;
+        const edgeMap = new Map();
+        const q = (val) => Math.round(val * 40);
+
+        for (let t = 0; t < nTris; t++) {
+          const base = t * 27;
+          const p0 = [v[base], v[base+1], v[base+2]];
+          const p1 = [v[base+9], v[base+10], v[base+11]];
+          const p2 = [v[base+18], v[base+19], v[base+20]];
+          const ux = p1[0]-p0[0], uy = p1[1]-p0[1], uz = p1[2]-p0[2];
+          const vx = p2[0]-p0[0], vy = p2[1]-p0[1], vz = p2[2]-p0[2];
+          let nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
+          const nl = Math.hypot(nx, ny, nz);
+          if (nl < 1e-9) continue;
+          nx /= nl; ny /= nl; nz /= nl;
+
+          const pts = [p0, p1, p2];
+          const keys = pts.map(p => `${q(p[0])},${q(p[1])},${q(p[2])}`);
+          for (let e = 0; e < 3; e++) {
+            const iA = e, iB = (e + 1) % 3;
+            const kA = keys[iA], kB = keys[iB];
+            if (kA === kB) continue;
+            const ek = kA < kB ? `${kA}|${kB}` : `${kB}|${kA}`;
+            const prev = edgeMap.get(ek);
+            if (!prev) {
+              edgeMap.set(ek, { pA: pts[iA], pB: pts[iB], nx, ny, nz, count: 1, sharp: false });
+            } else {
+              prev.count++;
+              const dot = prev.nx * nx + prev.ny * ny + prev.nz * nz;
+              if (dot < cosThresh) prev.sharp = true;
+            }
+          }
+        }
+
+        const linePos = [];
+        for (const item of edgeMap.values()) {
+          if (item.count === 1 || item.sharp) {
+            linePos.push(
+              item.pA[0], item.pA[1], item.pA[2],
+              item.pB[0], item.pB[1], item.pB[2]
+            );
+          }
+        }
+        for (let i = 0; i < mb.extraEdges.length; i++) {
+          linePos.push(mb.extraEdges[i]);
+        }
+        return new Float32Array(linePos);
+      }
+
+      // =========================================================================
+      // 2. WEBGL STUDIO SHADERS (WITH SECTION-PLANE CLIP & HATCHED CUT CAP!)
+      // =========================================================================
+      const canvas = document.getElementById("glCanvas");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false, stencil: false });
+
+      const vsSolid = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec3 aCol;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vNorm;
+        varying vec3 vWorldPos;
+        varying vec3 vCol;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorldPos = wp.xyz;
+          vNorm = normalize(mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNorm);
+          vCol = aCol;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsSolid = `
+        precision highp float;
+        varying vec3 vNorm;
+        varying vec3 vWorldPos;
+        varying vec3 vCol;
+        uniform vec3 uEye;
+        uniform float uSelect;
+        uniform float uAlpha;
+        uniform float uClipOn;
+        uniform vec4 uClipPlane;
+
+        void main() {
+          if (uClipOn > 0.5 && dot(vWorldPos, uClipPlane.xyz) > uClipPlane.w) {
+            discard;
+          }
+          if (!gl_FrontFacing && uClipOn > 0.5) {
+            float stripe = mod(vWorldPos.x + vWorldPos.y + vWorldPos.z, 3.2);
+            vec3 cutCol = stripe < 1.3 ? vec3(0.96, 0.42, 0.34) : vec3(0.72, 0.24, 0.20);
+            gl_FragColor = vec4(cutCol, uAlpha);
+            return;
+          }
+
+          vec3 N = normalize(gl_FrontFacing ? vNorm : -vNorm);
+          vec3 V = normalize(uEye - vWorldPos);
+
+          vec3 Lkey  = normalize(vec3(0.48, -0.58, 0.66));
+          vec3 Lfill = normalize(vec3(-0.72, 0.45, -0.52));
+          vec3 Lrim  = normalize(vec3(-0.20, 0.80, 0.56));
+
+          float dKey  = max(dot(N, Lkey), 0.0);
+          float dFill = max(dot(N, Lfill), 0.0);
+          float dRim  = max(dot(N, Lrim), 0.0);
+
+          vec3 hemi = mix(vec3(0.24, 0.26, 0.30), vec3(0.44, 0.47, 0.52), N.z * 0.5 + 0.5);
+
+          vec3 H1 = normalize(Lkey + V);
+          vec3 H2 = normalize(Lfill + V);
+          float spec = pow(max(dot(N, H1), 0.0), 42.0) * 0.36 + pow(max(dot(N, H2), 0.0), 28.0) * 0.22;
+          float fres = pow(1.0 - max(dot(N, V), 0.0), 3.5) * 0.12;
+
+          vec3 col = vCol * (hemi + 0.62 * dKey + 0.44 * dFill + 0.22 * dRim) + vec3(spec + fres);
+          col = mix(col, col * 0.72 + vec3(0.06, 0.34, 0.55), uSelect);
+          gl_FragColor = vec4(col, uAlpha);
+        }
+      `;
+
+      const vsLine = `
+        attribute vec3 aPos;
+        uniform mat4 uProj;
+        uniform mat4 uView;
+        uniform mat4 uModel;
+        varying vec3 vWorldPos;
+        void main() {
+          vec4 wp = uModel * vec4(aPos, 1.0);
+          vWorldPos = wp.xyz;
+          gl_Position = uProj * uView * wp;
+        }
+      `;
+
+      const fsLine = `
+        precision highp float;
+        varying vec3 vWorldPos;
+        uniform vec4 uLineCol;
+        uniform float uClipOn;
+        uniform vec4 uClipPlane;
+        void main() {
+          if (uClipOn > 0.5 && dot(vWorldPos, uClipPlane.xyz) > uClipPlane.w) {
+            discard;
+          }
+          gl_FragColor = uLineCol;
+        }
+      `;
+
+      function linkProg(vs, fs) {
+        const p = gl.createProgram();
+        const c = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; };
+        gl.attachShader(p, c(gl.VERTEX_SHADER, vs));
+        gl.attachShader(p, c(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(p);
+        return p;
+      }
+
+      const pSolid = linkProg(vsSolid, fsSolid);
+      const pLine  = linkProg(vsLine, fsLine);
+
+      const uSolid = {
+        aPos: gl.getAttribLocation(pSolid, "aPos"),
+        aNorm: gl.getAttribLocation(pSolid, "aNorm"),
+        aCol: gl.getAttribLocation(pSolid, "aCol"),
+        uProj: gl.getUniformLocation(pSolid, "uProj"),
+        uView: gl.getUniformLocation(pSolid, "uView"),
+        uModel: gl.getUniformLocation(pSolid, "uModel"),
+        uEye: gl.getUniformLocation(pSolid, "uEye"),
+        uSelect: gl.getUniformLocation(pSolid, "uSelect"),
+        uAlpha: gl.getUniformLocation(pSolid, "uAlpha"),
+        uClipOn: gl.getUniformLocation(pSolid, "uClipOn"),
+        uClipPlane: gl.getUniformLocation(pSolid, "uClipPlane")
+      };
+
+      const uLine = {
+        aPos: gl.getAttribLocation(pLine, "aPos"),
+        uProj: gl.getUniformLocation(pLine, "uProj"),
+        uView: gl.getUniformLocation(pLine, "uView"),
+        uModel: gl.getUniformLocation(pLine, "uModel"),
+        uLineCol: gl.getUniformLocation(pLine, "uLineCol"),
+        uClipOn: gl.getUniformLocation(pLine, "uClipOn"),
+        uClipPlane: gl.getUniformLocation(pLine, "uClipPlane")
+      };
+
+      function uploadCadBody(mb, creaseDeg = 27.0) {
+        const triArr = new Float32Array(mb.verts);
+        const triBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, triBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, triArr, gl.STATIC_DRAW);
+
+        const edgeArr = buildFeatureEdges(mb, creaseDeg);
+        const edgeBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, edgeArr, gl.STATIC_DRAW);
+
+        return { triBuf, triCount: triArr.length / 9, edgeBuf, edgeCount: edgeArr.length / 3 };
+      }
+
+      // =========================================================================
+      // 3. CONSTRUCT ALL 8 EXACT STEP BODIES (Solid1 60 .. Solid1 67)
+      // =========================================================================
+      const bodies = {};
+      const C_SILVER = [0.76, 0.78, 0.81];
+      const C_GREY   = [0.50, 0.52, 0.55];
+      const C_BLUE   = [0.07, 0.24, 0.86];
+      const C_PLATE  = [0.302, 0.306, 0.290];
+
+      // --- BODY #152: Solid1 (64) — 160x160x15 mm R5 Steel Corner Plate ---
+      {
+        const mb = new CadMeshBuilder();
+        const outer = buildRoundedRectLoop(80.0, 5.0, 7, 6);
+        const topTris = triangulatePerforatedFace(outer, PLATE_HOLES.map(h => ({ x: h.x, y: h.y, r: h.rTop })), 80.0, 5.0);
+        for (const [a, b, c] of topTris) mb.pushTri([a[0],a[1],15], [b[0],b[1],15], [c[0],c[1],15], [0,0,1], C_PLATE);
+
+        const botTris = triangulatePerforatedFace(outer, PLATE_HOLES.map(h => ({ x: h.x, y: h.y, r: h.rBot })), 80.0, 5.0);
+        for (const [a, b, c] of botTris) mb.pushTri([a[0],a[1],0], [c[0],c[1],0], [b[0],b[1],0], [0,0,-1], C_PLATE);
+
+        for (let i = 0; i < outer.length; i++) {
+          const p0 = outer[i], p1 = outer[(i + 1) % outer.length];
+          const dx = p1[0]-p0[0], dy = p1[1]-p0[1], l = Math.hypot(dx,dy) || 1;
+          const n = [dy/l, -dx/l, 0];
+          mb.pushTri([p0[0],p0[1],0],[p1[0],p1[1],0],[p1[0],p1[1],15], n, C_PLATE);
+          mb.pushTri([p0[0],p0[1],0],[p1[0],p1[1],15],[p0[0],p0[1],15], n, C_PLATE);
+        }
+        for (const s1 of [-1, 1]) {
+          for (const s2 of [-1, 1]) {
+            mb.addEdgeSeg([s1*75, s2*80, 0], [s1*75, s2*80, 15]);
+            mb.addEdgeSeg([s1*80, s2*75, 0], [s1*80, s2*75, 15]);
+          }
+        }
+
+        for (const h of PLATE_HOLES) {
+          if (h.cbDepth > 0) {
+            mb.addCylinderZSmooth(h.x, h.y, 0.0, h.cbDepth, h.rBot, 28, [0.36,0.37,0.36], true);
+            mb.addAnnulusZ(h.x, h.y, h.cbDepth, h.rTop, h.rBot, 28, -1, [0.34,0.35,0.34]);
+            mb.addCylinderZSmooth(h.x, h.y, h.cbDepth, 15.0, h.rTop, 28, [0.33,0.34,0.33], true);
+          } else {
+            const rings = 9, dz = 15.0 / rings;
+            for (let k = 0; k < rings; k++) {
+              mb.addCylinderZSmooth(h.x, h.y, k*dz, (k+1)*dz, h.rTop, 28, k%2===0 ? [0.26,0.28,0.30] : [0.46,0.48,0.50], true);
+            }
+          }
+        }
+        bodies.solid64 = uploadCadBody(mb);
+      }
+
+      // --- BODY #148: Solid1 (60) — CJHB75 Top Plate & Raceway ---
+      {
+        const mb = new CadMeshBuilder();
+        const holes60 = [
+          { x: -35.5, y: -35.5, r: 5.25 }, { x:  35.5, y: -35.5, r: 5.25 },
+          { x: -35.5, y:  35.5, r: 5.25 }, { x:  35.5, y:  35.5, r: 5.25 }
+        ];
+        const loop90 = buildRoundedRectLoop(45.0, 9.5, 7, 4);
+        const topT = triangulatePerforatedFace(loop90, holes60, 45.0, 9.5, 14);
+        for (const [a, b, c] of topT) mb.pushTri([a[0],a[1],0], [b[0],b[1],0], [c[0],c[1],0], [0,0,1], C_SILVER);
+        const botT = triangulatePerforatedFace(loop90, holes60, 45.0, 9.5, 14);
+        for (const [a, b, c] of botT) mb.pushTri([a[0],a[1],-3.2], [c[0],c[1],-3.2], [b[0],b[1],-3.2], [0,0,-1], C_SILVER);
+
+        for (let i = 0; i < loop90.length; i++) {
+          const p0 = loop90[i], p1 = loop90[(i+1)%loop90.length];
+          const dx = p1[0]-p0[0], dy = p1[1]-p0[1], l = Math.hypot(dx,dy)||1;
+          const n = [dy/l, -dx/l, 0];
+          mb.pushTri([p0[0],p0[1],-3.2],[p1[0],p1[1],-3.2],[p1[0],p1[1],0], n, C_SILVER);
+          mb.pushTri([p0[0],p0[1],-3.2],[p1[0],p1[1],0],[p0[0],p0[1],0], n, C_SILVER);
+        }
+        for (const h of holes60) mb.addCylinderZSmooth(h.x, h.y, -3.2, 0.0, h.r, 28, C_SILVER, true);
+
+        const cupProf = [
+          [0.0, -9.6], [30.47, -9.6], [32.3, -9.0], [33.36, -7.76], [35.50, -3.2]
+        ];
+        mb.addLatheZ(0, 0, cupProf, 48, C_SILVER);
+        mb.addCircleLoopZ(0, 0, -3.2, 35.50, 48);
+        mb.addCircleLoopZ(0, 0, -7.76, 33.36, 48);
+        mb.addCircleLoopZ(0, 0, -9.60, 30.47, 48);
+        bodies.solid60 = uploadCadBody(mb);
+      }
+
+      // --- BODY #149: Solid1 (61) — CJHB75 Pressed-Steel Swivel Fork + Bolt + Nut ---
+      {
+        const mb = new CadMeshBuilder();
+        const collarProf = [
+          [29.5, -9.6], [30.5, -9.6], [30.5, -12.6], [32.5, -14.6], [32.5, -19.2],
+          [29.5, -19.2], [29.5, -9.6]
+        ];
+        mb.addLatheZ(0, 0, collarProf, 48, C_SILVER);
+        mb.addCircleLoopZ(0, 0, -12.6, 30.5, 48);
+        mb.addCircleLoopZ(0, 0, -14.6, 32.5, 48);
+
+        function forkZBot(x) {
+          if (x <= -27.5) return -25.5;
+          if (x <= 20.15) {
+            const sq = Math.max(0, 3600.0 - (x - 32.222) * (x - 32.222));
+            return Math.max(-78.5, -19.727 - Math.sqrt(sq));
+          }
+          if (x <= 30.0) return -78.5;
+          const dx = Math.min(9.999, x - 30.0);
+          return -68.5 - Math.sqrt(Math.max(0, 100.0 - dx * dx));
+        }
+
+        const aJoinOut = Math.acos(23.452 / 32.5);
+        const stations = [];
+        const arcSteps = 26;
+        const frontSteps = 12;
+        for (let i = 0; i <= frontSteps; i++) {
+          const x = 40.0 - (i / frontSteps) * (40.0 - 23.452);
+          stations.push({ xo: x, yo: 22.5, xi: Math.min(40.0, x), yi: 19.5, nx: 0, ny: 1 });
+        }
+        for (let i = 1; i < arcSteps; i++) {
+          const a = aJoinOut + (i / arcSteps) * (Math.PI * 2 - 2 * aJoinOut);
+          const ca = Math.cos(a), sa = Math.sin(a);
+          stations.push({ xo: 32.5 * ca, yo: 32.5 * sa, xi: 29.5 * ca, yi: 29.5 * sa, nx: ca, ny: sa });
+        }
+        for (let i = 0; i <= frontSteps; i++) {
+          const x = 23.452 + (i / frontSteps) * (40.0 - 23.452);
+          stations.push({ xo: x, yo: -22.5, xi: Math.min(40.0, x), yi: -19.5, nx: 0, ny: -1 });
+        }
+
+        const zTop = -19.2;
+        for (let i = 0; i < stations.length - 1; i++) {
+          const s0 = stations[i], s1 = stations[i+1];
+          const zb0 = forkZBot(s0.xo), zb1 = forkZBot(s1.xo);
+          const n0 = [s0.nx, s0.ny, 0], n1 = [s1.nx, s1.ny, 0];
+          const ni0 = [-s0.nx, -s0.ny, 0], ni1 = [-s1.nx, -s1.ny, 0];
+
+          mb.pushTriSmooth([s0.xo,s0.yo,zb0],[s1.xo,s1.yo,zb1],[s1.xo,s1.yo,zTop], n0,n1,n1, C_SILVER);
+          mb.pushTriSmooth([s0.xo,s0.yo,zb0],[s1.xo,s1.yo,zTop],[s0.xo,s0.yo,zTop], n0,n1,n0, C_SILVER);
+          mb.pushTriSmooth([s1.xi,s1.yi,zb1],[s0.xi,s0.yi,zb0],[s1.xi,s1.yi,zTop], ni1,ni0,ni1, C_SILVER);
+          mb.pushTriSmooth([s0.xi,s0.yi,zb0],[s0.xi,s0.yi,zTop],[s1.xi,s1.yi,zTop], ni0,ni0,ni1, C_SILVER);
+
+          const dx = s1.xo - s0.xo, dz = zb1 - zb0;
+          const nb = [dz, 0, -Math.abs(dx) - 0.2];
+          const nbl = Math.hypot(nb[0],nb[1],nb[2]) || 1;
+          nb[0]/=nbl; nb[1]/=nbl; nb[2]/=nbl;
+          mb.pushTri([s0.xo,s0.yo,zb0],[s0.xi,s0.yi,zb0],[s1.xi,s1.yi,zb1], nb, C_SILVER);
+          mb.pushTri([s0.xo,s0.yo,zb0],[s1.xi,s1.yi,zb1],[s1.xo,s1.yo,zb1], nb, C_SILVER);
+
+          mb.addEdgeSeg([s0.xo,s0.yo,zb0], [s1.xo,s1.yo,zb1]);
+          mb.addEdgeSeg([s0.xi,s0.yi,zb0], [s1.xi,s1.yi,zb1]);
+        }
+
+        for (const sgn of [-1, 1]) {
+          const yA = sgn * 19.5, yB = sgn * 22.5;
+          const p0 = [40, yA, -68.5], p1 = [40, yB, -68.5], p2 = [40, yB, zTop], p3 = [40, yA, zTop];
+          if (sgn > 0) {
+            mb.pushTri(p0, p1, p2, [1,0,0], C_SILVER);
+            mb.pushTri(p0, p2, p3, [1,0,0], C_SILVER);
+          } else {
+            mb.pushTri(p1, p0, p2, [1,0,0], C_SILVER);
+            mb.pushTri(p0, p3, p2, [1,0,0], C_SILVER);
+          }
+          mb.addEdgeSeg([23.452, yB, forkZBot(23.452)], [23.452, yB, zTop]);
+        }
+
+        const boltDomeProf = [
+          [22.5, 0.0], [22.5, 6.0], [24.5, 6.0], [25.6, 5.2], [26.3, 3.3], [26.55, 0.0]
+        ];
+        mb.addLatheY(30.0, -68.5, boltDomeProf, 32, C_SILVER);
+        mb.addCircleLoopY(30.0, 24.5, -68.5, 6.0, 32);
+
+        mb.addLatheY(30.0, -68.5, [[-32.5,0],[-32.5,3.5],[-32.0,4.0],[-22.5,4.0],[22.5,4.0]], 24, C_SILVER);
+        for (let i = 0; i < 6; i++) {
+          const a0 = (i/6)*Math.PI*2, a1 = ((i+1)/6)*Math.PI*2, am = (a0+a1)*0.5;
+          const x0 = 30 + 7.5*Math.cos(a0), z0 = -68.5 + 7.5*Math.sin(a0);
+          const x1 = 30 + 7.5*Math.cos(a1), z1 = -68.5 + 7.5*Math.sin(a1);
+          const nm = [Math.cos(am), 0, Math.sin(am)];
+          mb.pushTri([x0,-28.8,z0],[x0,-22.5,z0],[x1,-22.5,z1], nm, C_SILVER);
+          mb.pushTri([x0,-28.8,z0],[x1,-22.5,z1],[x1,-28.8,z1], nm, C_SILVER);
+          mb.pushTri([30,-28.8,-68.5],[x0,-28.8,z0],[x1,-28.8,z1], [0,-1,0], C_SILVER);
+        }
+
+        bodies.solid61 = uploadCadBody(mb);
+      }
+
+      // --- BODY #150: Solid1 (62) — CJHB75 Axle Spacer Sleeve ---
+      {
+        const mb = new CadMeshBuilder();
+        const sleeveProf = [
+          [-19.5, 6.0], [-18.5, 12.5], [18.5, 12.5], [19.5, 6.0]
+        ];
+        mb.addLatheY(30.0, -68.5, sleeveProf, 36, C_GREY);
+        bodies.solid62 = uploadCadBody(mb);
+      }
+
+      // --- BODY #151: Solid1 (63) — CJHB75 Blue MC Nylon Crowned Wheel ---
+      {
+        const mb = new CadMeshBuilder();
+        const wProf = [[-18.5, 12.5], [-18.5, 31.432]];
+        for (let k = 1; k <= 5; k++) {
+          const ang = Math.PI - (k / 5) * (Math.PI * 0.5 - 0.48);
+          wProf.push([-16.50 + 2.0 * Math.cos(ang), 31.432 + 2.0 * Math.sin(ang)]);
+        }
+        const sphSteps = 18;
+        for (let k = 0; k <= sphSteps; k++) {
+          const y = -17.43 + (k / sphSteps) * 34.86;
+          wProf.push([y, Math.sqrt(37.5 * 37.5 - y * y)]);
+        }
+        for (let k = 0; k <= 5; k++) {
+          const ang = (Math.PI * 0.5 - 0.48) - (k / 5) * (Math.PI * 0.5 - 0.48);
+          wProf.push([16.50 + 2.0 * Math.cos(ang), 31.432 + 2.0 * Math.sin(ang)]);
+        }
+        wProf.push([18.5, 31.432], [18.5, 12.5]);
+
+        mb.addLatheY(30.0, -68.5, wProf, 56, C_BLUE);
+        mb.addCircleLoopY(30.0, -17.43, -68.5, 33.203, 52);
+        mb.addCircleLoopY(30.0, -18.50, -68.5, 31.432, 52);
+        mb.addCircleLoopY(30.0,  17.43, -68.5, 33.203, 52);
+        mb.addCircleLoopY(30.0,  18.50, -68.5, 31.432, 52);
+        bodies.solid63 = uploadCadBody(mb);
+      }
+
+      // --- BODY #153: Solid1 (65) — C-AJPJ16-148 Swivel Base Pad ---
+      {
+        const mb = new CadMeshBuilder();
+        const padProf = [
+          [0.0, 0.0], [8.5, 0.0], [8.5, 6.84], [10.58, 9.10], [19.44, 4.34], [19.70, 3.90], [19.70, 0.0],
+          [24.50, 0.0], [25.00, 0.50], [25.00, 6.70], [24.74, 7.14],
+          [12.24, 13.87], [11.98, 14.27], [11.54, 19.54], [11.04, 20.00],
+          [7.70, 20.00], [6.70, 19.00], [6.70, 17.73], [7.00, 15.70], [5.80, 11.80], [0.0, 9.80]
+        ];
+        mb.addLatheZ(0, 0, padProf, 48, C_SILVER);
+        mb.addCircleLoopZ(0, 0, 6.70, 25.00, 48);
+        mb.addCircleLoopZ(0, 0, 13.87, 12.24, 40);
+        mb.addCircleLoopZ(0, 0, 0.0, 19.70, 44);
+        mb.addCircleLoopZ(0, 0, 0.0, 8.50, 32);
+        bodies.solid65 = uploadCadBody(mb);
+      }
+
+      // --- BODY #154: Solid1 (66) — C-AJPJ16-148 M16x148 Ball Stud + 17mm Hex ---
+      {
+        const mb = new CadMeshBuilder();
+        const ballProf = [];
+        for (let k = 0; k <= 10; k++) {
+          const a = -Math.PI * 0.5 + (k / 10) * (Math.PI * 0.5 + Math.asin(4.33 / 7.0));
+          ballProf.push([7.0 * Math.cos(a), 7.0 * Math.sin(a)]);
+        }
+        ballProf.push([5.5, 4.33], [5.5, 7.30]);
+        mb.addLatheZ(0, 0, ballProf, 36, C_SILVER);
+
+        mb.addChamferedHexZ(0, 0, 7.30, 12.30, 17.0, 0.0, C_SILVER);
+
+        const studProf = [[0.0, 12.30], [8.0, 12.30]];
+        const pitchRings = 56;
+        const span = 159.073 - 12.30;
+        for (let r = 0; r < pitchRings; r++) {
+          const zBase = 12.30 + (r / pitchRings) * span;
+          const zMid  = 12.30 + ((r + 0.5) / pitchRings) * span;
+          const zNext = 12.30 + ((r + 1.0) / pitchRings) * span;
+          studProf.push([8.0, zBase], [7.25, zMid], [8.0, zNext]);
+        }
+        studProf.push([6.773, 160.30], [0.0, 160.30]);
+        mb.addLatheZ(0, 0, studProf, 36, C_SILVER);
+        mb.addCircleLoopZ(0, 0, 159.073, 8.0, 36);
+        bodies.solid66 = uploadCadBody(mb, 34.0);
+      }
+
+      // --- BODY #155: Solid1 (67) — C-AJPJ16-148 M16 Hex Jam Nut ---
+      {
+        const mb = new CadMeshBuilder();
+        mb.addChamferedHexZ(0, 0, 0.0, 12.20, 24.0, 6.9175, C_SILVER);
+        bodies.solid67 = uploadCadBody(mb);
+      }
+
+      // --- OPTIONAL BOM ADDITION: 4x M10x20 SHCS ---
+      {
+        const mb = new CadMeshBuilder();
+        const cDarkBolt = [0.22, 0.24, 0.27];
+        for (const sx of [-35.5, 35.5]) {
+          for (const sy of [-35.5, 35.5]) {
+            const shcsProf = [
+              [0, -13.2], [8.0, -13.2], [8.0, -3.2], [4.15, -3.2], [4.15, 13.5], [0, 13.5]
+            ];
+            mb.addLatheZ(sx, sy, shcsProf, 24, cDarkBolt);
+            mb.addChamferedHexZ(sx, sy, -13.21, -8.5, 8.0, 0.0, [0.12, 0.13, 0.15]);
+          }
+        }
+        bodies.m10Bolts = uploadCadBody(mb);
+      }
+
+      // --- REFERENCE SCENE CONTEXT: 80x80 Extrusions + Gussets + M8 SHCS ---
+      {
+        const mb = new CadMeshBuilder();
+        const cAlu = [0.62, 0.65, 0.69];
+        const cSlot = [0.26, 0.29, 0.33];
+        const cShcs = [0.20, 0.22, 0.25];
+
+        const colOuter = buildRoundedRectLoop(40.0, 2.5, 3, 2).map(p => [p[0] - 40, p[1] + 40]);
+        const colHoles = [
+          { x: -20.0, y: 20.0, r: 10.5 }, { x: -60.0, y: 20.0, r: 6.0 },
+          { x: -20.0, y: 60.0, r: 6.0 },  { x: -60.0, y: 60.0, r: 6.0 }
+        ];
+        const colTris = triangulatePerforatedFace(
+          buildRoundedRectLoop(40.0, 2.5, 3, 2),
+          colHoles.map(h => ({ x: h.x + 40, y: h.y - 40, r: h.r })),
+          40.0, 2.5, 16
+        );
+        for (const [a, b, c] of colTris) {
+          mb.pushTri([a[0]-40,a[1]+40,15],[c[0]-40,c[1]+40,15],[b[0]-40,b[1]+40,15], [0,0,-1], cAlu);
+          mb.pushTri([a[0]-40,a[1]+40,165],[b[0]-40,b[1]+40,165],[c[0]-40,c[1]+40,165], [0,0,1], cAlu);
+        }
+        for (let i = 0; i < colOuter.length; i++) {
+          const p0 = colOuter[i], p1 = colOuter[(i+1)%colOuter.length];
+          const dx = p1[0]-p0[0], dy = p1[1]-p0[1], l = Math.hypot(dx,dy)||1;
+          mb.pushTri([p0[0],p0[1],15],[p1[0],p1[1],15],[p1[0],p1[1],165], [dy/l,-dx/l,0], cAlu);
+          mb.pushTri([p0[0],p0[1],15],[p1[0],p1[1],165],[p0[0],p0[1],165], [dy/l,-dx/l,0], cAlu);
+        }
+        mb.addCylinderZSmooth(-20.0, 20.0, 15.0, 165.0, 10.5, 24, cSlot, true);
+
+        mb.addBox(82.5, 40.0, 55.0, 165.0, 80.0, 80.0, cAlu);
+        mb.addBox(82.5, -0.2, 35.0, 164.0, 1.5, 10.0, cSlot);
+        mb.addBox(82.5, -0.2, 75.0, 164.0, 1.5, 10.0, cSlot);
+
+        mb.addBox(-40.0, -82.5, 55.0, 80.0, 165.0, 80.0, cAlu);
+        mb.addBox(0.2, -82.5, 35.0, 1.5, 164.0, 10.0, cSlot);
+        mb.addBox(0.2, -82.5, 75.0, 1.5, 164.0, 10.0, cSlot);
+
+        mb.addBox(-40.0, 4.0, 128.0, 72.0, 8.0, 64.0, cAlu);
+        mb.addBox(32.0, 40.0, 128.0, 64.0, 72.0, 8.0, cAlu);
+        for (const gx of [-60.0, -20.0]) {
+          mb.addLatheZ(gx, 40.0, [[0,-9.5],[6.5,-9.5],[6.5,-1.0],[0,-1.0]], 20, cShcs);
+        }
+        for (const h of PLATE_HOLES) {
+          if (h.cbDepth > 0) {
+            const zSeat = h.cbDepth;
+            mb.addLatheZ(h.x, h.y, [[0, zSeat - 8.0],[6.5, zSeat - 8.0],[6.5, zSeat],[0, zSeat]], 20, cShcs);
+          }
+        }
+
+        bodies.refFrame = uploadCadBody(mb);
+      }
+
+      let floorGridBuf = null, floorGridCount = 0;
+      {
+        const lines = [];
+        for (let g = -220; g <= 220; g += 20) {
+          lines.push(-220, g, 0, 220, g, 0);
+          lines.push(g, -220, 0, g, 220, 0);
+        }
+        const arr = new Float32Array(lines);
+        floorGridBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, floorGridBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+        floorGridCount = arr.length / 3;
+      }
+
+      // =========================================================================
+      // 4. APPLICATION STATE, CAMERA & FUSION 360 CONTROLS
+      // =========================================================================
+      const state = {
+        jackExtensionMm: 110.0,
+        swivelDeg: 215.0,
+        padTiltDeg: 0.0,
+        explodePct: 0.0,
+        nutLockedFlush: false,
+        visualStyle: "shaded_edges",
+        sectionOn: false,
+        sectionAxis: "diag",
+        sectionOffset: 0.0,
+        showGrid: true,
+        selectedBody: "solid64",
+        vis: {
+          solid64: true,
+          solid60: true, solid61: true, solid62: true, solid63: true,
+          solid65: true, solid66: true, solid67: true,
+          refFrame: true,
+          m10Bolts: false
+        }
+      };
+
+      const cam = {
+        yaw: -0.72,
+        pitch: -0.34,
+        dist: 275.0,
+        target: [12.0, -10.0, 58.0],
+        eye: [0, 0, 0]
+      };
+
+      function applyCameraPreset(name) {
+        document.querySelectorAll("[data-cam]").forEach(b => b.classList.toggle("active", b.dataset.cam === name));
+        if (name === "cad_shot") {
+          cam.yaw = -0.72; cam.pitch = -0.34; cam.dist = 265; cam.target = [12, -10, 58];
+        } else if (name === "iso") {
+          cam.yaw = -0.82; cam.pitch = 0.42; cam.dist = 370; cam.target = [0, 0, 75];
+        } else if (name === "front") {
+          cam.yaw = -Math.PI * 0.5; cam.pitch = 0.02; cam.dist = 350; cam.target = [5, 0, 68];
+        } else if (name === "right") {
+          cam.yaw = 0.0; cam.pitch = 0.02; cam.dist = 350; cam.target = [0, -5, 68];
+        } else if (name === "top") {
+          cam.yaw = -Math.PI * 0.5; cam.pitch = 1.49; cam.dist = 340; cam.target = [0, 0, 115];
+        } else if (name === "bottom") {
+          cam.yaw = -Math.PI * 0.5; cam.pitch = -1.49; cam.dist = 330; cam.target = [8, -8, 60];
+        }
+      }
+
+      document.querySelectorAll("[data-cam]").forEach(btn => {
+        btn.addEventListener("click", () => applyCameraPreset(btn.dataset.cam));
+      });
+      document.getElementById("btnFit").addEventListener("click", () => {
+        cam.dist = 320; cam.target = [0, 0, 68];
+      });
+
+      let dragMode = 0, lx = 0, ly = 0;
+      canvas.addEventListener("contextmenu", e => e.preventDefault());
+      canvas.addEventListener("pointerdown", e => {
+        dragMode = (e.button === 2 || e.shiftKey) ? 2 : 1;
+        lx = e.clientX; ly = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", e => {
+        if (!dragMode) return;
+        const dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        if (dragMode === 1) {
+          cam.yaw -= dx * 0.008;
+          cam.pitch = Math.max(-1.51, Math.min(1.51, cam.pitch + dy * 0.008));
+        } else {
+          const scale = cam.dist * 0.0014;
+          const rx = -Math.sin(cam.yaw), ry = Math.cos(cam.yaw);
+          cam.target[0] -= dx * rx * scale;
+          cam.target[1] -= dx * ry * scale;
+          cam.target[2] += dy * scale;
+        }
+      });
+      canvas.addEventListener("pointerup", () => { dragMode = 0; });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        cam.dist = Math.max(110.0, Math.min(880.0, cam.dist * (1 + e.deltaY * 0.001)));
+      }, { passive: false });
+
+      function refreshTreeUI() {
+        document.querySelectorAll(".tree-node").forEach(n => {
+          n.classList.toggle("selected", n.dataset.body === state.selectedBody);
+        });
+        document.querySelectorAll("[data-eye]").forEach(b => {
+          const k = b.dataset.eye;
+          const on = state.vis[k];
+          b.textContent = on ? "EYE" : "OFF";
+          b.classList.toggle("hidden-part", !on);
+        });
+        document.getElementById("propTag").textContent = state.selectedBody;
+        document.getElementById("propBox").textContent = BODY_INFO[state.selectedBody] || "";
+      }
+
+      document.querySelectorAll(".tree-node").forEach(node => {
+        node.addEventListener("click", e => {
+          if (e.target.hasAttribute("data-eye")) return;
+          state.selectedBody = node.dataset.body;
+          refreshTreeUI();
+        });
+      });
+
+      document.querySelectorAll("[data-eye]").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          const k = btn.dataset.eye;
+          state.vis[k] = !state.vis[k];
+          refreshTreeUI();
+          syncAuditButtons();
+        });
+      });
+
+      document.querySelectorAll("[data-group-eye]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const g = btn.dataset.groupEye;
+          const keys = g === "cjhb"
+            ? ["solid60", "solid61", "solid62", "solid63"]
+            : ["solid65", "solid66", "solid67"];
+          const anyOn = keys.some(k => state.vis[k]);
+          keys.forEach(k => { state.vis[k] = !anyOn; });
+          btn.classList.toggle("hidden-part", anyOn);
+          refreshTreeUI();
+        });
+      });
+
+      document.getElementById("btnShowAll").addEventListener("click", () => {
+        Object.keys(state.vis).forEach(k => { if (k !== "m10Bolts") state.vis[k] = true; });
+        refreshTreeUI();
+      });
+
+      const rngJack = document.getElementById("rngJack");
+      const rngSwivel = document.getElementById("rngSwivel");
+      const rngTilt = document.getElementById("rngTilt");
+      const rngExplode = document.getElementById("rngExplode");
+
+      function setJack(val) {
+        state.jackExtensionMm = val;
+        rngJack.value = String(val);
+        document.querySelectorAll("[data-jack]").forEach(b => {
+          b.classList.toggle("active", Math.abs(Number(b.dataset.jack) - val) < 0.2);
+        });
+        updateReadouts();
+      }
+
+      rngJack.addEventListener("input", () => setJack(Number(rngJack.value)));
+      document.querySelectorAll("[data-jack]").forEach(b => {
+        b.addEventListener("click", () => setJack(Number(b.dataset.jack)));
+      });
+
+      rngSwivel.addEventListener("input", () => {
+        state.swivelDeg = Number(rngSwivel.value);
+        document.getElementById("lblSwivel").textContent = `${state.swivelDeg}°`;
+        updateReadouts();
+      });
+
+      rngTilt.addEventListener("input", () => {
+        state.padTiltDeg = Number(rngTilt.value);
+        document.getElementById("lblTilt").textContent = `${state.padTiltDeg.toFixed(1)}°`;
+      });
+
+      rngExplode.addEventListener("input", () => {
+        state.explodePct = Number(rngExplode.value);
+        document.getElementById("lblExplode").textContent = `${state.explodePct}%`;
+      });
+
+      const btnLockNut = document.getElementById("btnLockNut");
+      const btnAddM10  = document.getElementById("btnAddM10");
+
+      function syncAuditButtons() {
+        btnLockNut.textContent = state.nutLockedFlush ? "ล็อกชิดเพลทแล้ว ✓" : "ขันอัดชิดเพลท";
+        btnLockNut.classList.toggle("fixed", state.nutLockedFlush);
+        document.getElementById("txtNutAudit").textContent = state.nutLockedFlush
+          ? "สถานะ: ขันอัดชิดท้องเพลทแล้ว (Gap = 0.00 mm)"
+          : "สถานะ: วางตามพิกัด STEP เดิม (ห่างเพลท 8.10 mm)";
+
+        btnAddM10.textContent = state.vis.m10Bolts ? "ใส่สกรูแล้ว ✓" : "ใส่สกรู M10";
+        btnAddM10.classList.toggle("fixed", state.vis.m10Bolts);
+      }
+
+      btnLockNut.addEventListener("click", () => {
+        state.nutLockedFlush = !state.nutLockedFlush;
+        state.selectedBody = "solid67";
+        refreshTreeUI();
+        syncAuditButtons();
+      });
+
+      btnAddM10.addEventListener("click", () => {
+        state.vis.m10Bolts = !state.vis.m10Bolts;
+        if (state.vis.m10Bolts) state.selectedBody = "m10Bolts";
+        refreshTreeUI();
+        syncAuditButtons();
+      });
+
+      document.querySelectorAll("[data-style]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.visualStyle = btn.dataset.style;
+          document.querySelectorAll("[data-style]").forEach(b => b.classList.toggle("active", b === btn));
+        });
+      });
+
+      const btnSection = document.getElementById("btnSection");
+      const secControls = document.getElementById("secControls");
+      btnSection.addEventListener("click", () => {
+        state.sectionOn = !state.sectionOn;
+        btnSection.classList.toggle("active", state.sectionOn);
+        secControls.classList.toggle("show", state.sectionOn);
+      });
+
+      document.querySelectorAll("[data-axis]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.sectionAxis = btn.dataset.axis;
+          document.querySelectorAll("[data-axis]").forEach(b => b.classList.toggle("active", b === btn));
+        });
+      });
+
+      document.getElementById("rngSection").addEventListener("input", e => {
+        state.sectionOffset = Number(e.target.value);
+      });
+
+      const btnGrid = document.getElementById("btnGrid");
+      btnGrid.addEventListener("click", () => {
+        state.showGrid = !state.showGrid;
+        btnGrid.classList.toggle("active", state.showGrid);
+      });
+
+      function computeKinematics() {
+        const d = SPEC.exportsDatum({ jackExtensionMm: state.jackExtensionMm });
+        const swRad = (state.swivelDeg * Math.PI) / 180;
+        const wx = CASTER_CTR[0] + 30.0 * Math.cos(swRad);
+        const wy = CASTER_CTR[1] + 30.0 * Math.sin(swRad);
+        const gap = Math.hypot(wx - FOOT_CTR[0], wy - FOOT_CTR[1]) - 37.5 - 8.0;
+        const studProtrusion = d.studTopMm - d.zPlateTopMm;
+        return { ...d, gap, studProtrusion };
+      }
+
+      function updateReadouts() {
+        const k = computeKinematics();
+        const badge = document.getElementById("hdrModeBadge");
+        const wf = document.getElementById("kpiWheelFloat");
+
+        document.getElementById("lblJack").textContent = `${state.jackExtensionMm.toFixed(1)} mm`;
+        document.getElementById("kpiPlateZ").textContent = `${k.zPlateBotMm.toFixed(1)} / ${k.zPlateTopMm.toFixed(1)} mm`;
+        document.getElementById("kpiStudTop").textContent = `+${k.studProtrusion.toFixed(1)} mm (ในรูเสา)`;
+        document.getElementById("kpiGap").textContent = `${k.gap.toFixed(1)} mm (SAFE)`;
+
+        if (k.wheelFloatMm > 0.05) {
+          badge.className = "status-pill";
+          badge.textContent = `STATIONARY · ล้อลอย +${k.wheelFloatMm.toFixed(1)} mm (Plate ${k.zPlateBotMm.toFixed(0)}/${k.zPlateTopMm.toFixed(0)} mm)`;
+          wf.textContent = `+${k.wheelFloatMm.toFixed(2)} mm`;
+          wf.style.color = "var(--ok)";
+        } else {
+          badge.className = "status-pill warn";
+          badge.textContent = `ROLLING · ล้อแตะพื้น Z=0 (ขาหยั่งลอย +${k.footFloatMm.toFixed(1)} mm)`;
+          wf.textContent = `0.00 mm (ON FLOOR)`;
+          wf.style.color = "var(--accent-hi)";
+        }
+      }
+
+      refreshTreeUI();
+      syncAuditButtons();
+      updateReadouts();
+
+      // =========================================================================
+      // 5. 60 FPS HARDWARE-ACCELERATED CAD RENDER LOOP
+      // =========================================================================
+      const projMat = Mat4.create();
+      const viewMat = Mat4.create();
+      const mId = Mat4.create();
+      const mA = Mat4.create();
+      const mB = Mat4.create();
+
+      function getClipPlaneVec4() {
+        if (state.sectionAxis === "diag") {
+          const s = Math.SQRT1_2;
+          return [s, s, 0.0, state.sectionOffset];
+        } else if (state.sectionAxis === "x") {
+          return [1.0, 0.0, 0.0, state.sectionOffset];
+        }
+        return [0.0, 1.0, 0.0, state.sectionOffset];
+      }
+
+      function drawCadBody(key, modelMat) {
+        if (!state.vis[key]) return;
+        const mesh = bodies[key];
+        if (!mesh) return;
+        const isSel = state.selectedBody === key;
+        const clipVec = getClipPlaneVec4();
+        const clipFlag = state.sectionOn ? 1.0 : 0.0;
+
+        if (state.visualStyle !== "wireframe") {
+          gl.useProgram(pSolid);
+          gl.uniformMatrix4fv(uSolid.uProj, false, projMat);
+          gl.uniformMatrix4fv(uSolid.uView, false, viewMat);
+          gl.uniformMatrix4fv(uSolid.uModel, false, modelMat);
+          gl.uniform3fv(uSolid.uEye, cam.eye);
+          gl.uniform1f(uSolid.uSelect, isSel ? 1.0 : 0.0);
+          gl.uniform1f(uSolid.uAlpha, 1.0);
+          gl.uniform1f(uSolid.uClipOn, clipFlag);
+          gl.uniform4fv(uSolid.uClipPlane, clipVec);
+
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(1.15, 1.15);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.triBuf);
+          gl.enableVertexAttribArray(uSolid.aPos);
+          gl.vertexAttribPointer(uSolid.aPos, 3, gl.FLOAT, false, 36, 0);
+          gl.enableVertexAttribArray(uSolid.aNorm);
+          gl.vertexAttribPointer(uSolid.aNorm, 3, gl.FLOAT, false, 36, 12);
+          gl.enableVertexAttribArray(uSolid.aCol);
+          gl.vertexAttribPointer(uSolid.aCol, 3, gl.FLOAT, false, 36, 24);
+          gl.drawArrays(gl.TRIANGLES, 0, mesh.triCount);
+
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+        }
+
+        if (state.visualStyle === "shaded_edges" || state.visualStyle === "wireframe" || isSel) {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uLine.uProj, false, projMat);
+          gl.uniformMatrix4fv(uLine.uView, false, viewMat);
+          gl.uniformMatrix4fv(uLine.uModel, false, modelMat);
+          gl.uniform1f(uLine.uClipOn, clipFlag);
+          gl.uniform4fv(uLine.uClipPlane, clipVec);
+          gl.uniform4fv(
+            uLine.uLineCol,
+            isSel ? [0.22, 0.78, 1.0, 1.0] : [0.06, 0.07, 0.09, 0.92]
+          );
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, mesh.edgeBuf);
+          if (uSolid.aNorm >= 0) gl.disableVertexAttribArray(uSolid.aNorm);
+          if (uSolid.aCol >= 0) gl.disableVertexAttribArray(uSolid.aCol);
+          if (uSolid.aPos >= 0 && uSolid.aPos !== uLine.aPos) gl.disableVertexAttribArray(uSolid.aPos);
+          gl.enableVertexAttribArray(uLine.aPos);
+          gl.vertexAttribPointer(uLine.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, mesh.edgeCount);
+        }
+      }
+
+      function renderFrame() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.185, 0.205, 0.238, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+
+        cam.eye[0] = cam.target[0] + Math.cos(cam.pitch) * Math.cos(cam.yaw) * cam.dist;
+        cam.eye[1] = cam.target[1] + Math.cos(cam.pitch) * Math.sin(cam.yaw) * cam.dist;
+        cam.eye[2] = cam.target[2] + Math.sin(cam.pitch) * cam.dist;
+
+        Mat4.perspective(projMat, (36 * Math.PI) / 180, w / Math.max(1, h), 4.0, 3000.0);
+        Mat4.lookAt(viewMat, cam.eye, cam.target, [0, 0, 1]);
+
+        if (state.showGrid) {
+          gl.useProgram(pLine);
+          gl.uniformMatrix4fv(uLine.uProj, false, projMat);
+          gl.uniformMatrix4fv(uLine.uView, false, viewMat);
+          Mat4.identity(mId);
+          gl.uniformMatrix4fv(uLine.uModel, false, mId);
+          gl.uniform1f(uLine.uClipOn, 0.0);
+          gl.uniform4fv(uLine.uLineCol, [0.32, 0.36, 0.42, 0.55]);
+          gl.bindBuffer(gl.ARRAY_BUFFER, floorGridBuf);
+          if (uSolid.aNorm >= 0) gl.disableVertexAttribArray(uSolid.aNorm);
+          if (uSolid.aCol >= 0) gl.disableVertexAttribArray(uSolid.aCol);
+          if (uSolid.aPos >= 0 && uSolid.aPos !== uLine.aPos) gl.disableVertexAttribArray(uSolid.aPos);
+          gl.enableVertexAttribArray(uLine.aPos);
+          gl.vertexAttribPointer(uLine.aPos, 3, gl.FLOAT, false, 12, 0);
+          gl.drawArrays(gl.LINES, 0, floorGridCount);
+        }
+
+        const k = computeKinematics();
+        const ex = state.explodePct * 0.65;
+
+        Mat4.identity(mId);
+        Mat4.translate(mA, mId, 0, 0, k.zPlateBotMm + ex * 0.5);
+        drawCadBody("solid64", mA);
+
+        Mat4.translate(mA, mId, 0, 0, k.zPlateBotMm + ex * 1.15);
+        drawCadBody("refFrame", mA);
+
+        const zCasterTop = k.zPlateBotMm - ex * 0.35;
+        Mat4.translate(mA, mId, CASTER_CTR[0], CASTER_CTR[1], zCasterTop);
+        drawCadBody("solid60", mA);
+
+        Mat4.translate(mB, mId, CASTER_CTR[0], CASTER_CTR[1], zCasterTop - ex * 0.45);
+        drawCadBody("m10Bolts", mB);
+
+        const swRad = (state.swivelDeg * Math.PI) / 180;
+        Mat4.translate(mA, mId, CASTER_CTR[0], CASTER_CTR[1], zCasterTop - ex * 0.75);
+        Mat4.rotateZ(mA, mA, swRad);
+        drawCadBody("solid61", mA);
+
+        Mat4.copy(mB, mA);
+        Mat4.translate(mB, mB, 0, -ex * 0.85, 0);
+        drawCadBody("solid62", mB);
+
+        Mat4.copy(mB, mA);
+        Mat4.translate(mB, mB, ex * 0.45, 0, -ex * 0.55);
+        drawCadBody("solid63", mB);
+
+        const zFootPad = Math.max(0, k.footFloatMm - ex * 0.9);
+        Mat4.translate(mA, mId, FOOT_CTR[0], FOOT_CTR[1], zFootPad + 15.70);
+        Mat4.rotateX(mA, mA, (state.padTiltDeg * Math.PI) / 180);
+        Mat4.translate(mA, mA, 0, 0, -15.70);
+        drawCadBody("solid65", mA);
+
+        const zBallWorld = Math.max(0, k.footFloatMm) + 15.70 - ex * 0.35;
+        Mat4.translate(mA, mId, FOOT_CTR[0], FOOT_CTR[1], zBallWorld);
+        drawCadBody("solid66", mA);
+
+        const nutGap = state.nutLockedFlush ? 0.0 : 8.10;
+        const zNutBot = k.zPlateBotMm - nutGap - 12.20 - ex * 0.55;
+        Mat4.translate(mA, mId, FOOT_CTR[0], FOOT_CTR[1], zNutBot);
+        drawCadBody("solid67", mA);
+
+        requestAnimationFrame(renderFrame);
+      }
+
+      requestAnimationFrame(renderFrame);
+    })();
+  </script>
+</body>
+</html>
